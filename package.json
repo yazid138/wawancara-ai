@@ -1,0 +1,31 @@
+{
+	"name": "wawancara",
+	"module": "src/index.ts",
+	"type": "module",
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/express": "^5.0.4",
+		"@types/morgan": "^1.9.10",
+		"@types/node": "^24.9.1",
+		"dotenv": "^17.2.3",
+		"eslint": "^9.38.0",
+		"install": "^0.13.0",
+		"npm": "^11.6.2",
+		"prettier": "^3.6.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"cors": "^2.8.5",
+		"express": "^5.1.0",
+		"morgan": "^1.10.1",
+		"nodemon": "^3.1.10"
+	},
+	"scripts": {
+		"start": "tsx src/index.ts",
+		"dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
+		"lint": "eslint . --ext .ts",
+		"format": "prettier --write ."
+	}
+}
