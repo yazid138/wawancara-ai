@@ -7,6 +7,9 @@
 		"@types/express": "^5.0.4",
 		"@types/morgan": "^1.9.10",
 		"@types/node": "^24.9.1",
+		"@types/passport": "^1.0.17",
+		"@types/passport-jwt": "^4.0.1",
+		"@types/passport-local": "^1.0.38",
 		"dotenv": "^17.2.3",
 		"eslint": "^9.38.0",
 		"install": "^0.13.0",
@@ -21,7 +24,10 @@
 		"express": "^5.1.0",
 		"fastest-validator": "^1.19.1",
 		"morgan": "^1.10.1",
-		"nodemon": "^3.1.10"
+		"nodemon": "^3.1.10",
+		"passport": "^0.7.0",
+		"passport-jwt": "^4.0.1",
+		"passport-local": "^1.0.0"
 	},
 	"scripts": {
 		"start": "tsx src/index.ts",
