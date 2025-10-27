@@ -1,5 +1,5 @@
 import sendResponse from "@/utils/responseHandler";
-import { validate } from "@/utils/validation";
+import validate from "@/utils/validation";
 import { Router, Request, Response } from "express";
 
 const router = Router();
