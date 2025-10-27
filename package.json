@@ -2,6 +2,12 @@
 	"name": "wawancara",
 	"module": "src/index.ts",
 	"type": "module",
+	"scripts": {
+		"start": "tsx src/index.ts",
+		"dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
+		"lint": "eslint . --ext .ts",
+		"format": "prettier --write ."
+	},
 	"devDependencies": {
 		"@types/bun": "latest",
 		"@types/express": "^5.0.4",
@@ -28,11 +34,5 @@
 		"passport": "^0.7.0",
 		"passport-jwt": "^4.0.1",
 		"passport-local": "^1.0.0"
-	},
-	"scripts": {
-		"start": "tsx src/index.ts",
-		"dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
-		"lint": "eslint . --ext .ts",
-		"format": "prettier --write ."
 	}
 }
