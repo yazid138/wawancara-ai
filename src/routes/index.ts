@@ -1,4 +1,4 @@
-import { sendResponse } from "@/utils/responseHandler";
+import sendResponse from "@/utils/responseHandler";
 import { Router, Request, Response } from "express";
 const router = Router();
 

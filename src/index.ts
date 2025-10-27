@@ -4,7 +4,7 @@ import config from "@/config";
 import NotFoundException from "@/exception/NotFoundException";
 import HttpException from "@/types/exception";
 import routes from "@/routes/";
-import { sendError } from "./utils/responseHandler";
+import sendResponse from "./utils/responseHandler";
 
 const app = express();
 app.use(express.json());
@@ -19,10 +19,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use((err: HttpException, req: Request, res: Response, next: NextFunction) => {
 	try {
-		sendError(res, err.status, err.message);
+		sendResponse(res, { status: err.status, message: err.message });
 	} catch (error) {
 		console.log(error);
-		sendError(res, 500, "Internal Server Error");
+		sendResponse(res, { status: 500, message: "Internal Server Error" });
 	}
 });
 
