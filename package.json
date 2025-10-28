@@ -5,11 +5,11 @@
 	"scripts": {
 		"start": "tsx src/index.ts",
 		"dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
-		"postinstall": "npx prisma generate",
+		"postinstall": "prisma generate",
 		"lint": "eslint . --ext .ts",
 		"format": "prettier --write ."
 	},
-		"devDependencies": {
+	"devDependencies": {
 		"@types/bcrypt": "^6.0.0",
 		"@types/bun": "latest",
 		"@types/express": "^5.0.4",
@@ -33,6 +33,7 @@
 		"bcrypt": "^6.0.0",
 		"cors": "^2.8.5",
 		"express": "^5.1.0",
+		"express-session": "^1.18.2",
 		"fastest-validator": "^1.19.1",
 		"jsonwebtoken": "^9.0.2",
 		"morgan": "^1.10.1",

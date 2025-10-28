@@ -21,7 +21,7 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
 	passport.authenticate("local", (err: any, user: any, info: any) => {
 		try {
 			if (err) {
-				throw new BadRequestException("Authentication failed", err.message);
+				throw new BadRequestException("Authentication failed", err.message || err);
 			}
 			if (!user) {
 				throw new UnauthorizedException(info.message);
@@ -66,7 +66,7 @@ export const register = async (req: Request, res: Response) => {
 export const logout = (req: Request, res: Response) => {
 	req.logout((errLogout) => {
 		if (errLogout) {
-			throw new BadRequestException("Logout failed", errLogout);
+			throw new BadRequestException("Logout failed", errLogout.message || errLogout);
 		}
 		sendResponse(res, { status: 200, message: "Logout successful" });
 	});
