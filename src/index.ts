@@ -17,11 +17,11 @@ app.use(passport.initialize());
 app.use(routes);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-	throw new NotFoundException();
+  throw new NotFoundException();
 });
 
 app.use(errorHandler());
 
 app.listen(config.port, () => {
-	console.log(`Server is running on ${config.baseUrl}:${config.port}`);
+  console.log(`Server is running on ${config.baseUrl}:${config.port}`);
 });

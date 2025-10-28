@@ -5,9 +5,9 @@ import BadRequestException from "@/exception/BadRequestException";
 const v = new Validator();
 
 export default <T>(res: Response, schema: any, data: T) => {
-    const check = v.compile(schema);
-    const result = check(data || {});
-    if (result !== true) {
-        throw new BadRequestException("Validation Error", result as any);
-    }
-}
+  const check = v.compile(schema);
+  const result = check(data || {});
+  if (result !== true) {
+    throw new BadRequestException("Validation Error", result as any);
+  }
+};

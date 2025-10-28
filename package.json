@@ -1,47 +1,43 @@
 {
-	"name": "wawancara",
-	"module": "src/index.ts",
-	"type": "module",
-	"scripts": {
-		"start": "tsx src/index.ts",
-		"dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
-		"postinstall": "prisma generate",
-		"lint": "eslint . --ext .ts",
-		"format": "prettier --write ."
-	},
-	"devDependencies": {
-		"@types/bcrypt": "^6.0.0",
-		"@types/bun": "latest",
-		"@types/express": "^5.0.4",
-		"@types/morgan": "^1.9.10",
-		"@types/node": "^24.9.1",
-		"@types/passport": "^1.0.17",
-		"@types/passport-jwt": "^4.0.1",
-		"@types/passport-local": "^1.0.38",
-		"dotenv": "^17.2.3",
-		"eslint": "^9.38.0",
-		"install": "^0.13.0",
-		"npm": "^11.6.2",
-		"prettier": "^3.6.2",
-		"prisma": "^6.18.0"
-	},
-	"peerDependencies": {
-		"typescript": "^5.9.3"
-	},
-	"dependencies": {
-		"@prisma/client": "^6.18.0",
-		"bcrypt": "^6.0.0",
-		"cors": "^2.8.5",
-		"express": "^5.1.0",
-		"express-session": "^1.18.2",
-		"fastest-validator": "^1.19.1",
-		"jsonwebtoken": "^9.0.2",
-		"morgan": "^1.10.1",
-		"mysql2": "^3.15.3",
-		"nodemon": "^3.1.10",
-		"passport": "^0.7.0",
-		"passport-jwt": "^4.0.1",
-		"passport-local": "^1.0.0",
-		"sequelize": "^6.37.7"
-	}
+  "name": "wawancara",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
+    "postinstall": "prisma generate",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/bun": "latest",
+    "@types/express": "^5.0.4",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.9.1",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
+    "dotenv": "^17.2.3",
+    "install": "^0.13.0",
+    "npm": "^11.6.2",
+    "prettier": "^3.6.2",
+    "prisma": "^6.18.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "fastest-validator": "^1.19.1",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "nodemon": "^3.1.10",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0"
+  }
 }

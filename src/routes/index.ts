@@ -5,7 +5,7 @@ import authRouter from "./auth";
 const router = Router();
 
 router.get("/", (req: Request, res: Response) => {
-	sendResponse(res, { status: 200, message: "Welcome to the API" });
+  sendResponse(res, { status: 200, message: "Welcome to the API" });
 });
 
 router.use("/auth", authRouter);
