@@ -5,6 +5,7 @@ import config from "@/config";
 import prisma from "@/database/prisma";
 import bcrypt from "bcrypt";
 import { User } from "@prisma/client";
+import UserResponse from "@/types/UserResponse";
 
 passport.use(
   new LocalStrategy(
@@ -42,10 +43,7 @@ passport.use(
     },
     async (
       payload: { id: number },
-      done: (
-        err: boolean,
-        user?: { id: number; name: string; username: string; createdAt: Date },
-      ) => void,
+      done: (err: boolean, user?: UserResponse) => void,
     ) => {
       const user = await prisma.user.findUnique({
         where: { id: payload.id },
