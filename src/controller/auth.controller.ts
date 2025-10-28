@@ -12,7 +12,6 @@ import { User } from "@prisma/client";
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
   validate(
-    res,
     {
       username: "string",
       password: "string",
@@ -55,7 +54,6 @@ export const me = (req: Request, res: Response) => {
 
 export const register = async (req: Request, res: Response) => {
   validate(
-    res,
     {
       name: "string",
       username: "string",
