@@ -1,7 +1,7 @@
 {
   "name": "wawancara",
   "module": "src/index.ts",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
