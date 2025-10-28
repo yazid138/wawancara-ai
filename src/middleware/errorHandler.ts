@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import HttpException from "@/types/exception";
+import HttpException from "@/types/httpException";
 import sendResponse from "@/utils/responseHandler";
 
 export default () => (err: HttpException, req: Request, res: Response, next: NextFunction) => {

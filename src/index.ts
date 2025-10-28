@@ -6,10 +6,15 @@ import routes from "@/routes/";
 import passport from "passport";
 import dotenv from "dotenv";
 import errorHandler from "@/middleware/errorHandler";
+import {connectToDB} from "@/database/mysql";
+import "@/config/passport";
 
 dotenv.config();
 
 const app = express();
+
+connectToDB();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(logger("dev"));

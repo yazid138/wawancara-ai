@@ -2,11 +2,20 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { ExtractJwt, Strategy as JwtStrategy } from "passport-jwt";
 import config from "@/config";
+import { UserModel } from "@/model/user.model";
+import bcrypt from "bcrypt";
 
 passport.use(
 	new LocalStrategy({ usernameField: "username", passwordField: "password" }, async (username: string, password: string, done: (error: any, user?: any, info?: any) => void) => {
 		try {
-			const user = {};
+			const user = await UserModel.findOne({ where: { username } });
+			if (!user) {
+				return done(null, false, { message: "Username tidak ditemukan" });
+			}
+			const isPasswordValid = await bcrypt.compare(password, user.getDataValue("password"));
+			if (!isPasswordValid) {
+				return done(null, false, { message: "Password salah" });
+			}
 			return done(null, user, { message: "Berhasil Login" });
 		} catch (err) {
 			return done(err);

@@ -9,6 +9,7 @@
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
+		"@types/bcrypt": "^6.0.0",
 		"@types/bun": "latest",
 		"@types/express": "^5.0.4",
 		"@types/morgan": "^1.9.10",
@@ -26,14 +27,17 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
+		"bcrypt": "^6.0.0",
 		"cors": "^2.8.5",
 		"express": "^5.1.0",
 		"fastest-validator": "^1.19.1",
 		"jsonwebtoken": "^9.0.2",
 		"morgan": "^1.10.1",
+		"mysql2": "^3.15.3",
 		"nodemon": "^3.1.10",
 		"passport": "^0.7.0",
 		"passport-jwt": "^4.0.1",
-		"passport-local": "^1.0.0"
+		"passport-local": "^1.0.0",
+		"sequelize": "^6.37.7"
 	}
 }

@@ -1,4 +1,4 @@
-import HttpException from "@/types/exception";
+import HttpException from "@/types/httpException";
 
 export default class BadRequestException extends HttpException {
 	constructor(message = "Bad Request", error = null) {
