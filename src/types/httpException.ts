@@ -1,6 +1,6 @@
-export default class HttpException extends Error {
+export default class HttpException<T> extends Error {
   public status: number;
-  public error: any;
+  public error: T | null;
 
   constructor(message: string) {
     super(message);
