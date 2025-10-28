@@ -7,7 +7,7 @@ import UnauthorizedException from "@/exception/UnauthorizedException";
 import config from "@/config";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { UserModel } from "@/model/user.model";
+import prisma from "@/database/prisma";
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
 	validate(
@@ -21,7 +21,7 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
 	passport.authenticate("local", (err: any, user: any, info: any) => {
 		try {
 			if (err) {
-				throw new BadRequestException("Authentication failed", err);
+				throw new BadRequestException("Authentication failed", err.message);
 			}
 			if (!user) {
 				throw new UnauthorizedException(info.message);
@@ -54,12 +54,12 @@ export const register = async (req: Request, res: Response) => {
 		req.body
 	);
 	const { name, username, password } = req.body;
-	const existingUser = await UserModel.findOne({ where: { username } });
+	const existingUser = await prisma.user.findUnique({ where: { username } });
 	if (existingUser) {
 		throw new BadRequestException("Username already exists");
 	}
 	const hashedPassword = await bcrypt.hash(password, 10);
-	await UserModel.create({ name, username, password: hashedPassword });
+	await prisma.user.create({ data: { name, username, password: hashedPassword } });
 	sendResponse(res, { status: 200, message: "Register successful" });
 };
 
