@@ -1,4 +1,4 @@
-import HttpException from "@/exception/HttpException";
+import HttpException from "@/types/httpException";
 
 export default class NotFoundException extends HttpException {
   constructor(message = "Not Found") {
