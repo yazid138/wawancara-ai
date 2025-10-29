@@ -3,7 +3,12 @@ import HttpException from "@/types/httpException";
 import sendResponse from "@/utils/responseHandler";
 
 export default () =>
-  (err: HttpException<any>, req: Request, res: Response, next: NextFunction) => {
+  (
+    err: HttpException<any>,
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       sendResponse(res, {
         status: err.status,
