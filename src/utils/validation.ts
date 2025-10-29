@@ -9,4 +9,5 @@ export default <T>(schema: ValidationSchema<T>, data: T) => {
 	if (result !== true) {
 		throw new BadRequestException("Validation Error", result as ValidationError[]);
 	}
+	return true;
 };
