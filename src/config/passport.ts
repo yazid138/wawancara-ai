@@ -45,14 +45,18 @@ passport.use(
       payload: { id: number },
       done: (err: boolean, user?: UserResponse) => void,
     ) => {
-      const user = await prisma.user.findUnique({
-        where: { id: payload.id },
-        select: { id: true, name: true, username: true, createdAt: true },
-      });
-      if (!user) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: payload.id },
+          select: { id: true, name: true, username: true, createdAt: true },
+        });
+        if (!user) {
+          return done(true);
+        }
+        done(false, user);
+      } catch (err) {
         return done(true);
       }
-      done(false, user);
     },
   ),
 );
