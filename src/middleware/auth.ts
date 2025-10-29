@@ -1,7 +1,7 @@
 import UnauthorizedException from "@/exception/UnauthorizedException";
 import passport from "passport";
 import { Request, Response, NextFunction } from "express";
-import UserResponse from "@/types/UserResponse";
+import UserResponse from "@/types/userResponse";
 
 export default (req: Request, res: Response, next: NextFunction) =>
   passport.authenticate("jwt", (err: boolean, user?: UserResponse) => {
