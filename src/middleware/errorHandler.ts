@@ -1,14 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import HttpException from "@/types/httpException";
+import HttpException from "@/exception/HttpException";
 import sendResponse from "@/utils/responseHandler";
 
 export default () =>
-  (
-    err: HttpException<any>,
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
+  (err: HttpException, req: Request, res: Response, next: NextFunction) => {
     try {
       sendResponse(res, {
         status: err.status,

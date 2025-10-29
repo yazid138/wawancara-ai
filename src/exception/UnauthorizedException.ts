@@ -1,6 +1,6 @@
-import HttpException from "@/types/httpException";
+import HttpException from "@/exception/HttpException";
 
-export default class UnauthorizedException extends HttpException<null> {
+export default class UnauthorizedException extends HttpException {
   constructor(message = "Unauthorized") {
     super(message);
     this.name = "UnauthorizedException";

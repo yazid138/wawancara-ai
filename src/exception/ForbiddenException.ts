@@ -1,6 +1,6 @@
-import HttpException from "@/types/httpException";
+import HttpException from "@/exception/HttpException";
 
-export default class ForbiddenException extends HttpException<null> {
+export default class ForbiddenException extends HttpException {
   constructor(message = "Forbidden") {
     super(message);
     this.name = "ForbiddenException";
