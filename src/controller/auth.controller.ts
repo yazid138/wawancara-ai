@@ -9,9 +9,11 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "@/database/prisma";
 import { User } from "@prisma/client";
+import RegisterBody from "@/types/auth/registerBody";
+import LoginBody from "@/types/auth/loginBody";
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
-  validate(
+  validate<LoginBody>(
     {
       username: "string",
       password: "string",
@@ -53,7 +55,7 @@ export const me = (req: Request, res: Response) => {
 };
 
 export const register = async (req: Request, res: Response) => {
-  validate(
+  validate<RegisterBody>(
     {
       name: "string",
       username: "string",
@@ -61,7 +63,7 @@ export const register = async (req: Request, res: Response) => {
     },
     req.body,
   );
-  const { name, username, password } = req.body;
+  const { name, username, password } = req.body as RegisterBody;
   const existingUser = await prisma.user.findUnique({ where: { username } });
   if (existingUser) {
     throw new BadRequestException("Username already exists");

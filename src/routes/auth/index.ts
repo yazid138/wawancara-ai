@@ -6,7 +6,7 @@ import auth from "@/middleware/auth";
 const router = Router();
 
 router.post("/login", login);
-router.delete("/logout", logout);
+router.delete("/logout", auth, logout);
 router.get("/me", auth, me);
 router.post("/register", register);
 
