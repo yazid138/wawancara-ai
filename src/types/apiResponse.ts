@@ -7,5 +7,5 @@ export default interface ApiResponse<T> {
     limit: number;
   };
   data?: T;
-  error?: any;
+  error?: T;
 }
