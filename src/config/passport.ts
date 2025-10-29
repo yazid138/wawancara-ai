@@ -5,7 +5,7 @@ import config from "@/config";
 import prisma from "@/database/prisma";
 import bcrypt from "bcrypt";
 import { User } from "@prisma/client";
-import UserResponse from "@/types/UserResponse";
+import UserResponse from "@/types/userResponse";
 
 passport.use(
   new LocalStrategy(
