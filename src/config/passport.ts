@@ -26,6 +26,7 @@ passport.use(
         }
         return done(false, user, { message: "Berhasil Login" });
       } catch (err) {
+        console.error(err);
         return done(true);
       }
     },
@@ -55,6 +56,7 @@ passport.use(
         }
         done(false, user);
       } catch (err) {
+        console.error(err);
         return done(true);
       }
     },

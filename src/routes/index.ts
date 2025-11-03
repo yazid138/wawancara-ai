@@ -1,6 +1,7 @@
 import sendResponse from "@/utils/responseHandler";
 import { Router, Request, Response } from "express";
 import authRouter from "./auth";
+import aiRouter from "./ai";
 
 const router = Router();
 
@@ -9,5 +10,6 @@ router.get("/", (req: Request, res: Response) => {
 });
 
 router.use("/auth", authRouter);
+router.use("/ai", aiRouter);
 
 export default router;

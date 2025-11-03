@@ -1,8 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import HttpException from "@/types/httpException";
 import sendResponse from "@/utils/responseHandler";
+import NotFoundException from "@/exception/NotFoundException";
 
-export default () =>
+export const notFoundHandler =
+  () => (req: Request, res: Response, next: NextFunction) => {
+    throw new NotFoundException();
+  };
+
+export const errorHandler =
+  () =>
   (err: HttpException, req: Request, res: Response, next: NextFunction) => {
     try {
       sendResponse(res, {
@@ -15,3 +22,5 @@ export default () =>
       sendResponse(res, { status: 500, message: "Internal Server Error" });
     }
   };
+
+export default errorHandler;

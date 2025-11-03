@@ -1,10 +1,9 @@
-import express, { NextFunction, Request, Response } from "express";
+import express from "express";
 import logger from "morgan";
 import config from "@/config";
-import NotFoundException from "@/exception/NotFoundException";
 import routes from "@/routes/";
 import passport from "passport";
-import errorHandler from "@/middleware/errorHandler";
+import { notFoundHandler, errorHandler } from "@/middleware/errorHandler";
 import "@/config/passport";
 
 const app = express();
@@ -16,10 +15,7 @@ app.use(passport.initialize());
 
 app.use(routes);
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  throw new NotFoundException();
-});
-
+app.use(notFoundHandler());
 app.use(errorHandler());
 
 app.listen(config.port, () => {
