@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
-import ai from "@/services/ai.service";
+import ai, {validateInterviewInput} from "@/services/ai.service";
 import hf from "@/services/huggingface.service";
 import config from "@/config";
 import validate from "@/utils/validation";
@@ -14,9 +14,17 @@ export const generateMessage = async (req: Request, res: Response) => {
     req.body,
   );
   const { message } = req.body as GenerateMessageRequest;
+  const result = await validateInterviewInput('kamu tinggal dimana?', message);
+  const resultObj = JSON.parse(result);
+  if (resultObj.valid !== true) {
+    return sendResponse(res, {
+      status: 400,
+      message: "Input tidak sesuai dengan ketentuan wawancara",
+      error: resultObj.keterangan,
+    });
+  }
   const { output_text } = await ai.responses.create({
     model: config.openAIModel,
-    temperature: config.openAITemperature,
     input: [
       { role: "system", content: "You are a helpful assistant." },
       { role: "user", content: message },
