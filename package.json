@@ -4,7 +4,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "tsx src/index.ts",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx src/index.ts'",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec tsx src/index.ts",
     "postinstall": "prisma generate",
     "format": "prettier --write ."
   },
