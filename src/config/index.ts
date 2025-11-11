@@ -9,4 +9,5 @@ export default {
   openAITemperature: Number(process.env.OPENAI_TEMPERATURE) || 0.7,
   openAIEmbeddingModel:
     process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
+  hfKey: process.env.HF_KEY || "",
 };

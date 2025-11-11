@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
 import ai from "@/services/ai.service";
+import hf from "@/services/huggingface.service";
 import config from "@/config";
 import validate from "@/utils/validation";
 
@@ -25,6 +26,28 @@ export const generateMessage = async (req: Request, res: Response) => {
     status: 200,
     message: "berhasil generate message",
     data: output_text,
+  });
+};
+
+export const generateMessage2 = async (req: Request, res: Response) => {
+  validate<GenerateMessageRequest>(
+    {
+      message: "string",
+    },
+    req.body,
+  );
+  const { message } = req.body as GenerateMessageRequest;
+  const out = await hf.chatCompletion({
+    model: 'Qwen/Qwen3-4B-Instruct-2507',
+    messages: [
+      { role: "system", content: "You are a helpful assistant." },
+      { role: "user", content: message },
+    ]
+  })
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil generate message",
+    data: out.choices[0].message.content,
   });
 };
 
