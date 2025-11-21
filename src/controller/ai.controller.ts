@@ -7,8 +7,7 @@ import {
 } from "@/services/ai.service";
 import { generateMessage as generateMessageHF } from "@/services/huggingface.service";
 import validate from "@/utils/validation";
-import pineCone, { searchVector } from "@/services/pinecone.service";
-import { v4 as uuidv4 } from "uuid";
+import { searchVector, upsertVector } from "@/services/pinecone.service";
 
 type GenerateMessageRequest = { message: string };
 export const generateMessageController = async (
@@ -74,15 +73,7 @@ export const embedTextController = async (req: Request, res: Response) => {
   );
   const { text } = req.body as EmbedTextRequest;
   const dataEmbed = await createEmbedding(text);
-  await pineCone.upsert([
-    {
-      id: uuidv4(),
-      values: dataEmbed,
-      metadata: {
-        text: text,
-      },
-    },
-  ]);
+  await upsertVector(dataEmbed, { text });
   sendResponse(res, {
     status: 200,
     message: "berhasil embed text",
