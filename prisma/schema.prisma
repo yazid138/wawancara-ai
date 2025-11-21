@@ -15,12 +15,3 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-model Kisikisi {
-  id Int @id @default(autoincrement())
-  kategori String
-  pertanyaan String
-  jawaban String
-  vektor Int[]
-  createdAt DateTime @default(now())  
-}

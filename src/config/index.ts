@@ -10,4 +10,7 @@ export default {
   openAIEmbeddingModel:
     process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
   hfKey: process.env.HF_KEY || "",
+  pineConeKey: process.env.PINECONE_API_KEY || "",
+  pineConeHostUrl: process.env.PINECONE_HOST_URL || "",
+  pineConeIndex: process.env.PINECONE_INDEX_NAME || "",
 };

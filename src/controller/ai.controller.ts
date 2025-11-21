@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
-import ai, {validateInterviewInput} from "@/services/ai.service";
+import {validateInterviewInput, createEmbedding, generateMessage} from "@/services/ai.service";
 import hf from "@/services/huggingface.service";
-import config from "@/config";
 import validate from "@/utils/validation";
+import pineCone, { searchVector } from "@/services/pinecone.service";
+import { v4 as uuidv4 } from "uuid";
 
 type GenerateMessageRequest = { message: string };
-export const generateMessage = async (req: Request, res: Response) => {
+export const generateMessageController = async (req: Request, res: Response) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -23,21 +24,18 @@ export const generateMessage = async (req: Request, res: Response) => {
       error: resultObj.keterangan,
     });
   }
-  const { output_text } = await ai.responses.create({
-    model: config.openAIModel,
-    input: [
-      { role: "system", content: "You are a helpful assistant." },
-      { role: "user", content: message },
-    ],
-  });
+  const data = await generateMessage([
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: message },
+  ]);
   sendResponse(res, {
     status: 200,
     message: "berhasil generate message",
-    data: output_text,
+    data,
   });
 };
 
-export const generateMessage2 = async (req: Request, res: Response) => {
+export const generateMessage2Controller = async (req: Request, res: Response) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -60,7 +58,7 @@ export const generateMessage2 = async (req: Request, res: Response) => {
 };
 
 type EmbedTextRequest = { text: string };
-export const embedText = async (req: Request, res: Response) => {
+export const embedTextController = async (req: Request, res: Response) => {
   validate<EmbedTextRequest>(
     {
       text: "string",
@@ -68,13 +66,39 @@ export const embedText = async (req: Request, res: Response) => {
     req.body,
   );
   const { text } = req.body as EmbedTextRequest;
-  const { data } = await ai.embeddings.create({
-    model: config.openAIEmbeddingModel,
-    input: text,
-  });
+  const dataEmbed = await createEmbedding(text);
+  await pineCone.upsert([
+    {
+      id: uuidv4(),
+      values: dataEmbed,
+      metadata: { 
+        text: text 
+      },
+    }
+  ]);
   sendResponse(res, {
     status: 200,
     message: "berhasil embed text",
-    data: data[0].embedding,
+    data: dataEmbed,
+  });
+};
+
+type SearchTextRequest = { vector: number[] };
+export const searchSimilarTextController = async (req: Request, res: Response) => {
+  validate<SearchTextRequest>(
+    {
+      vector: {
+        type: "array",
+        items: "number",
+      },
+    },
+    req.body,
+  );
+  const { vector } = req.body as SearchTextRequest;
+  const data = await searchVector(vector);
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil search similar text",
+    data,
   });
 };
