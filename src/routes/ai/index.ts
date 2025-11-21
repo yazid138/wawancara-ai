@@ -1,6 +1,11 @@
 import { Router } from "express";
 import auth from "@/middleware/auth";
-import { generateMessageController, embedTextController, generateMessage2Controller, searchSimilarTextController } from "@/controller/ai.controller";
+import {
+  generateMessageController,
+  embedTextController,
+  generateMessage2Controller,
+  searchSimilarTextController,
+} from "@/controller/ai.controller";
 
 // ai/* routes
 const router = Router();

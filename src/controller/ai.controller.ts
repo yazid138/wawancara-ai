@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
-import {validateInterviewInput, createEmbedding, generateMessage} from "@/services/ai.service";
-import hf from "@/services/huggingface.service";
+import {
+  validateInterviewInput,
+  createEmbedding,
+  generateMessage,
+} from "@/services/ai.service";
+import { generateMessage as generateMessageHF } from "@/services/huggingface.service";
 import validate from "@/utils/validation";
 import pineCone, { searchVector } from "@/services/pinecone.service";
 import { v4 as uuidv4 } from "uuid";
 
 type GenerateMessageRequest = { message: string };
-export const generateMessageController = async (req: Request, res: Response) => {
+export const generateMessageController = async (
+  req: Request,
+  res: Response,
+) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -15,7 +22,7 @@ export const generateMessageController = async (req: Request, res: Response) => 
     req.body,
   );
   const { message } = req.body as GenerateMessageRequest;
-  const result = await validateInterviewInput('kamu tinggal dimana?', message);
+  const result = await validateInterviewInput("kamu tinggal dimana?", message);
   const resultObj = JSON.parse(result);
   if (resultObj.valid !== true) {
     return sendResponse(res, {
@@ -35,7 +42,10 @@ export const generateMessageController = async (req: Request, res: Response) => 
   });
 };
 
-export const generateMessage2Controller = async (req: Request, res: Response) => {
+export const generateMessage2Controller = async (
+  req: Request,
+  res: Response,
+) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -43,17 +53,14 @@ export const generateMessage2Controller = async (req: Request, res: Response) =>
     req.body,
   );
   const { message } = req.body as GenerateMessageRequest;
-  const out = await hf.chatCompletion({
-    model: 'Qwen/Qwen3-4B-Instruct-2507',
-    messages: [
-      { role: "system", content: "You are a helpful assistant." },
-      { role: "user", content: message },
-    ]
-  })
+  const data = await generateMessageHF([
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: message },
+  ]);
   sendResponse(res, {
     status: 200,
     message: "berhasil generate message",
-    data: out.choices[0].message.content,
+    data,
   });
 };
 
@@ -71,10 +78,10 @@ export const embedTextController = async (req: Request, res: Response) => {
     {
       id: uuidv4(),
       values: dataEmbed,
-      metadata: { 
-        text: text 
+      metadata: {
+        text: text,
       },
-    }
+    },
   ]);
   sendResponse(res, {
     status: 200,
@@ -84,7 +91,10 @@ export const embedTextController = async (req: Request, res: Response) => {
 };
 
 type SearchTextRequest = { vector: number[] };
-export const searchSimilarTextController = async (req: Request, res: Response) => {
+export const searchSimilarTextController = async (
+  req: Request,
+  res: Response,
+) => {
   validate<SearchTextRequest>(
     {
       vector: {

@@ -1,9 +1,12 @@
-import { Pinecone } from '@pinecone-database/pinecone';
-import config from '@/config';
+import { Pinecone } from "@pinecone-database/pinecone";
+import config from "@/config";
 
 const pc = new Pinecone({ apiKey: config.pineConeKey });
 
-export const pineconeIndex = pc.Index(config.pineConeIndex, config.pineConeHostUrl);
+export const pineconeIndex = pc.Index(
+  config.pineConeIndex,
+  config.pineConeHostUrl,
+);
 
 export const searchVector = async (vector: number[], topK = 5) => {
   const queryResponse = await pineconeIndex.query({
