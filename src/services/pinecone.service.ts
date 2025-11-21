@@ -1,7 +1,4 @@
-import {
-  Pinecone,
-  RecordMetadata,
-} from "@pinecone-database/pinecone";
+import { Pinecone, RecordMetadata } from "@pinecone-database/pinecone";
 import { v4 as uuidv4 } from "uuid";
 import config from "@/config";
 
