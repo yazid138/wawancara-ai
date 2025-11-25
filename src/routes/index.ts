@@ -1,7 +1,7 @@
 import sendResponse from "@/utils/responseHandler";
 import { Router, Request, Response } from "express";
-import authRouter from "./auth";
-import aiRouter from "./ai";
+import authRouter from "./auth.routes";
+import aiRouter from "./ai.routes";
 
 const router = Router();
 
