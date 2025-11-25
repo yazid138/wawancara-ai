@@ -7,7 +7,7 @@ import {
 } from "@/services/ai.service";
 import { generateMessage as generateMessageHF } from "@/services/huggingface.service";
 import validate from "@/utils/validation";
-import { searchVector, upsertVector } from "@/services/pinecone.service";
+import { listData, searchVector, upsertVector } from "@/services/pinecone.service";
 
 type GenerateMessageRequest = { message: string };
 export const generateMessageController = async (
@@ -81,6 +81,25 @@ export const embedTextController = async (req: Request, res: Response) => {
   });
 };
 
+type EmbedTanyaJawabRequest = { pertanyaan: string; jawaban: string };
+export const embedTanyaJawabController = async (req: Request, res: Response) => {
+  validate<EmbedTanyaJawabRequest>(
+    {
+      pertanyaan: "string",
+      jawaban: "string",
+    },
+    req.body,
+  );
+  const { pertanyaan, jawaban } = req.body as EmbedTanyaJawabRequest;
+  const dataEmbed = await createEmbedding(JSON.stringify({ pertanyaan, jawaban }));
+  // await upsertVector(dataEmbed, { pertanyaan, jawaban });
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil embed pertanyaan dan jawaban",
+    data: dataEmbed,
+  });
+};
+
 type SearchTextRequest = { vector: number[] };
 export const searchSimilarTextController = async (
   req: Request,
@@ -100,6 +119,15 @@ export const searchSimilarTextController = async (
   sendResponse(res, {
     status: 200,
     message: "berhasil search similar text",
+    data,
+  });
+};
+
+export const listDataController = async (req: Request, res: Response) => {
+  const data = await listData();
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil list data",
     data,
   });
 };

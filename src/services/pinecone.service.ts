@@ -16,6 +16,7 @@ export const upsertVector = async (
   await pineconeIndex.upsert([
     {
       id: uuidv4(),
+      // id: 'ed02ea29-b2ff-4c4e-9ade-5def036311c0',
       values: vector,
       metadata,
     },
@@ -27,8 +28,15 @@ export const searchVector = async (vector: number[], topK = 5) => {
     vector,
     topK,
     includeMetadata: true,
+    // filter: {
+    //   pertanyaan: 'Kamu tinggal dimana?',
+    // }
   });
   return queryResponse.matches;
+};
+
+export const listData = async () => {
+  return await pineconeIndex.listPaginated();
 };
 
 export default pineconeIndex;
