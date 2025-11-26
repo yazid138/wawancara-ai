@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 export default {
+  env: process.env.ENV || "production",
   baseUrl: process.env.BASE_URL || "http://localhost",
   port: process.env.PORT || 3000,
   secretKey: process.env.SECRET_KEY || "secretkey",
