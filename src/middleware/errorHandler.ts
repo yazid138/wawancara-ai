@@ -12,7 +12,7 @@ export const notFoundHandler =
 export const errorHandler =
   () =>
   (err: HttpException, req: Request, res: Response, next: NextFunction) => {
-    logger.error("Error:", err);
+    logger.error("", err);
     sendResponse(res, {
       status: err.status || 500,
       message: err.status ? err.message : "Internal Server Error",
