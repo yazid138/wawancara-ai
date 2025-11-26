@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import HttpException from "@/types/httpException";
 import sendResponse from "@/utils/responseHandler";
 import NotFoundException from "@/exception/NotFoundException";
+import logger from "@/utils/logger";
 
 export const notFoundHandler =
   () => (req: Request, res: Response, next: NextFunction) => {
@@ -18,7 +19,7 @@ export const errorHandler =
         error: err.error || undefined,
       });
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       sendResponse(res, { status: 500, message: "Internal Server Error" });
     }
   };

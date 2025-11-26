@@ -6,6 +6,7 @@ import { findUserById, findUserByUsername } from "@/services/user.service";
 import bcrypt from "bcrypt";
 import { User } from "@prisma/client";
 import UserResponse from "@/types/userResponse";
+import logger from "@/utils/logger";
 
 passport.use(
   new LocalStrategy(
@@ -26,7 +27,7 @@ passport.use(
         }
         return done(false, user, { message: "Berhasil Login" });
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         return done(true);
       }
     },
@@ -53,7 +54,7 @@ passport.use(
         }
         done(false, user);
       } catch (err) {
-        console.error(err);
+        logger.error(err);
         return done(true);
       }
     },
