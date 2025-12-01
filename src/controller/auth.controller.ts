@@ -7,13 +7,15 @@ import UnauthorizedException from "@/exception/UnauthorizedException";
 import config from "@/config";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { createUser, findUserByUsername } from "@/services/user.service";
+import userService from "@/services/user.service";
 import { User } from "@prisma/client";
-import RegisterBody from "@/types/auth/registerBody";
-import LoginBody from "@/types/auth/loginBody";
 
-export const login = (req: Request, res: Response, next: NextFunction) => {
-  validate<LoginBody>(
+type LoginRequest = {
+  username: string;
+  password: string;
+};
+const login = (req: Request, res: Response, next: NextFunction) => {
+  validate<LoginRequest>(
     {
       username: "string",
       password: "string",
@@ -50,12 +52,17 @@ export const login = (req: Request, res: Response, next: NextFunction) => {
   )(req, res, next);
 };
 
-export const me = (req: Request, res: Response) => {
+const me = (req: Request, res: Response) => {
   sendResponse(res, { status: 200, message: "User info", data: req.user });
 };
 
-export const register = async (req: Request, res: Response) => {
-  validate<RegisterBody>(
+type RegisterRequest = {
+  name: string;
+  username: string;
+  password: string;
+};
+const register = async (req: Request, res: Response) => {
+  validate<RegisterRequest>(
     {
       name: "string",
       username: "string",
@@ -63,17 +70,17 @@ export const register = async (req: Request, res: Response) => {
     },
     req.body,
   );
-  const { name, username, password } = req.body as RegisterBody;
-  const existingUser = await findUserByUsername(username);
+  const { name, username, password } = req.body as RegisterRequest;
+  const existingUser = await userService.findUserByUsername(username);
   if (existingUser) {
     throw new BadRequestException("Username already exists");
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  await createUser({ name, username, password: hashedPassword });
+  await userService.createUser({ name, username, password: hashedPassword });
   sendResponse(res, { status: 200, message: "Register successful" });
 };
 
-export const logout = (req: Request, res: Response) => {
+const logout = (req: Request, res: Response) => {
   req.logout((errLogout) => {
     if (errLogout) {
       throw new BadRequestException(
@@ -83,4 +90,11 @@ export const logout = (req: Request, res: Response) => {
     }
     sendResponse(res, { status: 200, message: "Logout successful" });
   });
+};
+
+export default {
+  login,
+  me,
+  register,
+  logout,
 };

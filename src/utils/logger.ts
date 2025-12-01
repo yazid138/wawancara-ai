@@ -4,7 +4,7 @@ import { PRODUCTION } from "@/utils/constants";
 
 const { combine, timestamp, printf } = winston.format;
 
-const logger = winston.createLogger({
+export default winston.createLogger({
   level: config.env === PRODUCTION ? "info" : "debug",
   format: combine(
     timestamp(),
@@ -16,5 +16,3 @@ const logger = winston.createLogger({
   handleRejections: config.env !== PRODUCTION,
   transports: [new winston.transports.File({ filename: "application.log" })],
 });
-
-export default logger;

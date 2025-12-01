@@ -4,15 +4,9 @@ import config from "@/config";
 
 const pc = new Pinecone({ apiKey: config.pineConeKey });
 
-export const pineconeIndex = pc.Index(
-  config.pineConeIndex,
-  config.pineConeHostUrl,
-);
+const pineconeIndex = pc.Index(config.pineConeIndex, config.pineConeHostUrl);
 
-export const upsertVector = async (
-  vector: number[],
-  metadata: RecordMetadata,
-) => {
+const upsertVector = async (vector: number[], metadata: RecordMetadata) => {
   await pineconeIndex.upsert([
     {
       id: uuidv4(),
@@ -23,7 +17,7 @@ export const upsertVector = async (
   ]);
 };
 
-export const searchVector = async (vector: number[], topK = 5) => {
+const searchVector = async (vector: number[], topK = 5) => {
   const queryResponse = await pineconeIndex.query({
     vector,
     topK,
@@ -35,8 +29,8 @@ export const searchVector = async (vector: number[], topK = 5) => {
   return queryResponse.matches;
 };
 
-export const listData = async () => {
+const listData = async () => {
   return await pineconeIndex.listPaginated();
 };
 
-export default pineconeIndex;
+export default { upsertVector, searchVector, listData };

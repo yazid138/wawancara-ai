@@ -4,12 +4,12 @@ import sendResponse from "@/utils/responseHandler";
 import NotFoundException from "@/exception/NotFoundException";
 import logger from "@/utils/logger";
 
-export const notFoundHandler =
+const notFoundHandler =
   () => (req: Request, res: Response, next: NextFunction) => {
     throw new NotFoundException();
   };
 
-export const errorHandler =
+const errorHandler =
   () =>
   (err: HttpException, req: Request, res: Response, next: NextFunction) => {
     logger.error("", err);
@@ -20,4 +20,4 @@ export const errorHandler =
     });
   };
 
-export default errorHandler;
+export default { notFoundHandler, errorHandler };

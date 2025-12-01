@@ -1,9 +1,8 @@
 import express from "express";
 import logger from "morgan";
-import config from "@/config";
 import routes from "@/routes/";
 import passport from "passport";
-import { notFoundHandler, errorHandler } from "@/middleware/errorHandler";
+import error from "@/middleware/error";
 import "@/config/passport";
 
 const app = express();
@@ -15,9 +14,7 @@ app.use(passport.initialize());
 
 app.use(routes);
 
-app.use(notFoundHandler());
-app.use(errorHandler());
+app.use(error.notFoundHandler());
+app.use(error.errorHandler());
 
-app.listen(config.port, () => {
-  console.log(`Server is running on ${config.baseUrl}:${config.port}`);
-});
+export default app;

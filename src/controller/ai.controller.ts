@@ -1,23 +1,12 @@
 import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
-import {
-  validateInterviewInput,
-  createEmbedding,
-  generateMessage,
-} from "@/services/ai.service";
-import { generateMessage as generateMessageHF } from "@/services/huggingface.service";
+import aiService from "@/services/ai.service";
+import hfService from "@/services/huggingface.service";
 import validate from "@/utils/validation";
-import {
-  listData,
-  searchVector,
-  upsertVector,
-} from "@/services/pinecone.service";
+import pineconeService from "@/services/pinecone.service";
 
 type GenerateMessageRequest = { message: string };
-export const generateMessageController = async (
-  req: Request,
-  res: Response,
-) => {
+const generateMessage = async (req: Request, res: Response) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -25,7 +14,10 @@ export const generateMessageController = async (
     req.body,
   );
   const { message } = req.body as GenerateMessageRequest;
-  const result = await validateInterviewInput("kamu tinggal dimana?", message);
+  const result = await aiService.validateInterviewInput(
+    "kamu tinggal dimana?",
+    message,
+  );
   const resultObj = JSON.parse(result);
   if (resultObj.valid !== true) {
     return sendResponse(res, {
@@ -34,7 +26,7 @@ export const generateMessageController = async (
       error: resultObj.keterangan,
     });
   }
-  const data = await generateMessage([
+  const data = await aiService.generateMessage([
     { role: "system", content: "You are a helpful assistant." },
     { role: "user", content: message },
   ]);
@@ -45,10 +37,7 @@ export const generateMessageController = async (
   });
 };
 
-export const generateMessage2Controller = async (
-  req: Request,
-  res: Response,
-) => {
+const generateMessage2 = async (req: Request, res: Response) => {
   validate<GenerateMessageRequest>(
     {
       message: "string",
@@ -56,7 +45,7 @@ export const generateMessage2Controller = async (
     req.body,
   );
   const { message } = req.body as GenerateMessageRequest;
-  const data = await generateMessageHF([
+  const data = await hfService.generateMessage([
     { role: "system", content: "You are a helpful assistant." },
     { role: "user", content: message },
   ]);
@@ -68,7 +57,7 @@ export const generateMessage2Controller = async (
 };
 
 type EmbedTextRequest = { text: string };
-export const embedTextController = async (req: Request, res: Response) => {
+const embedText = async (req: Request, res: Response) => {
   validate<EmbedTextRequest>(
     {
       text: "string",
@@ -76,8 +65,8 @@ export const embedTextController = async (req: Request, res: Response) => {
     req.body,
   );
   const { text } = req.body as EmbedTextRequest;
-  const dataEmbed = await createEmbedding(text);
-  await upsertVector(dataEmbed, { text });
+  const dataEmbed = await aiService.createEmbedding(text);
+  await pineconeService.upsertVector(dataEmbed, { text });
   sendResponse(res, {
     status: 200,
     message: "berhasil embed text",
@@ -86,10 +75,7 @@ export const embedTextController = async (req: Request, res: Response) => {
 };
 
 type EmbedTanyaJawabRequest = { pertanyaan: string; jawaban: string };
-export const embedTanyaJawabController = async (
-  req: Request,
-  res: Response,
-) => {
+const embedTanyaJawab = async (req: Request, res: Response) => {
   validate<EmbedTanyaJawabRequest>(
     {
       pertanyaan: "string",
@@ -98,7 +84,7 @@ export const embedTanyaJawabController = async (
     req.body,
   );
   const { pertanyaan, jawaban } = req.body as EmbedTanyaJawabRequest;
-  const dataEmbed = await createEmbedding(
+  const dataEmbed = await aiService.createEmbedding(
     JSON.stringify({ pertanyaan, jawaban }),
   );
   // await upsertVector(dataEmbed, { pertanyaan, jawaban });
@@ -110,10 +96,7 @@ export const embedTanyaJawabController = async (
 };
 
 type SearchTextRequest = { vector: number[] };
-export const searchSimilarTextController = async (
-  req: Request,
-  res: Response,
-) => {
+const searchSimilarText = async (req: Request, res: Response) => {
   validate<SearchTextRequest>(
     {
       vector: {
@@ -124,7 +107,7 @@ export const searchSimilarTextController = async (
     req.body,
   );
   const { vector } = req.body as SearchTextRequest;
-  const data = await searchVector(vector);
+  const data = await pineconeService.searchVector(vector);
   sendResponse(res, {
     status: 200,
     message: "berhasil search similar text",
@@ -132,11 +115,20 @@ export const searchSimilarTextController = async (
   });
 };
 
-export const listDataController = async (req: Request, res: Response) => {
-  const data = await listData();
+const listData = async (req: Request, res: Response) => {
+  const data = await pineconeService.listData();
   sendResponse(res, {
     status: 200,
     message: "berhasil list data",
     data,
   });
+};
+
+export default {
+  generateMessage,
+  generateMessage2,
+  embedText,
+  embedTanyaJawab,
+  searchSimilarText,
+  listData,
 };
