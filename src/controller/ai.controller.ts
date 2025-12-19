@@ -85,9 +85,9 @@ const embedTanyaJawab = async (req: Request, res: Response) => {
   );
   const { pertanyaan, jawaban } = req.body as EmbedTanyaJawabRequest;
   const dataEmbed = await aiService.createEmbedding(
-    JSON.stringify({ pertanyaan, jawaban }),
+    `pertanyaan: ${pertanyaan}, jawaban: ${jawaban}`,
   );
-  // await upsertVector(dataEmbed, { pertanyaan, jawaban });
+  await pineconeService.upsertVector(dataEmbed, { pertanyaan, jawaban });
   sendResponse(res, {
     status: 200,
     message: "berhasil embed pertanyaan dan jawaban",
