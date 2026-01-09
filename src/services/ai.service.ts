@@ -9,7 +9,7 @@ const client = new OpenAI({
 const createEmbedding = async (text: string) => {
   const { data } = await client.embeddings.create({
     model: config.openAIEmbeddingModel,
-    dimensions: 1024,
+    dimensions: 3072,
     encoding_format: "float",
     input: text,
   });

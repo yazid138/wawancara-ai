@@ -16,4 +16,6 @@ export default {
   pineConeKey: process.env.PINECONE_API_KEY || "",
   pineConeHostUrl: process.env.PINECONE_HOST_URL || "",
   pineConeIndex: process.env.PINECONE_INDEX_NAME || "index",
+  qdrantApiKey: process.env.QDRANT_API_KEY || "",
+  qdrantHostUrl: process.env.QDRANT_HOST_URL || "",
 };

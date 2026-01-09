@@ -4,6 +4,7 @@ import aiService from "@/services/ai.service";
 import hfService from "@/services/huggingface.service";
 import validate from "@/utils/validation";
 import pineconeService from "@/services/pinecone.service";
+import qdrantService from "@/services/qdrant.service";
 
 type GenerateMessageRequest = { message: string };
 const generateMessage = async (req: Request, res: Response) => {
@@ -87,7 +88,8 @@ const embedTanyaJawab = async (req: Request, res: Response) => {
   const dataEmbed = await aiService.createEmbedding(
     `pertanyaan: ${pertanyaan}, jawaban: ${jawaban}`,
   );
-  await pineconeService.upsertVector(dataEmbed, { pertanyaan, jawaban });
+  // await pineconeService.upsertVector(dataEmbed, { pertanyaan, jawaban });
+  await qdrantService.upsertVector(dataEmbed, { pertanyaan, jawaban });
   sendResponse(res, {
     status: 200,
     message: "berhasil embed pertanyaan dan jawaban",
@@ -107,7 +109,8 @@ const searchSimilarText = async (req: Request, res: Response) => {
     req.body,
   );
   const { vector } = req.body as SearchTextRequest;
-  const data = await pineconeService.searchVector(vector);
+  // const data = await pineconeService.searchVector(vector);
+  const data = await qdrantService.searchSimilarVectors(vector, 5);
   sendResponse(res, {
     status: 200,
     message: "berhasil search similar text",
