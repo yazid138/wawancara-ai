@@ -12,6 +12,7 @@ const notFoundHandler =
 const errorHandler =
   () =>
   (err: HttpException, req: Request, res: Response, next: NextFunction) => {
+    console.log(err);
     logger.error("", err);
     sendResponse(res, {
       status: err.status || 500,

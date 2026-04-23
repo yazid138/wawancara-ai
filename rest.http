@@ -1,0 +1,54 @@
+@hostname = http://localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@username = yazid
+@password = yazid
+@Content-Type = application/json
+
+### Register
+POST {{host}}/auth/register
+Content-Type: {{Content-Type}}
+
+{
+    "username": "{{username}}",
+    "password": "{{password}}",
+    "name": "Yazid"
+}
+
+### Login
+# @name login
+@authToken = {{login.response.body.data.token}}
+POST {{host}}/auth/login
+Content-Type: {{Content-Type}}
+
+{
+    "username": "{{username}}",
+    "password": "{{password}}"
+}
+
+### Me
+GET {{host}}/auth/me
+Authorization: Bearer {{authToken}}
+
+### message
+POST {{host}}/ai/message2
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+    "message": "Hello, how are you?"
+}
+
+### generate question
+GET {{host}}/ai/generate-question
+Authorization: Bearer {{authToken}}
+
+### score answer
+POST {{host}}/ai/score-answer
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+    "pertanyaan": "Apa itu REST API?",
+    "jawaban": "REST API adalah sebuah arsitektur untuk membangun layanan web yang menggunakan protokol HTTP untuk komunikasi antara klien dan server."
+}

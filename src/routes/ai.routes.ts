@@ -11,5 +11,7 @@ router.post("/embedding", auth, aiController.embedText);
 router.post("/embedding-tanya-jawab", auth, aiController.embedTanyaJawab);
 router.post("/search-text", auth, aiController.searchSimilarText);
 router.get("/list-data", auth, aiController.listData);
+router.get("/generate-question", auth, aiController.generateQuestion);
+router.post("/score-answer", auth, aiController.scoreAnswer);
 
 export default router;

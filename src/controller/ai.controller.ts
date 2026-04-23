@@ -127,6 +127,75 @@ const listData = async (req: Request, res: Response) => {
   });
 };
 
+const generateQuestion = async (req: Request, res: Response) => {
+  const question = await aiService.generateQuestion();
+  const keywordResult = await aiService.generateKeyword(question);
+  const answer = await aiService.generateAnswerAI(question, keywordResult);
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil generate question",
+    data: {
+      question,
+      answer
+    },
+  });
+};
+
+const ruleLengthScore = (jawaban: string, minLength: number) => {
+  if (jawaban.length >= minLength) {
+    return 1;
+  } else {
+    return jawaban.length / minLength;
+  }
+};
+
+const ruleKeywordScore = (jawaban: string, keywords: string[]) => {
+  const keywordCount = keywords.reduce((count, keyword) => {
+    if (jawaban.toLowerCase().includes(keyword.toLowerCase())) {
+      return count + 1;
+    }
+    return count;
+  }, 0);
+
+  if (keywordCount >= 2) {
+    return 1;
+  } else {
+    return keywordCount / 2;
+  }
+};
+
+const ruleAIScore = (aiResult: any) => {
+  const aiScore = (aiResult.pemahaman + aiResult.logika + aiResult.problem_solving + aiResult.komunikasi) / 20;
+  return aiScore;
+}
+
+const scoreAnswer = async (req: Request, res: Response) => {
+  type EvaluateAnswerRequest = { pertanyaan: string; jawaban: string };
+  validate<EvaluateAnswerRequest>(
+    {
+      pertanyaan: "string",
+      jawaban: "string",
+    },
+    req.body,
+  );
+  const { pertanyaan, jawaban } = req.body as EvaluateAnswerRequest;
+
+  const minLengthResult = await aiService.generateMinLength(pertanyaan)
+  const keywordResult = await aiService.generateKeyword(pertanyaan);
+  const aiScoreResult = await aiService.generateAIScore(pertanyaan, jawaban);
+
+  const aiScore = ruleAIScore(aiScoreResult) * 0.4;
+  const ruleScore = ruleLengthScore(jawaban, minLengthResult) * 0.3 + ruleKeywordScore(jawaban, keywordResult) * 0.3;
+
+  const finalScore = ruleScore + aiScore;
+  
+  sendResponse(res, {
+    status: 200,
+    message: "berhasil ",
+    data: { finalScore, aiScore, ruleScore, alasan: aiScoreResult.alasan },
+  });
+};
+
 export default {
   generateMessage,
   generateMessage2,
@@ -134,4 +203,6 @@ export default {
   embedTanyaJawab,
   searchSimilarText,
   listData,
+  generateQuestion,
+  scoreAnswer,
 };
