@@ -15,5 +15,5 @@ export default <T>(schema: ValidationSchema<T>, data: T) => {
       result as ValidationError[],
     );
   }
-  return true;
+  return data;
 };

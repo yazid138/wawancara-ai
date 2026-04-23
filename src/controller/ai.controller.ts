@@ -8,13 +8,12 @@ import qdrantService from "@/services/qdrant.service";
 
 type GenerateMessageRequest = { message: string };
 const generateMessage = async (req: Request, res: Response) => {
-  validate<GenerateMessageRequest>(
+  const { message } = validate<GenerateMessageRequest>(
     {
       message: "string",
     },
     req.body,
   );
-  const { message } = req.body as GenerateMessageRequest;
   const result = await aiService.validateInterviewInput(
     "kamu tinggal dimana?",
     message,
@@ -39,13 +38,12 @@ const generateMessage = async (req: Request, res: Response) => {
 };
 
 const generateMessage2 = async (req: Request, res: Response) => {
-  validate<GenerateMessageRequest>(
+  const { message } = validate<GenerateMessageRequest>(
     {
       message: "string",
     },
     req.body,
   );
-  const { message } = req.body as GenerateMessageRequest;
   const data = await hfService.generateMessage([
     { role: "system", content: "You are a helpful assistant." },
     { role: "user", content: message },
@@ -59,13 +57,12 @@ const generateMessage2 = async (req: Request, res: Response) => {
 
 type EmbedTextRequest = { text: string };
 const embedText = async (req: Request, res: Response) => {
-  validate<EmbedTextRequest>(
+  const { text } = validate<EmbedTextRequest>(
     {
       text: "string",
     },
     req.body,
   );
-  const { text } = req.body as EmbedTextRequest;
   const dataEmbed = await aiService.createEmbedding(text);
   await pineconeService.upsertVector(dataEmbed, { text });
   sendResponse(res, {
@@ -77,14 +74,13 @@ const embedText = async (req: Request, res: Response) => {
 
 type EmbedTanyaJawabRequest = { pertanyaan: string; jawaban: string };
 const embedTanyaJawab = async (req: Request, res: Response) => {
-  validate<EmbedTanyaJawabRequest>(
+  const { pertanyaan, jawaban } = validate<EmbedTanyaJawabRequest>(
     {
       pertanyaan: "string",
       jawaban: "string",
     },
     req.body,
   );
-  const { pertanyaan, jawaban } = req.body as EmbedTanyaJawabRequest;
   const dataEmbed = await aiService.createEmbedding(
     `pertanyaan: ${pertanyaan}, jawaban: ${jawaban}`,
   );
@@ -99,7 +95,7 @@ const embedTanyaJawab = async (req: Request, res: Response) => {
 
 type SearchTextRequest = { vector: number[] };
 const searchSimilarText = async (req: Request, res: Response) => {
-  validate<SearchTextRequest>(
+  const { vector } = validate<SearchTextRequest>(
     {
       vector: {
         type: "array",
@@ -108,7 +104,6 @@ const searchSimilarText = async (req: Request, res: Response) => {
     },
     req.body,
   );
-  const { vector } = req.body as SearchTextRequest;
   // const data = await pineconeService.searchVector(vector);
   const data = await qdrantService.searchSimilarVectors(vector, 5);
   sendResponse(res, {
@@ -164,8 +159,8 @@ const ruleKeywordScore = (jawaban: string, keywords: string[]) => {
   }
 };
 
-const ruleAIScore = (aiResult: any) => {
-  const aiScore = (aiResult.pemahaman + aiResult.logika + aiResult.problem_solving + aiResult.komunikasi) / 20;
+const ruleAIScore = ({ pemahaman, logika, problem_solving, komunikasi }: any) => {
+  const aiScore = (pemahaman + logika + problem_solving + komunikasi) / 20;
   return aiScore;
 }
 

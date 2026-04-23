@@ -6,7 +6,7 @@ const client = new OpenAI({
   apiKey: config.openAIKey,
 });
 
-const createEmbedding = async (text: string) => {
+export const createEmbedding = async (text: string) => {
   const { data } = await client.embeddings.create({
     model: config.openAIEmbeddingModel,
     dimensions: 3072,
@@ -16,7 +16,7 @@ const createEmbedding = async (text: string) => {
   return data[0].embedding;
 };
 
-const generateMessage = async (input: Message[]) => {
+export const generateMessage = async (input: Message[]) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input,
@@ -24,7 +24,10 @@ const generateMessage = async (input: Message[]) => {
   return output_text;
 };
 
-const validateInterviewInput = async (pertanyaan: string, jawaban: string) => {
+export const validateInterviewInput = async (
+  pertanyaan: string,
+  jawaban: string,
+) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Tolong periksa apakah jawaban berikut sesuai dengan pertanyaan yang diajukan.\n\nPertanyaan: ${pertanyaan}\n\nJawaban: ${jawaban}\n\nKembalinkan jawaban dengan format {"valid": true atau false, "alasan": "alasan jika tidak valid"}.`,
@@ -32,7 +35,7 @@ const validateInterviewInput = async (pertanyaan: string, jawaban: string) => {
   return output_text;
 };
 
-const generateMinLength = async (pertanyaan: string) => {
+export const generateMinLength = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Tolong periksa berapa panjang minimal jawaban yang sesuai untuk pertanyaan berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bilangan integer.`,
@@ -40,7 +43,7 @@ const generateMinLength = async (pertanyaan: string) => {
   return +output_text;
 };
 
-const generateKeyword = async (pertanyaan: string) => {
+export const generateKeyword = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Tolong buatkan beberapa kata kunci yang relevan agar nantinya digunakan untuk kesesuaian jawaban untuk pertanyaan berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dengan format ["kata kunci 1", "kata kunci 2"]`,
@@ -48,7 +51,7 @@ const generateKeyword = async (pertanyaan: string) => {
   return JSON.parse(output_text);
 };
 
-const generateQuestion = async () => {
+export const generateQuestion = async () => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Tolong buatkan satu pertanyaan yang relevan untuk wawancara kerja di bidang teknologi informasi.\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
@@ -56,15 +59,18 @@ const generateQuestion = async () => {
   return output_text;
 };
 
-const generateAnswerAI = async (pertanyaan: string, keyword: string[]) => {
+export const generateAnswerAI = async (
+  pertanyaan: string,
+  keyword: string[],
+) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Tolong buatkan jawaban yang relevan untuk pertanyaan berikut dengan memasukkan beberapa kata kunci berikut.\n\nPertanyaan: ${pertanyaan}\n\nKata Kunci: ${keyword.join(", ")}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
   });
   return output_text;
-}
+};
 
-const generateAIScore = async (pertanyaan: string, jawaban: string) => {
+export const generateAIScore = async (pertanyaan: string, jawaban: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Nilai jawaban mahasiswa berdasarkan rubrik berikut:
@@ -95,7 +101,6 @@ Output berformat JSON dengan format berikut:
   });
   return JSON.parse(output_text);
 };
-
 
 export default {
   createEmbedding,

@@ -8,7 +8,7 @@ import config from "@/config";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import userService from "@/services/user.service";
-import { User } from "@prisma/client";
+import { Role, User } from "@prisma/client";
 
 type LoginRequest = {
   username: string;
@@ -60,23 +60,27 @@ type RegisterRequest = {
   name: string;
   username: string;
   password: string;
+  role: Role;
 };
 const register = async (req: Request, res: Response) => {
-  validate<RegisterRequest>(
+  const { name, username, password, role } = validate<RegisterRequest>(
     {
       name: "string",
       username: "string",
       password: "string",
+      role: {
+        type: "enum",
+        values: Object.values(Role),
+      }
     },
     req.body,
   );
-  const { name, username, password } = req.body as RegisterRequest;
   const existingUser = await userService.findUserByUsername(username);
   if (existingUser) {
     throw new BadRequestException("Username already exists");
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  await userService.createUser({ name, username, password: hashedPassword });
+  await userService.createUser({ name, username, password: hashedPassword, role });
   sendResponse(res, { status: 200, message: "Register successful" });
 };
 

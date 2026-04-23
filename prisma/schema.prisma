@@ -7,11 +7,102 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  COMPANY
+  STUDENT
+  PSYCHOLOGIST
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String
   username  String   @unique
   password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviews Interview[]
+  answers Answer[]
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviews Interview[]
+}
+
+model Interview {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  companyId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+  questions Question[]
+  answers Answer[]
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  interviewId Int
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interview Interview @relation(fields: [interviewId], references: [id])
+  answers Answer[]
+  keywords Keyword[]
+}
+
+model Answer {
+  id         Int      @id @default(autoincrement())
+  questionId  Int
+  interviewId Int
+  userId     Int
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id])
+  interview Interview @relation(fields: [interviewId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  score ScoreAnswer?
+}
+
+model Keyword {
+  id        Int      @id @default(autoincrement())
+  questionId Int
+  word      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model ScoreAnswer {
+  id         Int      @id @default(autoincrement())
+  answerId   Int @unique
+  finalScore      Int
+  aiScore         Int
+  ruleScore       Int
+  reason String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  answer Answer @relation(fields: [answerId], references: [id])
+}
+
+model ScoreSetting {
+  id        Int      @id @default(autoincrement())
+  rule      String
+  score     Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

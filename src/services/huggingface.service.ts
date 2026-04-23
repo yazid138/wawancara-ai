@@ -4,7 +4,7 @@ import config from "@/config";
 
 const client = new InferenceClient(config.hfKey);
 
-const generateMessage = async (messages: Message[]) => {
+export const generateMessage = async (messages: Message[]) => {
   const out = await client.chatCompletion({
     model: config.hfModel,
     messages,

@@ -17,7 +17,7 @@ const upsertVector = async (vector: number[], metadata: RecordMetadata) => {
   ]);
 };
 
-const searchVector = async (vector: number[], topK = 5) => {
+export const searchVector = async (vector: number[], topK = 5) => {
   const queryResponse = await pineconeIndex.query({
     vector,
     topK,
@@ -29,7 +29,7 @@ const searchVector = async (vector: number[], topK = 5) => {
   return queryResponse.matches;
 };
 
-const listData = async () => {
+export const listData = async () => {
   return await pineconeIndex.listPaginated();
 };
 

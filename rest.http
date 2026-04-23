@@ -1,8 +1,8 @@
 @hostname = http://localhost
 @port = 5000
 @host = {{hostname}}:{{port}}
-@username = yazid
-@password = yazid
+@username = admin
+@password = admin
 @Content-Type = application/json
 
 ### Register

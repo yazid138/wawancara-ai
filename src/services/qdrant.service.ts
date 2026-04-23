@@ -9,7 +9,7 @@ const client = new QdrantClient({
   apiKey: config.qdrantApiKey,
 });
 
-const upsertVector = async (vector: number[], payload: Record<string, any>) => {
+export const upsertVector = async (vector: number[], payload: Record<string, any>) => {
   await client.upsert(COLLECTION_NAME, {
     points: [
       {
@@ -21,7 +21,7 @@ const upsertVector = async (vector: number[], payload: Record<string, any>) => {
   });
 };
 
-const searchSimilarVectors = async (vector: number[], topK: number) => {
+export const searchSimilarVectors = async (vector: number[], topK: number) => {
   const searchResult = await client.search(COLLECTION_NAME, {
     vector,
     limit: topK,
@@ -29,7 +29,7 @@ const searchSimilarVectors = async (vector: number[], topK: number) => {
   return searchResult;
 };
 
-const getMyCollection = async () => {
+export const getMyCollection = async () => {
   return await client.getCollection(COLLECTION_NAME);
 };
 
