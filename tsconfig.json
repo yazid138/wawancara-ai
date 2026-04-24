@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "commonjs",
+    "target": "es2023",
+    "module": "esnext",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "**/*.ts"],
+  "include": ["src/**/*", "**/*.ts", "prisma/seed.ts"],
   "exclude": ["node_modules"]
 }

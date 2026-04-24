@@ -1,7 +1,12 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role } from "../src/prisma/client";
 import bcrypt from "bcrypt";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({ adapter });
 
 const main = async () => {
   await prisma.user.create({
@@ -11,6 +16,15 @@ const main = async () => {
       password: await bcrypt.hash('admin', 10),
       role: Role.ADMIN
     }
+  });
+
+  await prisma.scoreSetting.createMany({
+    data: [
+      { name: "rule_score", score: 0.5 },
+      { name: "ai_score", score: 0.5 },
+      { name: "min_length_score", score: 0.3 },
+      { name: "keyword_score", score: 0.3 },
+    ]
   });
 };
 

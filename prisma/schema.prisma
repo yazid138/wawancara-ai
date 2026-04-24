@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output = "../src/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -89,9 +89,9 @@ model Keyword {
 model ScoreAnswer {
   id         Int      @id @default(autoincrement())
   answerId   Int @unique
-  finalScore      Int
-  aiScore         Int
-  ruleScore       Int
+  finalScore      Float
+  aiScore         Float
+  ruleScore       Float
   reason String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -101,8 +101,8 @@ model ScoreAnswer {
 
 model ScoreSetting {
   id        Int      @id @default(autoincrement())
-  rule      String
-  score     Int
+  name      String
+  score     Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
