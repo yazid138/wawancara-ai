@@ -18,12 +18,12 @@ const main = async () => {
     }
   });
 
-  await prisma.scoreSetting.createMany({
+  await prisma.scoringComponent.createMany({
     data: [
-      { name: "rule_score", score: 0.5 },
-      { name: "ai_score", score: 0.5 },
-      { name: "min_length_score", score: 0.3 },
-      { name: "keyword_score", score: 0.3 },
+      { key: 'similarity', name: "rule", weight: 0.5 },
+      { key: 'rubric', name: "ai", weight: 0.5 },
+      { key: 'min_length', name: "min length", weight: 0.3 },
+      { key: 'keyword', name: "keyword", weight: 0.3 },
     ]
   });
 };

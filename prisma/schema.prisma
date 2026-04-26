@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output = "../src/prisma"
+  output   = "../src/prisma"
 }
 
 datasource db {
@@ -24,62 +24,105 @@ model User {
   updatedAt DateTime @updatedAt
 
   interviews Interview[]
-  answers Answer[]
+  answers    Answer[]
 }
 
 model Company {
   id        Int      @id @default(autoincrement())
   name      String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   interviews Interview[]
 }
 
+model Position {
+  id Int @id @default(autoincrement())
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  interviews Interview[]
+}
+
+enum Status {
+  ONGOING
+  FINISH
+}
+
 model Interview {
   id        Int      @id @default(autoincrement())
   userId    Int
   companyId Int
+  positionId Int
+  status    Status?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
-  company Company @relation(fields: [companyId], references: [id])
-  questions Question[]
+  user    User     @relation(fields: [userId], references: [id])
+  company Company  @relation(fields: [companyId], references: [id])
+  position Position @relation(fields: [positionId], references: [id])
   answers Answer[]
+}
+
+enum QuestionType {
+  INTRO
+  GENERAL
+  TECHNICAL
+  BEHAVIORAL
 }
 
 model Question {
-  id        Int      @id @default(autoincrement())
-  interviewId Int
-  content   String
+  id         Int          @id @default(autoincrement())
+  content    String
+  difficulty String?
+  type       QuestionType @default(GENERAL)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interview Interview @relation(fields: [interviewId], references: [id])
-  answers Answer[]
-  keywords Keyword[]
+  answers     Answer[]
+  keywords    Keyword[]
+  idealAnswer IdealAnswer?
 }
 
 model Answer {
-  id         Int      @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   questionId  Int
   interviewId Int
-  userId     Int
+  userId      Int
   content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  question Question @relation(fields: [questionId], references: [id])
-  interview Interview @relation(fields: [interviewId], references: [id])
-  user User @relation(fields: [userId], references: [id])
-  score ScoreAnswer?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question  Question     @relation(fields: [questionId], references: [id])
+  interview Interview    @relation(fields: [interviewId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  score     ScoreAnswer?
 }
 
 model Keyword {
-  id        Int      @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   questionId Int
-  word      String
+  word       String
+  weight     Float  @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model IdealAnswer {
+  id         Int    @id @default(autoincrement())
+  questionId Int    @unique
+  content    String
+  embedding  Json
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -87,22 +130,27 @@ model Keyword {
 }
 
 model ScoreAnswer {
-  id         Int      @id @default(autoincrement())
-  answerId   Int @unique
-  finalScore      Float
-  aiScore         Float
-  ruleScore       Float
-  reason String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id       Int @id @default(autoincrement())
+  answerId Int @unique
+
+  scores     Json // { rubric: 8, similarity: 7, keyword: 6 }
+  finalScore Float
+
+  breakdown Json?
+  feedback  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   answer Answer @relation(fields: [answerId], references: [id])
 }
 
-model ScoreSetting {
-  id        Int      @id @default(autoincrement())
-  name      String
-  score     Float
+model ScoringComponent {
+  id     Int    @id @default(autoincrement())
+  key    String @unique // "rubric", "similarity", "keyword", dll
+  name   String
+  weight Float
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -1,3 +1,25 @@
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'COMPANY', 'STUDENT', 'PSYCHOLOGIST');
+
+-- CreateEnum
+CREATE TYPE "Status" AS ENUM ('ONGOING', 'FINISH');
+
+-- CreateEnum
+CREATE TYPE "QuestionType" AS ENUM ('INTRO', 'GENERAL', 'TECHNICAL', 'BEHAVIORAL');
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "role" "Role" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateTable
 CREATE TABLE "Company" (
     "id" SERIAL NOT NULL,
@@ -9,10 +31,22 @@ CREATE TABLE "Company" (
 );
 
 -- CreateTable
+CREATE TABLE "Position" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Position_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Interview" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "companyId" INTEGER NOT NULL,
+    "positionId" INTEGER NOT NULL,
+    "status" "Status",
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -22,8 +56,9 @@ CREATE TABLE "Interview" (
 -- CreateTable
 CREATE TABLE "Question" (
     "id" SERIAL NOT NULL,
-    "interviewId" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
+    "difficulty" TEXT,
+    "type" "QuestionType" NOT NULL DEFAULT 'GENERAL',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -48,6 +83,7 @@ CREATE TABLE "Keyword" (
     "id" SERIAL NOT NULL,
     "questionId" INTEGER NOT NULL,
     "word" TEXT NOT NULL,
+    "weight" DOUBLE PRECISION NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -55,13 +91,25 @@ CREATE TABLE "Keyword" (
 );
 
 -- CreateTable
+CREATE TABLE "IdealAnswer" (
+    "id" SERIAL NOT NULL,
+    "questionId" INTEGER NOT NULL,
+    "content" TEXT NOT NULL,
+    "embedding" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "IdealAnswer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ScoreAnswer" (
     "id" SERIAL NOT NULL,
     "answerId" INTEGER NOT NULL,
-    "finalScore" INTEGER NOT NULL,
-    "aiScore" INTEGER NOT NULL,
-    "ruleScore" INTEGER NOT NULL,
-    "reason" TEXT NOT NULL,
+    "scores" JSONB NOT NULL,
+    "finalScore" DOUBLE PRECISION NOT NULL,
+    "breakdown" JSONB,
+    "feedback" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -69,18 +117,28 @@ CREATE TABLE "ScoreAnswer" (
 );
 
 -- CreateTable
-CREATE TABLE "ScoreSetting" (
+CREATE TABLE "ScoringComponent" (
     "id" SERIAL NOT NULL,
-    "rule" TEXT NOT NULL,
-    "score" INTEGER NOT NULL,
+    "key" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "weight" DOUBLE PRECISION NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ScoreSetting_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ScoringComponent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "IdealAnswer_questionId_key" ON "IdealAnswer"("questionId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "ScoreAnswer_answerId_key" ON "ScoreAnswer"("answerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ScoringComponent_key_key" ON "ScoringComponent"("key");
 
 -- AddForeignKey
 ALTER TABLE "Interview" ADD CONSTRAINT "Interview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -89,7 +147,7 @@ ALTER TABLE "Interview" ADD CONSTRAINT "Interview_userId_fkey" FOREIGN KEY ("use
 ALTER TABLE "Interview" ADD CONSTRAINT "Interview_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Question" ADD CONSTRAINT "Question_interviewId_fkey" FOREIGN KEY ("interviewId") REFERENCES "Interview"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Interview" ADD CONSTRAINT "Interview_positionId_fkey" FOREIGN KEY ("positionId") REFERENCES "Position"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Answer" ADD CONSTRAINT "Answer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -102,6 +160,9 @@ ALTER TABLE "Answer" ADD CONSTRAINT "Answer_userId_fkey" FOREIGN KEY ("userId") 
 
 -- AddForeignKey
 ALTER TABLE "Keyword" ADD CONSTRAINT "Keyword_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "IdealAnswer" ADD CONSTRAINT "IdealAnswer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ScoreAnswer" ADD CONSTRAINT "ScoreAnswer_answerId_fkey" FOREIGN KEY ("answerId") REFERENCES "Answer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
