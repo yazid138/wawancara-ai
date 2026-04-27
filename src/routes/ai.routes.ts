@@ -1,17 +1,16 @@
 import { Router } from "express";
-import auth from "@/middleware/auth";
 import aiController from "@/controller/ai.controller";
 
 // ai/* routes
 const router = Router();
 
-router.post("/message", auth, aiController.generateMessage);
-router.post("/message2", auth, aiController.generateMessage2);
-router.post("/embedding", auth, aiController.embedText);
-router.post("/embedding-tanya-jawab", auth, aiController.embedTanyaJawab);
-router.post("/search-text", auth, aiController.searchSimilarText);
-router.get("/list-data", auth, aiController.listData);
-router.get("/generate-question", auth, aiController.generateQuestion);
-router.post("/score-answer", auth, aiController.scoreAnswer);
+router.post("/message", aiController.generateMessage);
+router.post("/message2", aiController.generateMessage2);
+router.post("/embedding", aiController.embedText);
+router.post("/embedding-tanya-jawab", aiController.embedTanyaJawab);
+router.post("/search-text", aiController.searchSimilarText);
+router.get("/list-data", aiController.listData);
+router.get("/generate-question", aiController.generateQuestion);
+router.post("/score-answer", aiController.scoreAnswer);
 
 export default router;

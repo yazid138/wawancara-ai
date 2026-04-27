@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy as JwtStrategy } from "passport-jwt";
 import config from "@/config";
 import userService from "@/services/user.service";
 import bcrypt from "bcrypt";
-import { User } from "@prisma/client";
+import { User } from "@/prisma/client";
 import UserResponse from "@/types/userResponse";
 import logger from "@/utils/logger";
 

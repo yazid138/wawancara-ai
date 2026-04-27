@@ -1,5 +1,5 @@
 import prisma from "@/database/prisma";
-import { Role } from "@prisma/client";
+import { Role } from "@/prisma/client";
 
 type CreateUserData = {
   name: string;

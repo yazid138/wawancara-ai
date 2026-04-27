@@ -6,10 +6,10 @@ const pc = new Pinecone({ apiKey: config.pineConeKey });
 
 const pineconeIndex = pc.Index(config.pineConeIndex, config.pineConeHostUrl);
 
-const upsertVector = async (vector: number[], metadata: RecordMetadata) => {
+export const upsertVector = async (vector: number[], metadata: RecordMetadata, id?: string) => {
   await pineconeIndex.upsert([
     {
-      id: uuidv4(),
+      id: id || uuidv4(),
       // id: 'ed02ea29-b2ff-4c4e-9ade-5def036311c0',
       values: vector,
       metadata,
@@ -33,4 +33,8 @@ export const listData = async () => {
   return await pineconeIndex.listPaginated();
 };
 
-export default { upsertVector, searchVector, listData };
+export const deleteVector = async (id: string) => {
+  await pineconeIndex.deleteOne(id);
+};
+
+export default { upsertVector, searchVector, listData, deleteVector };

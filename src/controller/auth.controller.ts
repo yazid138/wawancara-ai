@@ -8,7 +8,7 @@ import config from "@/config";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import userService from "@/services/user.service";
-import { Role, User } from "@prisma/client";
+import { Role, User } from "@/prisma/client";
 
 type LoginRequest = {
   username: string;

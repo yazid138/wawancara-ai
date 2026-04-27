@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "../src/prisma/client";
+import { PrismaClient, Role } from "@/src/prisma/client";
 import bcrypt from "bcrypt";
 import { PrismaPg } from "@prisma/adapter-pg";
 
