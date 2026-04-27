@@ -1,0 +1,17 @@
+@hostname = http://localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@username = admin
+@password = admin
+@Content-Type = application/json
+
+### Login
+# @name login
+@authToken = {{login.response.body.data.token}}
+POST {{host}}/auth/login
+Content-Type: {{Content-Type}}
+
+{
+    "username": "{{username}}",
+    "password": "{{password}}"
+}

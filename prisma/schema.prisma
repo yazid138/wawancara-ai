@@ -144,13 +144,3 @@ model ScoreAnswer {
 
   answer Answer @relation(fields: [answerId], references: [id])
 }
-
-model ScoringComponent {
-  id     Int    @id @default(autoincrement())
-  key    String @unique // "rubric", "similarity", "keyword", dll
-  name   String
-  weight Float
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}

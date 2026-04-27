@@ -1,0 +1,1 @@
+{{candidate_name}} is a {{candidate_position}} with {{candidate_experience}} years of experience. Assess their suitability for the role based on the following criteria: {{criteria}}.

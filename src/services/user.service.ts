@@ -24,7 +24,7 @@ export const findUserByUsername = async (username: string) => {
 export const findUserById = async (id: number) => {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, username: true, createdAt: true },
+    select: { id: true, name: true, username: true, role: true, createdAt: true },
   });
   return user;
 };

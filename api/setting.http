@@ -1,0 +1,43 @@
+@hostname = http://localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@username = admin
+@password = admin
+@Content-Type = application/json
+
+### Login
+# @name login
+@authToken = {{login.response.body.data.token}}
+POST {{host}}/auth/login
+Content-Type: {{Content-Type}}
+
+{
+    "username": "{{username}}",
+    "password": "{{password}}"
+}
+
+### Get Settings Scoring
+GET {{host}}/setting/scoring
+Authorization: Bearer {{authToken}}
+
+### Update Settings Scoring
+PUT {{host}}/setting/scoring
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+    "score": 10
+}
+
+### Get Template Prompt
+GET {{host}}/setting/prompt
+Authorization: Bearer {{authToken}}
+
+### Update Template Prompt
+PUT {{host}}/setting/prompt
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+    "template": "{{candidate_name}} is a {{candidate_position}} with {{candidate_experience}} years of experience. Assess their suitability for the role based on the following criteria: {{criteria}}."
+}
