@@ -11,7 +11,7 @@
 POST {{host}}/auth/login
 Content-Type: {{Content-Type}}
 
-{
+{   
     "username": "{{username}}",
     "password": "{{password}}"
 }

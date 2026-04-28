@@ -1,0 +1,39 @@
+@hostname = http://localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@username = admin
+@password = admin
+@Content-Type = application/json
+@interviewId = 1
+
+### Login
+# @name login
+@authToken = {{login.response.body.data.token}}
+POST {{host}}/auth/login
+Content-Type: {{Content-Type}}
+
+{
+    "username": "{{username}}",
+    "password": "{{password}}"
+}
+
+### Get all interviews
+# @name getAllInterviews
+GET {{host}}/interviews
+Authorization: Bearer {{authToken}}
+
+### Get interview by ID
+# @name getInterviewById
+
+GET {{host}}/interviews/{{interviewId}}
+Authorization: Bearer {{authToken}}
+
+### Get interview questions (ordered by order)
+GET {{host}}/interviews/{{interviewId}}/questions
+Authorization: Bearer {{authToken}}
+
+{
+    "order": "asc",
+    "question": "Ceritakan tentang diri Anda"
+}
+
