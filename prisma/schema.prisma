@@ -72,7 +72,6 @@ enum QuestionType {
   INTRO
   GENERAL
   TECHNICAL
-  BEHAVIORAL
   SOFTSKILL
 }
 
@@ -114,7 +113,7 @@ model AnswerCategory {
   score Int // 4
 
   question     Question     @relation(fields: [questionId], references: [id])
-  scoreAnswers ScoreAnswer[]
+  ScoreSoftSkill ScoreSoftSkill[]
 }
 
 model Answer {
@@ -130,7 +129,8 @@ model Answer {
   question  Question     @relation(fields: [questionId], references: [id])
   interview Interview    @relation(fields: [interviewId], references: [id])
   user      User         @relation(fields: [userId], references: [id])
-  score     ScoreAnswer?
+  technicalScore ScoreTechnical?
+  softSkillScore ScoreSoftSkill?
 
   @@index([questionId])
   @@index([interviewId])
@@ -160,28 +160,39 @@ model IdealAnswer {
   question Question @relation(fields: [questionId], references: [id])
 }
 
-model ScoreAnswer {
+model ScoreTechnical {
   id       Int @id @default(autoincrement())
   answerId Int @unique
 
-  // TECHNICAL
-  rubricScore     Float?
-  similarityScore Float?
-  keywordScore    Float?
+  rubricScore     Float
+  similarityScore Float
+  keywordScore    Float
 
-  // SOFTSKILL
-  categoryId    Int?
-  categoryLabel String?
-
-  // FINAL
   finalScore Float
 
-  breakdown Json?
   feedback  String?
+  breakdown Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answer Answer @relation(fields: [answerId], references: [id])
+}
+
+
+model ScoreSoftSkill {
+  id       Int @id @default(autoincrement())
+  answerId Int @unique
+
+  categoryId    Int
+  categoryLabel String
+
+  finalScore Float
+  reason     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   answer   Answer         @relation(fields: [answerId], references: [id])
-  category AnswerCategory? @relation(fields: [categoryId], references: [id])
+  category AnswerCategory @relation(fields: [categoryId], references: [id])
 }
