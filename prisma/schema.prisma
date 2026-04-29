@@ -57,7 +57,8 @@ model Interview {
   userId     Int
   companyId  Int
   positionId Int
-  status     Status?
+  status    Status?
+  currentIndex Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
