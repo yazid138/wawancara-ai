@@ -28,8 +28,8 @@ model User {
 }
 
 model Company {
-  id        Int      @id @default(autoincrement())
-  name      String
+  id   Int    @id @default(autoincrement())
+  name String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,7 +38,7 @@ model Company {
 }
 
 model Position {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
   name String
 
   createdAt DateTime @default(now())
@@ -53,19 +53,19 @@ enum Status {
 }
 
 model Interview {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  companyId Int
+  id         Int     @id @default(autoincrement())
+  userId     Int
+  companyId  Int
   positionId Int
-  status    Status?
+  status     Status?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user    User     @relation(fields: [userId], references: [id])
-  company Company  @relation(fields: [companyId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  company  Company  @relation(fields: [companyId], references: [id])
   position Position @relation(fields: [positionId], references: [id])
-  answers Answer[]
+  answers  Answer[]
 }
 
 enum QuestionType {
@@ -80,6 +80,7 @@ model Question {
   content    String
   difficulty String?
   type       QuestionType @default(GENERAL)
+  categoryId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,6 +88,30 @@ model Question {
   answers     Answer[]
   keywords    Keyword[]
   idealAnswer IdealAnswer?
+  categories  AnswerCategory[]
+
+  category QuestionCategory @relation(fields: [categoryId], references: [id])
+}
+
+model QuestionCategory {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions Question[]
+}
+
+model AnswerCategory {
+  id         Int @id @default(autoincrement())
+  questionId Int
+
+  label String // "Mudah beradaptasi"
+  score Int // 4
+
+  question     Question     @relation(fields: [questionId], references: [id])
+  scoreAnswers ScoreAnswer?
 }
 
 model Answer {
@@ -136,11 +161,15 @@ model ScoreAnswer {
   scores     Json // { rubric: 8, similarity: 7, keyword: 6 }
   finalScore Float
 
+  categoryId    Int     @unique
+  categoryLabel String?
+
   breakdown Json?
   feedback  String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  answer Answer @relation(fields: [answerId], references: [id])
+  answer   Answer         @relation(fields: [answerId], references: [id])
+  category AnswerCategory @relation(fields: [categoryId], references: [id])
 }
