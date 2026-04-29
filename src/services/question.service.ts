@@ -36,21 +36,41 @@ export const getQuestionById = async (id: number) => {
 
 export const createQuestion = async (questionData: {
   content: string;
+  category: string;
   keywords?: string[];
   type?: QuestionType;
   difficulty?: string;
   idealAnswer?: string;
 }) => {
-  const { content, keywords, type, difficulty, idealAnswer } = questionData;
+  const { content, keywords, type, difficulty, idealAnswer, category } = questionData;
   const keywordList = keywords ?? [];
   let embedding: number[] | undefined;
   if (idealAnswer) embedding = await createEmbedding(idealAnswer);
+
+  let categoryResult = await prisma.questionCategory.findFirst({
+    where: {
+      name: category.toLowerCase(),
+    },
+  });
+
+  if (!categoryResult) {
+    categoryResult = await prisma.questionCategory.create({
+      data: {
+        name: category.toLowerCase(),
+      },
+    });
+  }
 
   const question = await prisma.question.create({
     data: {
       content,
       type,
       difficulty,
+      category: {
+        connect: {
+          id: categoryResult.id,
+        }
+      },
       idealAnswer: idealAnswer
         ? {
             create: {
@@ -94,26 +114,53 @@ export const createQuestion = async (questionData: {
 export const updateQuestion = async (
   id: number,
   questionData: {
-    title?: string;
     content?: string;
     keywords?: string[];
     type?: QuestionType;
     difficulty?: string;
     idealAnswer?: string;
+    category?: string;
   },
 ) => {
-  const { title, content, keywords, type, difficulty, idealAnswer } =
+  const { content, keywords, type, difficulty, idealAnswer, category } =
     questionData;
   let embedding: number[] | undefined;
   if (idealAnswer) embedding = await createEmbedding(idealAnswer);
 
+  let categoryResult:
+    | {
+        id: number;
+      }
+    | null = null;
+  if (category) {
+    categoryResult = await prisma.questionCategory.findFirst({
+      where: {
+        name: category.toLowerCase(),
+      },
+    });
+
+    if (!categoryResult) {
+      categoryResult = await prisma.questionCategory.create({
+        data: {
+          name: category.toLowerCase(),
+        },
+      });
+    }
+  }
+
   const question = await prisma.question.update({
     where: { id },
     data: {
-      title,
       content,
       type,
       difficulty,
+      category: categoryResult
+        ? {
+            connect: {
+              id: categoryResult.id,
+            },
+          }
+        : undefined,
       idealAnswer: idealAnswer
         ? {
             upsert: {
@@ -172,7 +219,15 @@ export const deleteQuestion = async (id: number) => {
 
     const answerIds = answers.map((answer) => answer.id);
 
-    await tx.scoreAnswer.deleteMany({
+    await tx.scoreTechnical.deleteMany({
+      where: {
+        answerId: {
+          in: answerIds,
+        },
+      },
+    });
+
+    await tx.scoreSoftSkill.deleteMany({
       where: {
         answerId: {
           in: answerIds,
@@ -192,11 +247,13 @@ export const deleteQuestion = async (id: number) => {
       where: { questionId: id },
     });
 
-    return tx.question.delete({
+    const question = await tx.question.delete({
       where: { id },
     });
 
     await Promise.all([deleteQdrant("" + id), deletePinecone("" + id)]);
+
+    return question;
   });
 };
 
