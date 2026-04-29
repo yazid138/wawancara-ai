@@ -12,7 +12,8 @@ Content-Type: {{Content-Type}}
 {
     "username": "{{username}}",
     "password": "{{password}}",
-    "name": "Yazid"
+    "name": "Admin",
+    "role": "ADMIN"
 }
 
 ### Login
