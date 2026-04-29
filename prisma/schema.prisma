@@ -93,6 +93,8 @@ model Question {
   categories  AnswerCategory[]
 
   category QuestionCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
 }
 
 model QuestionCategory {
@@ -113,7 +115,7 @@ model AnswerCategory {
   score Int // 4
 
   question     Question     @relation(fields: [questionId], references: [id])
-  scoreAnswers ScoreAnswer?
+  scoreAnswers ScoreAnswer[]
 }
 
 model Answer {
@@ -130,6 +132,9 @@ model Answer {
   interview Interview    @relation(fields: [interviewId], references: [id])
   user      User         @relation(fields: [userId], references: [id])
   score     ScoreAnswer?
+
+  @@index([questionId])
+  @@index([interviewId])
 }
 
 model Keyword {
@@ -160,11 +165,17 @@ model ScoreAnswer {
   id       Int @id @default(autoincrement())
   answerId Int @unique
 
-  scores     Json // { rubric: 8, similarity: 7, keyword: 6 }
-  finalScore Float
+  // TECHNICAL
+  rubricScore     Float?
+  similarityScore Float?
+  keywordScore    Float?
 
-  categoryId    Int     @unique
+  // SOFTSKILL
+  categoryId    Int?
   categoryLabel String?
+
+  // FINAL
+  finalScore Float
 
   breakdown Json?
   feedback  String?
@@ -173,5 +184,5 @@ model ScoreAnswer {
   updatedAt DateTime @updatedAt
 
   answer   Answer         @relation(fields: [answerId], references: [id])
-  category AnswerCategory @relation(fields: [categoryId], references: [id])
+  category AnswerCategory? @relation(fields: [categoryId], references: [id])
 }
