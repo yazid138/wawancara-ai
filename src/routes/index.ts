@@ -17,7 +17,7 @@ router.get("/", (req: Request, res: Response) => {
 
 router.use("/auth", authRouter);
 router.use("/ai", auth, aiRouter);
-// router.use("/interview", auth, interviewRouter);
+router.use("/interview", auth, interviewRouter);
 // router.use("/answer", auth, answerRouter);
 router.use("/question", auth, questionRouter);
 router.use("/setting", auth, role('ADMIN'), settingRouter);

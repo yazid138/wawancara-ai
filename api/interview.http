@@ -4,7 +4,6 @@
 @username = admin
 @password = admin
 @Content-Type = application/json
-@interviewId = 1
 
 ### Login
 # @name login
@@ -17,23 +16,66 @@ Content-Type: {{Content-Type}}
     "password": "{{password}}"
 }
 
-### Get all interviews
-# @name getAllInterviews
-GET {{host}}/interviews
-Authorization: Bearer {{authToken}}
+### Create Interview
+# @name createInterview
+@interviewId = {{createInterview.response.body.data.id}}
 
-### Get interview by ID
-# @name getInterviewById
-
-GET {{host}}/interviews/{{interviewId}}
+POST {{host}}/interview
 Authorization: Bearer {{authToken}}
-
-### Get interview questions (ordered by order)
-GET {{host}}/interviews/{{interviewId}}/questions
-Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
 
 {
-    "order": "asc",
-    "question": "Ceritakan tentang diri Anda"
+  "companyId": 1,
+  "positionId": 1
 }
 
+### Get Questions
+# @name getQuestions
+GET {{host}}/interview/{{interviewId}}/questions
+Authorization: Bearer {{authToken}}
+
+### Get Current Question
+# @name current1
+GET {{host}}/interview/{{interviewId}}/current
+Authorization: Bearer {{authToken}}
+
+### Submit Answer
+POST {{host}}/answers
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "interviewId": {{interviewId}},
+  "answer": "Saya adalah backend developer dengan pengalaman 3 tahun..."
+}
+
+### Get Next Question
+@name next1
+GET {{host}}/interview/{{interviewId}}/next
+Authorization: Bearer {{authToken}}
+
+### Get Current Question Again
+GET {{host}}/interview/{{interviewId}}/current
+Authorization: Bearer {{authToken}}
+
+### Submit Answer Again
+POST {{host}}/answers
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "interviewId": {{interviewId}},
+  "answer": "Saya memiliki pengalaman bekerja dengan Node.js, Express, dan MongoDB..."
+}
+
+### Next Question Again
+GET {{host}}/interview/{{interviewId}}/next
+Authorization: Bearer {{authToken}}
+
+### Finish Interview
+GET {{host}}/interview/{{interviewId}}/finish
+Authorization: Bearer {{authToken}}
+
+### Get Result
+GET {{host}}/interview/{{interviewId}}/result
+Authorization: Bearer {{authToken}}
