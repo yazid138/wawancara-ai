@@ -31,23 +31,35 @@ export const getQuestionById = async (req: Request, res: Response) => {
 
 type CreateQuestionRequest = {
   content: string;
+  category: string;
   keywords?: string[];
   type?: string;
   difficulty?: string;
   idealAnswer?: string;
 };
 export const createQuestion = async (req: Request, res: Response) => {
-  const { content, difficulty, idealAnswer, keywords, type } =
+  const { content, difficulty, idealAnswer, keywords, type, category } =
     validate<CreateQuestionRequest>(
       {
         content: "string",
-        keywords: "array",
+        category: "string",
+        keywords: {
+          type: "array",
+          optional: true,
+        },
         type: {
           type: "enum",
-          values: ["TECHNICAL", "INTRO", "BEHAVIORAL", "GENERAL"],
+          values: Object.values(QuestionType),
+          optional: true,
         },
-        difficulty: "string",
-        idealAnswer: "string",
+        difficulty: {
+          type: "string",
+          optional: true,
+        },
+        idealAnswer: {
+          type: "string",
+          optional: true,
+        },
       },
       req.body,
     );
@@ -58,6 +70,7 @@ export const createQuestion = async (req: Request, res: Response) => {
     idealAnswer,
     keywords,
     type: QuestionType[type as keyof typeof QuestionType],
+    category,
   });
   sendResponse(res, {
     status: 201,
@@ -72,9 +85,10 @@ type UpdateQuestionRequest = {
   type?: string;
   difficulty?: string;
   idealAnswer?: string;
+  category?: string;
 };
 export const updateQuestion = async (req: Request, res: Response) => {
-  const { content, keywords, type, difficulty, idealAnswer } =
+  const { content, keywords, type, difficulty, idealAnswer, category } =
     validate<UpdateQuestionRequest>(
       {
         content: {
@@ -87,7 +101,7 @@ export const updateQuestion = async (req: Request, res: Response) => {
         },
         type: {
           type: "enum",
-          values: ["TECHNICAL", "INTRO", "BEHAVIORAL", "GENERAL"],
+          values: Object.values(QuestionType),
           optional: true,
         },
         difficulty: {
@@ -95,6 +109,10 @@ export const updateQuestion = async (req: Request, res: Response) => {
           optional: true,
         },
         idealAnswer: {
+          type: "string",
+          optional: true,
+        },
+        category: {
           type: "string",
           optional: true,
         },
@@ -108,6 +126,7 @@ export const updateQuestion = async (req: Request, res: Response) => {
     difficulty,
     idealAnswer,
     keywords,
+    category,
   });
   sendResponse(res, {
     status: 200,

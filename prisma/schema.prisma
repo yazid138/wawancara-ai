@@ -171,6 +171,8 @@ model ScoreTechnical {
 
   finalScore Float
 
+  confidenceScore Float
+
   feedback  String?
   breakdown Json?
 
@@ -190,6 +192,8 @@ model ScoreSoftSkill {
 
   finalScore Float
   reason     String?
+
+  confidenceScore Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
