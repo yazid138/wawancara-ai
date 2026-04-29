@@ -20,7 +20,7 @@ Content-Type: {{Content-Type}}
 # @name createInterview
 @interviewId = {{createInterview.response.body.data.id}}
 
-POST {{host}}/interview
+POST {{host}}/interviews
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
@@ -31,12 +31,12 @@ Content-Type: {{Content-Type}}
 
 ### Get Questions
 # @name getQuestions
-GET {{host}}/interview/{{interviewId}}/questions
+GET {{host}}/interviews/{{interviewId}}/questions
 Authorization: Bearer {{authToken}}
 
 ### Get Current Question
 # @name current1
-GET {{host}}/interview/{{interviewId}}/current
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
 ### Submit Answer
@@ -51,11 +51,11 @@ Content-Type: {{Content-Type}}
 
 ### Get Next Question
 @name next1
-GET {{host}}/interview/{{interviewId}}/next
+GET {{host}}/interviews/{{interviewId}}/next
 Authorization: Bearer {{authToken}}
 
 ### Get Current Question Again
-GET {{host}}/interview/{{interviewId}}/current
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
 ### Submit Answer Again
@@ -69,13 +69,13 @@ Content-Type: {{Content-Type}}
 }
 
 ### Next Question Again
-GET {{host}}/interview/{{interviewId}}/next
+GET {{host}}/interviews/{{interviewId}}/next
 Authorization: Bearer {{authToken}}
 
 ### Finish Interview
-GET {{host}}/interview/{{interviewId}}/finish
+GET {{host}}/interviews/{{interviewId}}/finish
 Authorization: Bearer {{authToken}}
 
 ### Get Result
-GET {{host}}/interview/{{interviewId}}/result
+GET {{host}}/interviews/{{interviewId}}/result
 Authorization: Bearer {{authToken}}

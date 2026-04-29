@@ -15,3 +15,32 @@ Content-Type: {{Content-Type}}
     "username": "{{username}}",
     "password": "{{password}}"
 }
+
+### Create Question
+# @name createQuestion
+@questionId = {{createQuestion.response.body.data.id}}
+
+POST {{host}}/questions
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "content": "Bagaimana anda menyesuaikan diri dengan aturan yang berlaku di tempat magang?",
+  "keywords": ["menyesuaikan diri", "aturan", "tempat magang"],
+  "type" : "GENERAL",
+  "difficulty": "MEDIUM",
+  "idealAnswer": "Saya akan mempelajari aturan yang berlaku di tempat magang dengan seksama, baik melalui dokumen resmi maupun dengan bertanya kepada rekan kerja atau atasan. Saya juga akan berusaha untuk selalu mematuhi aturan tersebut dan menyesuaikan diri dengan budaya kerja yang ada."
+}
+
+### Get All Questions
+# @name getAllQuestions
+GET {{host}}/questions
+Authorization: Bearer {{authToken}}
+
+
+### Get Question By Id
+# @name getQuestionById
+@questionId = {{getQuestionById.response.body.data.id}}
+
+GET {{host}}/questions/{{questionId}}
+Authorization: Bearer {{authToken}} 
