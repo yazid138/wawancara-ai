@@ -73,6 +73,7 @@ enum QuestionType {
   GENERAL
   TECHNICAL
   BEHAVIORAL
+  SOFTSKILL
 }
 
 model Question {
