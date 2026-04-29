@@ -25,11 +25,9 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "content": "Bagaimana anda menyesuaikan diri dengan aturan yang berlaku di tempat magang?",
-  "keywords": ["menyesuaikan diri", "aturan", "tempat magang"],
-  "type" : "GENERAL",
-  "difficulty": "MEDIUM",
-  "idealAnswer": "Saya akan mempelajari aturan yang berlaku di tempat magang dengan seksama, baik melalui dokumen resmi maupun dengan bertanya kepada rekan kerja atau atasan. Saya juga akan berusaha untuk selalu mematuhi aturan tersebut dan menyesuaikan diri dengan budaya kerja yang ada."
+  "content": "Jelaskan apa itu REST API dan bagaimana cara kerjanya?",
+  "category": "HARDSKILL",
+  "type": "TECHNICAL"
 }
 
 ### Get All Questions
@@ -40,7 +38,5 @@ Authorization: Bearer {{authToken}}
 
 ### Get Question By Id
 # @name getQuestionById
-@questionId = {{getQuestionById.response.body.data.id}}
-
 GET {{host}}/questions/{{questionId}}
 Authorization: Bearer {{authToken}} 

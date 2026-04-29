@@ -1,14 +1,18 @@
 import prisma from "@/database/prisma";
+import { QuestionType } from "@/prisma/browser";
 
-const createInterview = (data: {
+type StartInterviewInput = {
   userId: number;
   companyId: number;
   positionId: number;
-}) => {
+};
+
+const startInterview = (data: StartInterviewInput) => {
   return prisma.interview.create({
     data: {
       ...data,
       status: "ONGOING",
+      currentIndex: 0,
     },
   });
 };
@@ -19,10 +23,32 @@ const getInterviewById = (id: number) => {
   });
 };
 
-const getQuestionsByPosition = (positionId: number) => {
-  return prisma.question.findMany({
-    where: { positionId },
-    orderBy: { id: "asc" },
+const updateInterview = (id: number, data: any) => {
+  return prisma.interview.update({
+    where: { id },
+    data,
+  });
+};
+
+const FLOW = [
+  QuestionType.INTRO,
+  QuestionType.GENERAL,
+  QuestionType.SOFTSKILL,
+  QuestionType.TECHNICAL,
+];
+
+const getQuestionsOrdered = async () => {
+  const questions = await prisma.question.findMany();
+
+  return questions.sort((a, b) => {
+    const stageA = FLOW.indexOf(a.type);
+    const stageB = FLOW.indexOf(b.type);
+
+    if (stageA !== stageB) {
+      return stageA - stageB;
+    }
+
+    return a.id - b.id;
   });
 };
 
@@ -55,18 +81,20 @@ const getResult = (id: number) => {
     include: {
       answers: {
         include: {
-          score: true,
+          technicalScore: true,
+          softSkillScore: true,
           question: true,
-        },
+        }
       },
     },
   });
 };
 
 export default {
-  createInterview,
+  startInterview,
   getInterviewById,
-  getQuestionsByPosition,
+  updateInterview,
+  getQuestionsOrdered,
   incrementIndex,
   finishInterview,
   createAnswer,
