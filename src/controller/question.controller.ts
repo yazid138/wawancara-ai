@@ -73,6 +73,38 @@ export const createQuestion = async (req: Request, res: Response) => {
   });
 };
 
+type AddIdealAnswerRequest = {
+  idealAnswer: string;
+};
+export const addIdealAnswer = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  const { idealAnswer } = validate<AddIdealAnswerRequest>({
+    idealAnswer: "string",
+  }, req.body);
+  const question = await questionService.addIdealAnswer(id, idealAnswer);
+  sendResponse(res, {
+    status: 200,
+    message: "Berhasil menambahkan jawaban ideal",
+    data: question,
+  });
+};
+
+type RemoveIdealAnswerRequest = {
+  idealAnswerId: number;
+};
+export const removeIdealAnswer = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  const { idealAnswerId } = validate<RemoveIdealAnswerRequest>({
+    idealAnswerId: "number",
+  }, req.body);
+  const question = await questionService.removeIdealAnswer(id, idealAnswerId);
+  sendResponse(res, {
+    status: 200,
+    message: "Berhasil menghapus jawaban ideal",
+    data: question,
+  });
+}
+
 type UpdateQuestionRequest = {
   content?: string;
   keywords?: string[];
@@ -145,4 +177,6 @@ export default {
   createQuestion,
   updateQuestion,
   deleteQuestion,
+  addIdealAnswer,
+  removeIdealAnswer,
 };

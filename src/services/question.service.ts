@@ -1,5 +1,9 @@
 import prisma from "@/database/prisma";
 import { QuestionType } from "@/prisma/client";
+import pineconeService from "@/services/pinecone.service";
+import qdrantService from "@/services/qdrant.service";
+import { createEmbedding } from "@/services/ai.service";
+import NotFoundException from "@/exception/NotFoundException";
 
 export const getAllQuestions = async () => {
   const questions = await prisma.question.findMany({
@@ -57,7 +61,7 @@ export const createQuestion = async (questionData: {
       category: {
         connect: {
           id: categoryResult.id,
-        }
+        },
       },
       keywords: {
         createMany: {
@@ -80,15 +84,12 @@ export const updateQuestion = async (
     category?: string;
   },
 ) => {
-  const { content, keywords, type, difficulty, category } =
-    questionData;
+  const { content, keywords, type, difficulty, category } = questionData;
   let embedding: number[] | undefined;
 
-  let categoryResult:
-    | {
-        id: number;
-      }
-    | null = null;
+  let categoryResult: {
+    id: number;
+  } | null = null;
   if (category) {
     categoryResult = await prisma.questionCategory.findFirst({
       where: {
@@ -173,10 +174,87 @@ export const deleteQuestion = async (id: number) => {
   });
 };
 
+export const addIdealAnswer = async (
+  questionId: number,
+  idealAnswer: string,
+) => {
+  // Verify question exists
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+  });
+
+  if (!question) {
+    throw new NotFoundException(`Question with id ${questionId} not found`);
+  }
+
+  // Delete existing ideal answer if any
+  await prisma.idealAnswer.deleteMany({
+    where: { questionId },
+  });
+
+  const embedding = await createEmbedding(idealAnswer);
+  const idealAnswerResult = await prisma.idealAnswer.create({
+    data: {
+      question: {
+        connect: {
+          id: questionId,
+        },
+      },
+      content: idealAnswer,
+      embedding,
+    },
+  });
+
+  // Upsert vectors to Pinecone and Qdrant
+  await pineconeService.upsertVector(embedding,
+    {
+      questionId,
+      answer: idealAnswer,
+      type: "ideal_answer",
+    },
+    `ideal_${idealAnswerResult.id}`,
+  );
+
+  await qdrantService.upsertVector(embedding, {
+      questionId,
+      answer: idealAnswer,
+      type: "ideal_answer",
+    },
+    `ideal_${idealAnswerResult.id}`,
+  );
+
+  return idealAnswerResult;
+};
+
+export const removeIdealAnswer = async (questionId: number, idealAnswerId: number) => {
+  const idealAnswer = await prisma.idealAnswer.findFirst({
+    where: { questionId, id: idealAnswerId },
+  });
+
+  if (!idealAnswer) {
+    throw new NotFoundException(`No ideal answer found for question ${questionId}`);
+  }
+
+  // Delete vectors from Pinecone and Qdrant
+  Promise.all([
+    pineconeService.deleteVector(`ideal_${idealAnswer.id}`),
+    qdrantService.deleteVector(`ideal_${idealAnswer.id}`),
+  ]);
+
+  // Delete from database
+  const deletedIdealAnswer = await prisma.idealAnswer.delete({
+    where: { id: idealAnswer.id },
+  });
+
+  return deletedIdealAnswer;
+};
+
 export default {
   getAllQuestions,
   getQuestionById,
   createQuestion,
   updateQuestion,
   deleteQuestion,
+  addIdealAnswer,
+  removeIdealAnswer,
 };
