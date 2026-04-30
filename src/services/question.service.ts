@@ -206,37 +206,46 @@ export const addIdealAnswer = async (
   });
 
   // Upsert vectors to Pinecone and Qdrant
-  await pineconeService.upsertVector(embedding,
-    {
-      questionId,
-      answer: idealAnswer,
-      type: "ideal_answer",
-    },
-    `ideal_${idealAnswerResult.id}`,
-  );
-
-  await qdrantService.upsertVector(embedding, {
-      questionId,
-      answer: idealAnswer,
-      type: "ideal_answer",
-    },
-    `ideal_${idealAnswerResult.id}`,
-  );
+  await Promise.all([
+    pineconeService.upsertVector(
+      embedding,
+      {
+        questionId,
+        answer: idealAnswer,
+        type: "ideal_answer",
+      },
+      `ideal_${idealAnswerResult.id}`,
+    ),
+    qdrantService.upsertVector(
+      embedding,
+      {
+        questionId,
+        answer: idealAnswer,
+        type: "ideal_answer",
+      },
+      `ideal_${idealAnswerResult.id}`,
+    ),
+  ]);
 
   return idealAnswerResult;
 };
 
-export const removeIdealAnswer = async (questionId: number, idealAnswerId: number) => {
+export const removeIdealAnswer = async (
+  questionId: number,
+  idealAnswerId: number,
+) => {
   const idealAnswer = await prisma.idealAnswer.findFirst({
     where: { questionId, id: idealAnswerId },
   });
 
   if (!idealAnswer) {
-    throw new NotFoundException(`No ideal answer found for question ${questionId}`);
+    throw new NotFoundException(
+      `No ideal answer found for question ${questionId}`,
+    );
   }
 
   // Delete vectors from Pinecone and Qdrant
-  Promise.all([
+  await Promise.all([
     pineconeService.deleteVector(`ideal_${idealAnswer.id}`),
     qdrantService.deleteVector(`ideal_${idealAnswer.id}`),
   ]);
