@@ -1,6 +1,6 @@
 import prisma from "@/database/prisma";
 
-const scoreAnswer = async (answerId: number) => {
+const scoreTechnicalAnswer = async (answerId: number) => {
   const answer = await prisma.answer.findUnique({
     where: { id: answerId },
     include: {
@@ -8,7 +8,6 @@ const scoreAnswer = async (answerId: number) => {
         include: {
           keywords: true,
           idealAnswer: true,
-          categories: true,
         },
       },
     },
@@ -20,7 +19,6 @@ const scoreAnswer = async (answerId: number) => {
   const keywords = answer.question.keywords;
   const ideal = answer.question.idealAnswer?.content || "";
 
-  
   let keywordScore = 0;
   let totalWeight = 0;
 
@@ -33,15 +31,12 @@ const scoreAnswer = async (answerId: number) => {
 
   keywordScore = totalWeight ? keywordScore / totalWeight : 0;
 
-  
   const similarityScore = userAnswer && ideal
     ? Math.min(userAnswer.length / ideal.length, 1)
     : 0;
 
-  
   const rubricScore = Math.min(userAnswer.length / 100, 1);
 
-  
   const finalScore =
     rubricScore * 0.4 +
     similarityScore * 0.3 +
@@ -49,7 +44,6 @@ const scoreAnswer = async (answerId: number) => {
 
   const confidenceScore = (rubricScore + similarityScore + keywordScore) / 3;
 
-  
   const feedback =
     finalScore > 0.7
       ? "Jawaban sangat baik"
@@ -57,41 +51,91 @@ const scoreAnswer = async (answerId: number) => {
       ? "Jawaban cukup baik"
       : "Jawaban perlu diperbaiki";
 
-  
-  const result = await prisma.scoreTechnical.upsert({
+  return prisma.scoreTechnical.upsert({
     where: { answerId },
     update: {
+      rubricScore,
+      similarityScore,
+      keywordScore,
+      finalScore,
+      confidenceScore,
+      feedback,
+      breakdown: {
         rubricScore,
         similarityScore,
         keywordScore,
-        finalScore,
-        confidenceScore,
-        feedback,
-        breakdown: {
-        rubricScore,
-        similarityScore,
-        keywordScore,
-        },
+      },
     },
     create: {
-        answerId,
+      answerId,
+      rubricScore,
+      similarityScore,
+      keywordScore,
+      finalScore,
+      confidenceScore,
+      feedback,
+      breakdown: {
         rubricScore,
         similarityScore,
         keywordScore,
-        finalScore,
-        confidenceScore,
-        feedback,
-        breakdown: {
-        rubricScore,
-        similarityScore,
-        keywordScore,
-        },
+      },
     },
-    });
+  });
+};
 
-  return result;
+const scoreSoftSkillAnswer = async (answerId: number) => {
+  const answer = await prisma.answer.findUnique({
+    where: { id: answerId },
+    include: {
+      question: {
+        include: {
+          categories: true,
+        },
+      },
+    },
+  });
+
+  if (!answer) throw new Error("Answer tidak ditemukan");
+
+  const categories = answer.question.categories;
+
+  // 🔥 kalau tidak ada category → skip
+  if (!categories.length) {
+    return null;
+  }
+
+  const userAnswer = answer.content.toLowerCase();
+
+  let bestCategory = categories.find((cat) =>
+    userAnswer.includes(cat.label.toLowerCase())
+  );
+
+  // fallback ke category pertama
+  if (!bestCategory) {
+    bestCategory = categories[0];
+  }
+
+  return prisma.scoreSoftSkill.upsert({
+    where: { answerId },
+    update: {
+      categoryId: bestCategory.id,
+      categoryLabel: bestCategory.label,
+      finalScore: bestCategory.score,
+      confidenceScore: 0.7,
+      reason: "Matched by keyword",
+    },
+    create: {
+      answerId,
+      categoryId: bestCategory.id,
+      categoryLabel: bestCategory.label,
+      finalScore: bestCategory.score,
+      confidenceScore: 0.7,
+      reason: "Matched by keyword",
+    },
+  });
 };
 
 export default {
-  scoreAnswer,
+  scoreTechnicalAnswer,
+  scoreSoftSkillAnswer
 };

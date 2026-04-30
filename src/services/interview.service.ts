@@ -1,11 +1,25 @@
 import prisma from "@/database/prisma";
-import { QuestionType } from "@/prisma/browser";
+import { QuestionType } from "@/prisma/client";
 
 type StartInterviewInput = {
   userId: number;
   companyId: number;
   positionId: number;
 };
+
+const DISTRIBUTION: Record<QuestionType, number> = {
+  INTRO: 1,
+  GENERAL: 1,
+  SOFTSKILL: 4,
+  TECHNICAL: 4,
+};
+
+const FLOW: QuestionType[] = [
+  QuestionType.INTRO,
+  QuestionType.GENERAL,
+  QuestionType.SOFTSKILL,
+  QuestionType.TECHNICAL,
+];
 
 const startInterview = (data: StartInterviewInput) => {
   return prisma.interview.create({
@@ -23,42 +37,6 @@ const getInterviewById = (id: number) => {
   });
 };
 
-const updateInterview = (id: number, data: any) => {
-  return prisma.interview.update({
-    where: { id },
-    data,
-  });
-};
-
-const FLOW = [
-  QuestionType.INTRO,
-  QuestionType.GENERAL,
-  QuestionType.SOFTSKILL,
-  QuestionType.TECHNICAL,
-];
-
-const getQuestionsOrdered = async () => {
-  const questions = await prisma.question.findMany();
-
-  return questions.sort((a, b) => {
-    const stageA = FLOW.indexOf(a.type);
-    const stageB = FLOW.indexOf(b.type);
-
-    if (stageA !== stageB) {
-      return stageA - stageB;
-    }
-
-    return a.id - b.id;
-  });
-};
-
-const incrementIndex = (id: number, nextIndex: number) => {
-  return prisma.interview.update({
-    where: { id },
-    data: { currentIndex: nextIndex },
-  });
-};
-
 const finishInterview = (id: number) => {
   return prisma.interview.update({
     where: { id },
@@ -73,6 +51,56 @@ const createAnswer = (data: {
   userId: number;
 }) => {
   return prisma.answer.create({ data });
+};
+
+const getNextQuestion = async (interviewId: number) => {
+  const answers = await prisma.answer.findMany({
+    where: { interviewId },
+    include: { question: true },
+  });
+
+  const countByType: Record<QuestionType, number> = {
+    INTRO: 0,
+    GENERAL: 0,
+    SOFTSKILL: 0,
+    TECHNICAL: 0,
+  };
+
+  for (const ans of answers) {
+    countByType[ans.question.type]++;
+  }
+
+  const usedQuestionIds = answers.map((a) => a.questionId);
+
+  for (const type of FLOW) {
+    const remaining = DISTRIBUTION[type] - countByType[type];
+
+    if (remaining > 0) {
+      const candidates = await prisma.question.findMany({
+        where: {
+          type,
+          id: { notIn: usedQuestionIds },
+        },
+      });
+
+      if (candidates.length > 0) {
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+
+    }
+  }
+
+  const fallback = await prisma.question.findMany({
+    where: {
+      id: { notIn: usedQuestionIds },
+    },
+  });
+
+  if (fallback.length > 0) {
+    return fallback[Math.floor(Math.random() * fallback.length)];
+  }
+
+  return null;
 };
 
 const getResult = (id: number) => {
@@ -93,10 +121,8 @@ const getResult = (id: number) => {
 export default {
   startInterview,
   getInterviewById,
-  updateInterview,
-  getQuestionsOrdered,
-  incrementIndex,
   finishInterview,
   createAnswer,
+  getNextQuestion,
   getResult,
 };

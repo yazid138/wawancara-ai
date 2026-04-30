@@ -12,8 +12,8 @@ POST {{host}}/auth/login
 Content-Type: {{Content-Type}}
 
 {
-    "username": "{{username}}",
-    "password": "{{password}}"
+  "username": "{{username}}",
+  "password": "{{password}}"
 }
 
 ### Start Interview
@@ -29,75 +29,65 @@ Content-Type: {{Content-Type}}
   "positionId": 1
 }
 
-### Get Questions
-# @name getQuestions
-GET {{host}}/interviews/{{interviewId}}/questions
-Authorization: Bearer {{authToken}}
-
-### Get Current Question
+### Get Current Question (INTRO)
 # @name current1
 GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
-### Submit Answer
+### Submit Answer 1
 POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Nama saya John Doe, saya seorang software engineer dengan pengalaman 5 tahun di bidang pengembangan web. Saya memiliki keahlian dalam berbagai bahasa pemrograman seperti JavaScript, Python, dan Java. Saya juga memiliki pengalaman bekerja dengan framework seperti React, Angular, dan Django. Saya sangat antusias untuk bergabung dengan perusahaan ini karena saya percaya bahwa saya dapat memberikan kontribusi yang signifikan dengan keahlian dan pengalaman yang saya miliki."
+  "answer": "Perkenalkan saya adalah backend developer dengan pengalaman 3 tahun."
 }
 
-### Get Next Question
-# @name next1
-GET {{host}}/interviews/{{interviewId}}/next
-Authorization: Bearer {{authToken}}
-
-### Get Current Question Again
+### Get Current Question (GENERAL)
+# @name current2
 GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
-### Submit Answer Again
+### Submit Answer 2
 POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Perusahaan ini berfokus pada pengembangan solusi teknologi inovatif untuk berbagai industri, termasuk e-commerce, keuangan, dan kesehatan. Mereka memiliki tim yang sangat berbakat dan berkomitmen untuk menciptakan produk berkualitas tinggi yang dapat memberikan dampak positif bagi pengguna. Saya sangat tertarik dengan visi perusahaan ini untuk terus berkembang dan berinovasi, serta kesempatan untuk bekerja dengan tim yang hebat dalam menciptakan solusi teknologi yang dapat mengubah cara orang bekerja dan berinteraksi dengan teknologi."
+  "answer": "Saya tertarik dengan perusahaan ini karena fokus pada inovasi teknologi..."
 }
 
-### Next Question Again
-GET {{host}}/interviews/{{interviewId}}/next
+### Get Current Question (SOFTSKILL)
+# @name current3
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
-### Submit Answer Again
+### Submit Answer 3
 POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Iya saya membutuhkan waktu untuk menyesuaikan diri dengan lingkungan baru"
+  "answer": "Saya cukup cepat dalam menyesuaikan diri dengan rekan kerja"
 }
 
-### Next Question Again
-GET {{host}}/interviews/{{interviewId}}/next
+### Get Current Question
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
-### Submit Answer Again
+### Submit Answer 4
 POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Saya berusaha agar bisa menyesuaikan dengan aturan yang ada"
+  "answer": "Ya, saya pernah menggunakan JavaScript untuk membangun REST API dengan Node.js dan Express."
 }
 
-### Next Question Again
-GET {{host}}/interviews/{{interviewId}}/next
-Authorization: Bearer {{authToken}}
+### (ULANGI SAMPAI SELESAI - TOTAL 10 SOAL)
 
-### Finish Interview
-POST {{host}}/interviews/{{interviewId}}/finish
+### Get Current (Should be NULL if finished)
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
 ### Get Result
