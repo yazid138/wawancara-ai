@@ -17,15 +17,6 @@ const main = async () => {
       role: Role.ADMIN
     }
   });
-
-  await prisma.scoringComponent.createMany({
-    data: [
-      { key: 'similarity', name: "rule", weight: 0.5 },
-      { key: 'rubric', name: "ai", weight: 0.5 },
-      { key: 'min_length', name: "min length", weight: 0.3 },
-      { key: 'keyword', name: "keyword", weight: 0.3 },
-    ]
-  });
 };
 
 main()
