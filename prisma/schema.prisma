@@ -88,7 +88,7 @@ model Question {
 
   answers     Answer[]
   keywords    Keyword[]
-  idealAnswer IdealAnswer?
+  idealAnswer IdealAnswer[]
   categories  AnswerCategory[]
 
   category QuestionCategory @relation(fields: [categoryId], references: [id])
@@ -151,7 +151,7 @@ model Keyword {
 
 model IdealAnswer {
   id         Int    @id @default(autoincrement())
-  questionId Int    @unique
+  questionId Int    
   content    String
   embedding  Json
 
