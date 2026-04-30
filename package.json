@@ -6,7 +6,8 @@
     "start": "tsx index.ts",
     "dev": "nodemon --watch 'src/**/*.ts' --exec tsx index.ts",
     "postinstall": "prisma generate",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:seed": "ts-node prisma/seed.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
