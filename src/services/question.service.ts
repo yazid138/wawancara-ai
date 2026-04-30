@@ -1,14 +1,5 @@
 import prisma from "@/database/prisma";
 import { QuestionType } from "@/prisma/client";
-import { createEmbedding } from "@/services/ai.service";
-import {
-  upsertVector as upsertQdrant,
-  deleteVector as deleteQdrant,
-} from "@/services/qdrant.service";
-import {
-  upsertVector as upsertPinecone,
-  deleteVector as deletePinecone,
-} from "@/services/pinecone.service";
 
 export const getAllQuestions = async () => {
   const questions = await prisma.question.findMany({
@@ -40,12 +31,9 @@ export const createQuestion = async (questionData: {
   keywords?: string[];
   type?: QuestionType;
   difficulty?: string;
-  idealAnswer?: string;
 }) => {
-  const { content, keywords, type, difficulty, idealAnswer, category } = questionData;
+  const { content, keywords, type, difficulty, category } = questionData;
   const keywordList = keywords ?? [];
-  let embedding: number[] | undefined;
-  if (idealAnswer) embedding = await createEmbedding(idealAnswer);
 
   let categoryResult = await prisma.questionCategory.findFirst({
     where: {
@@ -71,14 +59,6 @@ export const createQuestion = async (questionData: {
           id: categoryResult.id,
         }
       },
-      idealAnswer: idealAnswer
-        ? {
-            create: {
-              content: idealAnswer,
-              embedding: embedding!,
-            },
-          }
-        : undefined,
       keywords: {
         createMany: {
           data: keywordList.map((word) => ({ word })),
@@ -86,27 +66,6 @@ export const createQuestion = async (questionData: {
       },
     },
   });
-
-  if (idealAnswer && embedding) {
-    await Promise.all([
-      upsertQdrant(
-        embedding,
-        {
-          questionId: question.id,
-          content: idealAnswer,
-        },
-        "" + question.id,
-      ),
-      upsertPinecone(
-        embedding,
-        {
-          questionId: question.id,
-          content: idealAnswer,
-        },
-        "" + question.id,
-      ),
-    ]);
-  }
 
   return question;
 };
@@ -118,14 +77,12 @@ export const updateQuestion = async (
     keywords?: string[];
     type?: QuestionType;
     difficulty?: string;
-    idealAnswer?: string;
     category?: string;
   },
 ) => {
-  const { content, keywords, type, difficulty, idealAnswer, category } =
+  const { content, keywords, type, difficulty, category } =
     questionData;
   let embedding: number[] | undefined;
-  if (idealAnswer) embedding = await createEmbedding(idealAnswer);
 
   let categoryResult:
     | {
@@ -161,20 +118,6 @@ export const updateQuestion = async (
             },
           }
         : undefined,
-      idealAnswer: idealAnswer
-        ? {
-            upsert: {
-              create: {
-                content: idealAnswer,
-                embedding: embedding!,
-              },
-              update: {
-                content: idealAnswer,
-                embedding: embedding!,
-              },
-            },
-          }
-        : undefined,
       keywords: keywords
         ? {
             deleteMany: {},
@@ -185,27 +128,6 @@ export const updateQuestion = async (
         : undefined,
     },
   });
-
-  if (idealAnswer && embedding) {
-    await Promise.all([
-      upsertQdrant(
-        embedding,
-        {
-          questionId: question.id,
-          content: idealAnswer,
-        },
-        "" + question.id,
-      ),
-      upsertPinecone(
-        embedding,
-        {
-          questionId: question.id,
-          content: idealAnswer,
-        },
-        "" + question.id,
-      ),
-    ]);
-  }
 
   return question;
 };
@@ -243,15 +165,9 @@ export const deleteQuestion = async (id: number) => {
       where: { questionId: id },
     });
 
-    await tx.idealAnswer.deleteMany({
-      where: { questionId: id },
-    });
-
     const question = await tx.question.delete({
       where: { id },
     });
-
-    await Promise.all([deleteQdrant("" + id), deletePinecone("" + id)]);
 
     return question;
   });

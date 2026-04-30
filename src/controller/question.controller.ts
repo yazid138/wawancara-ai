@@ -35,10 +35,9 @@ type CreateQuestionRequest = {
   keywords?: string[];
   type?: string;
   difficulty?: string;
-  idealAnswer?: string;
 };
 export const createQuestion = async (req: Request, res: Response) => {
-  const { content, difficulty, idealAnswer, keywords, type, category } =
+  const { content, difficulty, keywords, type, category } =
     validate<CreateQuestionRequest>(
       {
         content: "string",
@@ -56,10 +55,6 @@ export const createQuestion = async (req: Request, res: Response) => {
           type: "string",
           optional: true,
         },
-        idealAnswer: {
-          type: "string",
-          optional: true,
-        },
       },
       req.body,
     );
@@ -67,7 +62,6 @@ export const createQuestion = async (req: Request, res: Response) => {
   const newQuestion = await questionService.createQuestion({
     content,
     difficulty,
-    idealAnswer,
     keywords,
     type: QuestionType[type as keyof typeof QuestionType],
     category,
@@ -84,11 +78,10 @@ type UpdateQuestionRequest = {
   keywords?: string[];
   type?: string;
   difficulty?: string;
-  idealAnswer?: string;
   category?: string;
 };
 export const updateQuestion = async (req: Request, res: Response) => {
-  const { content, keywords, type, difficulty, idealAnswer, category } =
+  const { content, keywords, type, difficulty, category } =
     validate<UpdateQuestionRequest>(
       {
         content: {
@@ -108,10 +101,6 @@ export const updateQuestion = async (req: Request, res: Response) => {
           type: "string",
           optional: true,
         },
-        idealAnswer: {
-          type: "string",
-          optional: true,
-        },
         category: {
           type: "string",
           optional: true,
@@ -124,7 +113,6 @@ export const updateQuestion = async (req: Request, res: Response) => {
     content,
     type: type ? QuestionType[type as keyof typeof QuestionType] : undefined,
     difficulty,
-    idealAnswer,
     keywords,
     category,
   });
