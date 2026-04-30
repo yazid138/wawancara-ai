@@ -16,11 +16,11 @@ Content-Type: {{Content-Type}}
     "password": "{{password}}"
 }
 
-### Create Interview
-# @name createInterview
-@interviewId = {{createInterview.response.body.data.id}}
+### Start Interview
+# @name startInterview
+@interviewId = {{startInterview.response.body.data.id}}
 
-POST {{host}}/interview
+POST {{host}}/interviews
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
@@ -31,51 +31,75 @@ Content-Type: {{Content-Type}}
 
 ### Get Questions
 # @name getQuestions
-GET {{host}}/interview/{{interviewId}}/questions
+GET {{host}}/interviews/{{interviewId}}/questions
 Authorization: Bearer {{authToken}}
 
 ### Get Current Question
 # @name current1
-GET {{host}}/interview/{{interviewId}}/current
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
 ### Submit Answer
-POST {{host}}/answers
+POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "interviewId": {{interviewId}},
-  "answer": "Saya adalah backend developer dengan pengalaman 3 tahun..."
+  "answer": "Nama saya John Doe, saya seorang software engineer dengan pengalaman 5 tahun di bidang pengembangan web. Saya memiliki keahlian dalam berbagai bahasa pemrograman seperti JavaScript, Python, dan Java. Saya juga memiliki pengalaman bekerja dengan framework seperti React, Angular, dan Django. Saya sangat antusias untuk bergabung dengan perusahaan ini karena saya percaya bahwa saya dapat memberikan kontribusi yang signifikan dengan keahlian dan pengalaman yang saya miliki."
 }
 
 ### Get Next Question
-@name next1
-GET {{host}}/interview/{{interviewId}}/next
+# @name next1
+GET {{host}}/interviews/{{interviewId}}/next
 Authorization: Bearer {{authToken}}
 
 ### Get Current Question Again
-GET {{host}}/interview/{{interviewId}}/current
+GET {{host}}/interviews/{{interviewId}}/current
 Authorization: Bearer {{authToken}}
 
 ### Submit Answer Again
-POST {{host}}/answers
+POST {{host}}/interviews/{{interviewId}}/answers
 Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "interviewId": {{interviewId}},
-  "answer": "Saya memiliki pengalaman bekerja dengan Node.js, Express, dan MongoDB..."
+  "answer": "Perusahaan ini berfokus pada pengembangan solusi teknologi inovatif untuk berbagai industri, termasuk e-commerce, keuangan, dan kesehatan. Mereka memiliki tim yang sangat berbakat dan berkomitmen untuk menciptakan produk berkualitas tinggi yang dapat memberikan dampak positif bagi pengguna. Saya sangat tertarik dengan visi perusahaan ini untuk terus berkembang dan berinovasi, serta kesempatan untuk bekerja dengan tim yang hebat dalam menciptakan solusi teknologi yang dapat mengubah cara orang bekerja dan berinteraksi dengan teknologi."
 }
 
 ### Next Question Again
-GET {{host}}/interview/{{interviewId}}/next
+GET {{host}}/interviews/{{interviewId}}/next
+Authorization: Bearer {{authToken}}
+
+### Submit Answer Again
+POST {{host}}/interviews/{{interviewId}}/answers
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "answer": "Iya saya membutuhkan waktu untuk menyesuaikan diri dengan lingkungan baru"
+}
+
+### Next Question Again
+GET {{host}}/interviews/{{interviewId}}/next
+Authorization: Bearer {{authToken}}
+
+### Submit Answer Again
+POST {{host}}/interviews/{{interviewId}}/answers
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "answer": "Saya berusaha agar bisa menyesuaikan dengan aturan yang ada"
+}
+
+### Next Question Again
+GET {{host}}/interviews/{{interviewId}}/next
 Authorization: Bearer {{authToken}}
 
 ### Finish Interview
-GET {{host}}/interview/{{interviewId}}/finish
+POST {{host}}/interviews/{{interviewId}}/finish
 Authorization: Bearer {{authToken}}
 
 ### Get Result
-GET {{host}}/interview/{{interviewId}}/result
+GET {{host}}/interviews/{{interviewId}}/result
 Authorization: Bearer {{authToken}}

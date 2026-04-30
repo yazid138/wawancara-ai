@@ -2,14 +2,16 @@ import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
 import validate from "@/utils/validation";
 import interviewService from "@/services/interview.service";
+import NotFoundException from "@/exception/NotFoundException";
+import scoringService from "@/services/scoring.service";
 
-type CreateInterviewRequest = {
+type StartInterviewRequest = {
   companyId: number;
   positionId: number;
 };
 
-export const createInterview = async (req: Request, res: Response) => {
-  const { companyId, positionId } = validate<CreateInterviewRequest>(
+export const startInterview = async (req: Request, res: Response) => {
+  const { companyId, positionId } = validate<StartInterviewRequest>(
     {
       companyId: "number",
       positionId: "number",
@@ -19,7 +21,7 @@ export const createInterview = async (req: Request, res: Response) => {
 
   const userId = req.user!.id;
 
-  const interview = await interviewService.createInterview({
+  const interview = await interviewService.startInterview({
     userId,
     companyId,
     positionId,
@@ -37,12 +39,18 @@ export const getQuestions = async (req: Request, res: Response) => {
 
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
-    return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
+    throw new NotFoundException("Interview tidak ditemukan");
   }
 
-  const questions = await interviewService.getQuestionsByPosition(
-    interview.positionId
-  );
+  const questions = await interviewService.getQuestionsOrdered();
+
+  if (!questions.length) {
+    return sendResponse(res, {
+      status: 200,
+      message: "Belum ada pertanyaan",
+      data: [],
+    });
+  }
 
   sendResponse(res, {
     status: 200,
@@ -59,11 +67,17 @@ export const getCurrent = async (req: Request, res: Response) => {
     return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
   }
 
-  const questions = await interviewService.getQuestionsByPosition(
-    interview.positionId
-  );
+  const questions = await interviewService.getQuestionsOrdered();
 
   const current = questions[interview.currentIndex];
+
+  if (!questions.length) {
+    return sendResponse(res, {
+      status: 200,
+      message: "Belum ada pertanyaan",
+      data: [],
+    });
+  }
 
   sendResponse(res, {
     status: 200,
@@ -78,9 +92,9 @@ type SubmitAnswerRequest = {
 };
 
 export const submitAnswer = async (req: Request, res: Response) => {
-  const { interviewId, answer } = validate<SubmitAnswerRequest>(
+  const interviewId = +req.params.id;
+  const { answer } = validate<{ answer: string }>(
     {
-      interviewId: "number",
       answer: "string",
     },
     req.body
@@ -93,9 +107,22 @@ export const submitAnswer = async (req: Request, res: Response) => {
     return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
   }
 
-  const questions = await interviewService.getQuestionsByPosition(
-    interview.positionId
-  );
+  if (interview.status === "FINISH") {
+    return sendResponse(res, {
+      status: 400,
+      message: "Interview sudah selesai",
+    });
+  }
+
+  const questions = await interviewService.getQuestionsOrdered();
+
+  if (!questions.length) {
+    return sendResponse(res, {
+      status: 200,
+      message: "Belum ada pertanyaan",
+      data: [],
+    });
+  }
 
   const currentQuestion = questions[interview.currentIndex];
 
@@ -106,16 +133,30 @@ export const submitAnswer = async (req: Request, res: Response) => {
     });
   }
 
-  await interviewService.createAnswer({
+  const savedAnswer = await interviewService.createAnswer({
     content: answer,
     questionId: currentQuestion.id,
     interviewId,
     userId,
   });
 
-  sendResponse(res, {
+  const category = currentQuestion.type;
+
+  if (["SOFTSKILL", "TECHNICAL"].includes(category)) {
+    const score = await scoringService.scoreAnswer(savedAnswer.id);
+
+    return sendResponse(res, {
+      status: 200,
+      message: "Jawaban & scoring berhasil",
+      data: { answer: savedAnswer, score },
+    });
+  }
+
+  // selain itu → no scoring
+  return sendResponse(res, {
     status: 200,
-    message: "Jawaban berhasil disimpan",
+    message: "Jawaban berhasil (tanpa scoring)",
+    data: { answer: savedAnswer },
   });
 };
 
@@ -127,13 +168,12 @@ export const getNext = async (req: Request, res: Response) => {
     return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
   }
 
-  const questions = await interviewService.getQuestionsByPosition(
-    interview.positionId
-  );
-
+  const questions = await interviewService.getQuestionsOrdered();
   const nextIndex = interview.currentIndex + 1;
 
   if (nextIndex >= questions.length) {
+    await interviewService.finishInterview(id);
+
     return sendResponse(res, {
       status: 200,
       message: "Interview selesai",
@@ -141,11 +181,13 @@ export const getNext = async (req: Request, res: Response) => {
     });
   }
 
-  await interviewService.incrementIndex(id, nextIndex);
+  await interviewService.updateInterview(id, {
+    currentIndex: nextIndex,
+  });
 
-  sendResponse(res, {
+  return sendResponse(res, {
     status: 200,
-    message: "Pertanyaan berikutnya",
+    message: "Next question",
     data: questions[nextIndex],
   });
 };
@@ -186,7 +228,7 @@ export const getResult = async (req: Request, res: Response) => {
 };
 
 export default {
-  createInterview,
+  startInterview,
   getQuestions,
   getCurrent,
   submitAnswer,

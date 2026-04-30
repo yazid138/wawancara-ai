@@ -15,3 +15,28 @@ Content-Type: {{Content-Type}}
     "username": "{{username}}",
     "password": "{{password}}"
 }
+
+### Create Question
+# @name createQuestion
+@questionId = {{createQuestion.response.body.data.id}}
+
+POST {{host}}/questions
+Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "content": "Jelaskan apa itu REST API dan bagaimana cara kerjanya?",
+  "category": "HARDSKILL",
+  "type": "TECHNICAL"
+}
+
+### Get All Questions
+# @name getAllQuestions
+GET {{host}}/questions
+Authorization: Bearer {{authToken}}
+
+
+### Get Question By Id
+# @name getQuestionById
+GET {{host}}/questions/{{questionId}}
+Authorization: Bearer {{authToken}} 
