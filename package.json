@@ -1,10 +1,11 @@
 {
   "name": "wawancara",
   "module": "index.ts",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "start": "tsx index.ts",
-    "dev": "nodemon --watch 'src/**/*.ts' --exec tsx index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec tsx index.ts",
     "postinstall": "prisma generate",
     "format": "prettier --write .",
     "db:seed": "ts-node prisma/seed.ts"
