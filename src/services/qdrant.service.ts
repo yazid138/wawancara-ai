@@ -9,7 +9,7 @@ const client = new QdrantClient({
   apiKey: config.qdrantApiKey,
 });
 
-export const upsertVector = async (vector: number[], payload: Record<string, any>, id?: string) => {
+export const upsertVector = async (vector: number[], payload: Record<string, any>, id?: string | number) => {
   await client.upsert(COLLECTION_NAME, {
     points: [
       {
@@ -33,7 +33,7 @@ export const getMyCollection = async () => {
   return await client.getCollection(COLLECTION_NAME);
 };
 
-export const deleteVector = async (id: string) => {
+export const deleteVector = async (id: string | number) => {
   await client.delete(COLLECTION_NAME, {
     points: [id],
   });

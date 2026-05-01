@@ -102,6 +102,22 @@ Output berformat JSON dengan format berikut:
   return JSON.parse(output_text);
 };
 
+export const generateAnswerCategories = async (pertanyaan: string) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Tolong buatkan beberapa kategori penilaian untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dengan format [{"label": "kategori 1", "score": 0-5}, {"label": "kategori 2", "score": 0-5}]`,
+  });
+  return JSON.parse(output_text);
+};
+
+export const generateIdealAnswer = async (pertanyaan: string) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Tolong buatkan jawaban ideal untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
+  });
+  return output_text;
+}
+
 export default {
   createEmbedding,
   generateMessage,
@@ -111,4 +127,6 @@ export default {
   generateQuestion,
   generateAIScore,
   generateAnswerAI,
+  generateAnswerCategories,
+  generateIdealAnswer,
 };

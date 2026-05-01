@@ -10,7 +10,6 @@ export const upsertVector = async (vector: number[], metadata: RecordMetadata, i
   await pineconeIndex.upsert([
     {
       id: id || uuidv4(),
-      // id: 'ed02ea29-b2ff-4c4e-9ade-5def036311c0',
       values: vector,
       metadata,
     },

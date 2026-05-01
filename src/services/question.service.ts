@@ -222,7 +222,7 @@ export const addIdealAnswer = async (
         answer: idealAnswer,
         type: "ideal_answer",
       },
-      `ideal_${idealAnswerResult.id}`,
+      idealAnswerResult.id,
     ),
   ]);
 
@@ -246,7 +246,7 @@ export const removeIdealAnswer = async (
   // Delete vectors from Pinecone and Qdrant
   await Promise.all([
     pineconeService.deleteVector(`ideal_${idealAnswer.id}`),
-    qdrantService.deleteVector(`ideal_${idealAnswer.id}`),
+    qdrantService.deleteVector(idealAnswer.id),
   ]);
 
   // Delete from database

@@ -1,6 +1,9 @@
 import { PrismaClient, Role, QuestionType } from "@/prisma/client";
 import bcrypt from "bcrypt";
 import { PrismaPg } from "@prisma/adapter-pg";
+import aiService from "@/services/ai.service";
+import pineconeService from "@/services/pinecone.service";
+import qdrantService from "@/services/qdrant.service";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -25,11 +28,7 @@ const main = async () => {
 
   // COMPANY & POSITION
   await prisma.company.createMany({
-    data: [
-      { name: "Tokopedia" },
-      { name: "Gojek" },
-      { name: "Shopee" },
-    ],
+    data: [{ name: "Tokopedia" }, { name: "Gojek" }, { name: "Shopee" }],
     skipDuplicates: true,
   });
 
@@ -87,31 +86,59 @@ const main = async () => {
     });
 
     // keywords
+    const keywords = await aiService.generateKeyword(q.content);
     await prisma.keyword.createMany({
-      data: q.keywords.map((word: string) => ({
+      data: keywords.map((word: string) => ({
         questionId: question.id,
         word,
       })),
     });
 
     // ideal answer
-    await prisma.idealAnswer.create({
-      data: {
-        questionId: question.id,
-        content: q.idealAnswer,
-        embedding: {},
-      },
-    });
+    await Promise.all(
+      Array.from({ length: 3 }).map(async () => {
+        const idealAnswer = await aiService.generateIdealAnswer(q.content);
+        const embedding = await aiService.createEmbedding(idealAnswer);
+        const idealAnswerRecord = await prisma.idealAnswer.create({
+          data: {
+            questionId: question.id,
+            content: idealAnswer,
+            embedding,
+          },
+        });
+        await Promise.all([
+          pineconeService.upsertVector(
+            embedding,
+            {
+              questionId: question.id,
+              answer: idealAnswer,
+              type: "ideal_answer",
+            },
+            `ideal_${idealAnswerRecord.id}`,
+          ),
+          qdrantService.upsertVector(
+            embedding,
+            {
+              questionId: question.id,
+              answer: idealAnswer,
+              type: "ideal_answer",
+            },
+            idealAnswerRecord.id,
+          ),
+        ]);
+      }),
+    );
 
     // SOFTSKILL CATEGORY (IMPORTANT)
     if (q.type === QuestionType.SOFTSKILL) {
+      const answerCategories: { label: string; score: number }[] =
+        await aiService.generateAnswerCategories(q.content);
       await prisma.answerCategory.createMany({
-        data: [
-          { questionId: question.id, label: "komunikasi", score: 4 },
-          { questionId: question.id, label: "kerjasama", score: 5 },
-          { questionId: question.id, label: "adaptasi", score: 3 },
-          { questionId: question.id, label: "problem solving", score: 5 },
-        ],
+        data: answerCategories.map((cat) => ({
+          questionId: question.id,
+          label: cat.label,
+          score: cat.score,
+        })),
       });
     }
   };
@@ -124,16 +151,12 @@ const main = async () => {
       type: QuestionType.INTRO,
       difficulty: "EASY",
       category: "Personal",
-      keywords: ["diri", "pengalaman"],
-      idealAnswer: "Menjelaskan latar belakang dan skill utama.",
     },
     {
       content: "Apa yang membuat Anda memilih karir ini?",
       type: QuestionType.INTRO,
       difficulty: "EASY",
       category: "Personal",
-      keywords: ["motivasi"],
-      idealAnswer: "Menjelaskan alasan memilih bidang ini.",
     },
 
     // GENERAL
@@ -142,16 +165,12 @@ const main = async () => {
       type: QuestionType.GENERAL,
       difficulty: "EASY",
       category: "Motivation",
-      keywords: ["perusahaan"],
-      idealAnswer: "Menunjukkan ketertarikan terhadap perusahaan.",
     },
     {
       content: "Apa tujuan karir Anda?",
       type: QuestionType.GENERAL,
       difficulty: "MEDIUM",
       category: "Motivation",
-      keywords: ["karir"],
-      idealAnswer: "Menjelaskan rencana karir.",
     },
 
     // SOFTSKILL
@@ -160,48 +179,36 @@ const main = async () => {
       type: QuestionType.SOFTSKILL,
       difficulty: "MEDIUM",
       category: "Teamwork",
-      keywords: ["tim"],
-      idealAnswer: "Menjelaskan kontribusi dalam tim.",
     },
     {
       content: "Bagaimana menangani konflik?",
       type: QuestionType.SOFTSKILL,
       difficulty: "MEDIUM",
       category: "Teamwork",
-      keywords: ["konflik"],
-      idealAnswer: "Menggunakan komunikasi.",
     },
     {
       content: "Bagaimana mengatur waktu?",
       type: QuestionType.SOFTSKILL,
       difficulty: "MEDIUM",
       category: "Time Management",
-      keywords: ["waktu"],
-      idealAnswer: "Mengatur prioritas.",
     },
     {
       content: "Ceritakan saat harus adaptasi cepat.",
       type: QuestionType.SOFTSKILL,
       difficulty: "MEDIUM",
       category: "Adaptability",
-      keywords: ["adaptasi"],
-      idealAnswer: "Menunjukkan fleksibilitas.",
     },
     {
       content: "Bagaimana menghadapi tekanan?",
       type: QuestionType.SOFTSKILL,
       difficulty: "MEDIUM",
       category: "Stress Management",
-      keywords: ["stress"],
-      idealAnswer: "Tetap produktif.",
     },
     {
       content: "Ceritakan kegagalan Anda.",
       type: QuestionType.SOFTSKILL,
       difficulty: "HARD",
       category: "Personality",
-      keywords: ["gagal"],
-      idealAnswer: "Belajar dari kesalahan.",
     },
 
     // TECHNICAL
@@ -210,47 +217,37 @@ const main = async () => {
       type: QuestionType.TECHNICAL,
       difficulty: "MEDIUM",
       category: "Security",
-      keywords: ["jwt"],
-      idealAnswer: "Token autentikasi.",
     },
     {
       content: "Apa itu indexing?",
       type: QuestionType.TECHNICAL,
       difficulty: "MEDIUM",
       category: "Database",
-      keywords: ["index"],
-      idealAnswer: "Mempercepat query.",
     },
     {
       content: "Jelaskan REST API.",
       type: QuestionType.TECHNICAL,
       difficulty: "MEDIUM",
       category: "Backend",
-      keywords: ["rest"],
-      idealAnswer: "API berbasis HTTP.",
     },
     {
       content: "Bagaimana optimasi database?",
       type: QuestionType.TECHNICAL,
       difficulty: "HARD",
       category: "Database",
-      keywords: ["query"],
-      idealAnswer: "Indexing dan tuning.",
     },
-    { content: "Jelaskan konsep MVC.", 
-      type: QuestionType.TECHNICAL, 
-      difficulty: "MEDIUM", 
-      category: "Backend", 
-      keywords: ["MVC"], 
-      idealAnswer: "Memisahkan model, view, controller." 
+    {
+      content: "Jelaskan konsep MVC.",
+      type: QuestionType.TECHNICAL,
+      difficulty: "MEDIUM",
+      category: "Backend",
     },
-    { content: "Bagaimana mengamankan API?", 
-      type: QuestionType.TECHNICAL, 
-      difficulty: "HARD", 
-      category: "Security", 
-      keywords: ["auth", "security"], 
-      idealAnswer: "Menggunakan auth, validation, rate limit." 
-    }
+    {
+      content: "Bagaimana mengamankan API?",
+      type: QuestionType.TECHNICAL,
+      difficulty: "HARD",
+      category: "Security",
+    },
   ];
 
   for (const q of questions) {
