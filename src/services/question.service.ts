@@ -85,8 +85,7 @@ export const updateQuestion = async (
   },
 ) => {
   const { content, keywords, type, difficulty, category } = questionData;
-  let embedding: number[] | undefined;
-
+  
   let categoryResult: {
     id: number;
   } | null = null;
