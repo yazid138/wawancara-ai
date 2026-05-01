@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias -f",
     "start": "node dist/index.js",
     "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec tsx index.ts",
     "postinstall": "prisma generate",
@@ -25,11 +25,13 @@
     "prettier": "^3.6.2",
     "prisma": "7",
     "ts-node": "^10.9.2",
+    "tsc": "^2.0.4",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.2",
@@ -49,7 +51,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "uuid": "^13.0.0",
+    "uuid": "^14.0.0",
     "winston": "^3.18.3"
   }
 }

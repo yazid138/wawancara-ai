@@ -17,7 +17,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   const userAnswer = answer.content;
   const keywords = answer.question.keywords;
-  const ideal = answer.question.idealAnswer?.content || "";
+  const ideal = answer.question.idealAnswer?.[0]?.content || "";
 
   let keywordScore = 0;
   let totalWeight = 0;
