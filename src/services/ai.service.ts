@@ -105,7 +105,17 @@ Output berformat JSON dengan format berikut:
 export const generateAnswerCategories = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan beberapa kategori penilaian untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dengan format [{"label": "kategori 1", "score": 0-5}, {"label": "kategori 2", "score": 0-5}]`,
+    input: `Tolong buatkan beberapa kategori penilaian untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\n
+    Contoh: {
+      "question": "Bagaimana anda menyesuaikan diri dengan aturan yang berlaku di tempat magang?",
+      "options": [
+        { "label": "Mudah beradaptasi", "score": 4 },
+        { "label": "Bisa beradaptasi", "score": 3 },
+        { "label": "Sulit beradaptasi", "score": 2 },
+        { "label": "Tidak mau beradaptasi", "score": 1 }
+      ]
+    }
+    \n\nKembalinkan jawaban dengan format [{"label": "kategori 1", "score": 0-5}, {"label": "kategori 2", "score": 0-5}]`,
   });
   return JSON.parse(output_text);
 };
@@ -113,7 +123,7 @@ export const generateAnswerCategories = async (pertanyaan: string) => {
 export const generateIdealAnswer = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan jawaban ideal untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
+    input: `Anda adalah mahasiswa yang akan menjawab pertanyaan wawancara kerja. Tolong buatkan jawaban ideal untuk pertanyaan wawancara kerja berikut. jawab dengan singkat dan jelas.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
   });
   return output_text;
 }
