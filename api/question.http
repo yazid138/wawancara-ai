@@ -25,7 +25,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "content": "Jelaskan apa itu REST API dan bagaimana cara kerjanya?",
+  "content": "Framework JavaScript apa yang paling kamu kuasai dan kenapa?",
   "category": "HARDSKILL",
   "type": "TECHNICAL"
 }
