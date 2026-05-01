@@ -7,7 +7,7 @@
     "dev": "nodemon --watch 'src/**/*.ts' --exec tsx index.ts",
     "postinstall": "prisma generate",
     "format": "prettier --write .",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -24,6 +24,7 @@
     "prettier": "^3.6.2",
     "prisma": "7",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {

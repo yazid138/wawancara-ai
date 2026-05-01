@@ -99,7 +99,6 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const categories = answer.question.categories;
 
-  // 🔥 kalau tidak ada category → skip
   if (!categories.length) {
     return null;
   }
@@ -110,7 +109,6 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     userAnswer.includes(cat.label.toLowerCase())
   );
 
-  // fallback ke category pertama
   if (!bestCategory) {
     bestCategory = categories[0];
   }

@@ -40,7 +40,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Perkenalkan saya adalah backend developer dengan pengalaman 3 tahun."
+  "answer": "Saya memilih karir ini karena saya tertarik dengan dunia teknologi dan ingin terus belajar serta berkembang di bidang ini. Saya juga melihat banyak peluang untuk berkontribusi dalam pengembangan aplikasi yang bermanfaat bagi banyak orang."
 }
 
 ### Get Current Question (GENERAL)
@@ -54,7 +54,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Saya tertarik dengan perusahaan ini karena fokus pada inovasi teknologi..."
+  "answer": "Saya ingin meningkatkan skill teknikal saya dan belajar lebih banyak tentang backend development."
 }
 
 ### Get Current Question (SOFTSKILL)
@@ -68,7 +68,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Saya cukup cepat dalam menyesuaikan diri dengan rekan kerja"
+  "answer": "Saya pernah gagal menyelesaikan sebuah proyek karena kurangnya komunikasi yang efektif dengan tim. Dari pengalaman itu, saya belajar pentingnya komunikasi yang jelas dan rutin dengan anggota tim untuk memastikan semua orang berada pada halaman yang sama dan dapat bekerja sama dengan baik."
 }
 
 ### Get Current Question
@@ -81,14 +81,23 @@ Authorization: Bearer {{authToken}}
 Content-Type: {{Content-Type}}
 
 {
-  "answer": "Ya, saya pernah menggunakan JavaScript untuk membangun REST API dengan Node.js dan Express."
+  "answer": "Indexing adalah proses mengorganisir data dalam struktur yang memungkinkan pencarian dan pengambilan data yang cepat. Dalam konteks database, indexing membantu meningkatkan performa query dengan memungkinkan database untuk menemukan data dengan lebih efisien."
 }
 
 ### (ULANGI SAMPAI SELESAI - TOTAL 10 SOAL)
 
 ### Get Current (Should be NULL if finished)
-GET {{host}}/interviews/{{interviewId}}/current
+# GET {{host}}/interviews/{{interviewId}}/current
+# Authorization: Bearer {{authToken}}
+
+### Finish Interview
+POST {{host}}/interviews/{{interviewId}}/finish
 Authorization: Bearer {{authToken}}
+Content-Type: {{Content-Type}}
+
+{
+  "feedback": "Terima kasih atas partisipasinya dalam wawancara ini. Kami akan segera menghubungi Anda untuk memberikan hasilnya."
+}
 
 ### Get Result
 GET {{host}}/interviews/{{interviewId}}/result

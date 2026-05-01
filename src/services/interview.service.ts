@@ -53,11 +53,18 @@ const createAnswer = (data: {
   return prisma.answer.create({ data });
 };
 
+const TOTAL_QUESTIONS = 10;
+
 const getNextQuestion = async (interviewId: number) => {
   const answers = await prisma.answer.findMany({
     where: { interviewId },
     include: { question: true },
   });
+
+  // HARD LIMIT
+  if (answers.length >= TOTAL_QUESTIONS) {
+    return null;
+  }
 
   const countByType: Record<QuestionType, number> = {
     INTRO: 0,
@@ -86,18 +93,7 @@ const getNextQuestion = async (interviewId: number) => {
       if (candidates.length > 0) {
         return candidates[Math.floor(Math.random() * candidates.length)];
       }
-
     }
-  }
-
-  const fallback = await prisma.question.findMany({
-    where: {
-      id: { notIn: usedQuestionIds },
-    },
-  });
-
-  if (fallback.length > 0) {
-    return fallback[Math.floor(Math.random() * fallback.length)];
   }
 
   return null;
