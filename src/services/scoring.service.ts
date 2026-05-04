@@ -1,4 +1,23 @@
 import prisma from "@/database/prisma";
+import {
+  classifySoftSkillAnswer,
+  createEmbedding,
+  generateTechnicalRubricScore,
+} from "@/services/ai.service";
+import qdrantService from "@/services/qdrant.service";
+
+const normalizeText = (text: string) =>
+  text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ");
+
+const hasWholeWord = (text: string, keyword: string) => {
+  const escapedKeyword = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!escapedKeyword) {
+    return false;
+  }
+
+  const pattern = new RegExp(`(^|\\s)${escapedKeyword}(?=\\s|$)`, "u");
+  return pattern.test(text);
+};
 
 const scoreTechnicalAnswer = async (answerId: number) => {
   const answer = await prisma.answer.findUnique({
@@ -17,32 +36,85 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   const userAnswer = answer.content;
   const keywords = answer.question.keywords;
-  const ideal = answer.question.idealAnswer?.[0]?.content || "";
+  const questionId = answer.question.id;
+  const questionText = answer.question.content;
+  const normalizedAnswer = normalizeText(userAnswer);
+  const coreKeywords = [...keywords]
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, Math.min(5, keywords.length));
 
-  let keywordScore = 0;
-  let totalWeight = 0;
+  let matchedWeight = 0;
+  let totalCoreWeight = 0;
+  let matchedCount = 0;
 
-  for (const k of keywords) {
-    totalWeight += k.weight;
-    if (userAnswer.toLowerCase().includes(k.word.toLowerCase())) {
-      keywordScore += k.weight;
+  for (const k of coreKeywords) {
+    totalCoreWeight += k.weight;
+    if (hasWholeWord(normalizedAnswer, normalizeText(k.word))) {
+      matchedWeight += k.weight;
+      matchedCount += 1;
     }
   }
 
-  keywordScore = totalWeight ? keywordScore / totalWeight : 0;
+  const weightCoverage = totalCoreWeight ? matchedWeight / totalCoreWeight : 0;
+  const countCoverage = coreKeywords.length ? matchedCount / coreKeywords.length : 0;
+  const keywordScore = Math.min(1, weightCoverage * 0.7 + countCoverage * 0.3);
 
-  const similarityScore = userAnswer && ideal
-    ? Math.min(userAnswer.length / ideal.length, 1)
-    : 0;
+  let similarityScore = 0;
 
-  const rubricScore = Math.min(userAnswer.length / 100, 1);
+  if (userAnswer) {
+    const userEmbedding = await createEmbedding(userAnswer);
+    const matches = await qdrantService.searchSimilarVectors(userEmbedding, 1, {
+      must: [
+        {
+          key: "questionId",
+          match: { value: questionId },
+        },
+        {
+          key: "type",
+          match: { value: "ideal_answer" },
+        },
+      ],
+    });
+
+    similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
+  }
+
+  const aiRubric = await generateTechnicalRubricScore(questionText, userAnswer);
+  const rubricScore = Math.max(
+    0,
+    Math.min(
+      ((aiRubric.pemahaman ?? 0) + (aiRubric.teknis ?? 0) + (aiRubric.logika ?? 0) + (aiRubric.komunikasi ?? 0)) / 20,
+      1,
+    ),
+  );
+
+  const rubricConfidence = Math.max(0, Math.min(Number(aiRubric.confidence ?? 0), 1));
+  const keywordCoverage = keywordScore;
+  const similarityConfidence = similarityScore;
 
   const finalScore =
     rubricScore * 0.4 +
     similarityScore * 0.3 +
     keywordScore * 0.3;
 
-  const confidenceScore = (rubricScore + similarityScore + keywordScore) / 3;
+  const evidenceAlignment =
+    rubricScore * 0.5 + similarityConfidence * 0.25 + keywordCoverage * 0.25;
+
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      rubricConfidence * 0.45 + evidenceAlignment * 0.45 + (finalScore >= 0.5 ? 0.1 : 0),
+      1,
+    ),
+  );
+
+  const reasonParts = [
+    `Rubrik AI: pemahaman ${(aiRubric.pemahaman ?? 0)}/5, teknis ${(aiRubric.teknis ?? 0)}/5, logika ${(aiRubric.logika ?? 0)}/5, komunikasi ${(aiRubric.komunikasi ?? 0)}/5`,
+    `Confidence rubrik AI: ${Math.round(rubricConfidence * 100)}%`,
+    `Similarity vector: ${Math.round(similarityScore * 100)}%`,
+    `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
+    aiRubric.alasan ? `Alasan AI: ${aiRubric.alasan}` : null,
+  ].filter(Boolean);
 
   const feedback =
     finalScore > 0.7
@@ -60,6 +132,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      reason: reasonParts.join(" | "),
       breakdown: {
         rubricScore,
         similarityScore,
@@ -74,6 +147,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      reason: reasonParts.join(" | "),
       breakdown: {
         rubricScore,
         similarityScore,
@@ -103,15 +177,44 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     return null;
   }
 
-  const userAnswer = answer.content.toLowerCase();
-
-  let bestCategory = categories.find((cat) =>
-    userAnswer.includes(cat.label.toLowerCase())
+  const classification = await classifySoftSkillAnswer(
+    answer.question.content,
+    answer.content,
+    categories.map((category) => ({
+      label: category.label,
+      score: category.score,
+    })),
   );
 
-  if (!bestCategory) {
-    bestCategory = categories[0];
-  }
+  const bestCategory =
+    categories.find(
+      (category) =>
+        category.label.toLowerCase() ===
+        String(classification?.label || "").toLowerCase(),
+    ) ?? categories[0];
+
+  const maxCategoryScore = Math.max(...categories.map((category) => category.score), 1);
+  const categoryStrength = Math.max(0, Math.min(bestCategory.score / maxCategoryScore, 1));
+  const aiConfidence = Math.max(0, Math.min(Number(classification?.confidence ?? 0), 1));
+  const exactLabelMatch =
+    bestCategory.label.toLowerCase() ===
+    String(classification?.label || "").toLowerCase();
+
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      aiConfidence * 0.6 + categoryStrength * 0.3 + (exactLabelMatch ? 0.1 : 0),
+      1,
+    ),
+  );
+
+  const reasonParts = [
+    `Kategori terpilih: ${bestCategory.label}`,
+    `Bobot kategori: ${bestCategory.score}`,
+    `Keyakinan AI: ${Math.round(aiConfidence * 100)}%`,
+    classification?.alasan ? `Alasan AI: ${classification.alasan}` : null,
+    exactLabelMatch ? "Label cocok persis dengan hasil klasifikasi" : "Label diambil dari kategori terdekat yang tersedia",
+  ].filter(Boolean);
 
   return prisma.scoreSoftSkill.upsert({
     where: { answerId },
@@ -119,16 +222,16 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       categoryId: bestCategory.id,
       categoryLabel: bestCategory.label,
       finalScore: bestCategory.score,
-      confidenceScore: 0.7,
-      reason: "Matched by keyword",
+      confidenceScore,
+      reason: reasonParts.join(" | "),
     },
     create: {
       answerId,
       categoryId: bestCategory.id,
       categoryLabel: bestCategory.label,
       finalScore: bestCategory.score,
-      confidenceScore: 0.7,
-      reason: "Matched by keyword",
+      confidenceScore,
+      reason: reasonParts.join(" | "),
     },
   });
 };

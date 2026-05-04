@@ -21,10 +21,15 @@ export const upsertVector = async (vector: number[], payload: Record<string, any
   });
 };
 
-export const searchSimilarVectors = async (vector: number[], topK: number) => {
+export const searchSimilarVectors = async (
+  vector: number[],
+  topK: number,
+  filter?: Record<string, any>,
+) => {
   const searchResult = await client.search(COLLECTION_NAME, {
     vector,
     limit: topK,
+    filter,
   });
   return searchResult;
 };

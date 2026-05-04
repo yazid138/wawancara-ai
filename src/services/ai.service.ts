@@ -30,7 +30,18 @@ export const validateInterviewInput = async (
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong periksa apakah jawaban berikut sesuai dengan pertanyaan yang diajukan.\n\nPertanyaan: ${pertanyaan}\n\nJawaban: ${jawaban}\n\nKembalinkan jawaban dengan format {"valid": true atau false, "alasan": "alasan jika tidak valid"}.`,
+    input: `Role:
+Anda adalah evaluator jawaban interview yang menilai kesesuaian antara pertanyaan dan jawaban.
+
+Task:
+Periksa apakah jawaban relevan, sopan, dan benar-benar menjawab pertanyaan.
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+
+Format:
+Kembalikan hanya JSON dengan format {"valid": true/false, "alasan": "alasan singkat jika tidak valid"}.`,
   });
   return output_text;
 };
@@ -38,7 +49,17 @@ export const validateInterviewInput = async (
 export const generateMinLength = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong periksa berapa panjang minimal jawaban yang sesuai untuk pertanyaan berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bilangan integer.`,
+    input: `Role:
+Anda membantu menentukan standar minimum panjang jawaban interview.
+
+Task:
+Tentukan estimasi panjang minimal jawaban yang masih memadai untuk menjawab pertanyaan.
+
+Data:
+Pertanyaan: ${pertanyaan}
+
+Format:
+Kembalikan hanya bilangan integer.`,
   });
   return +output_text;
 };
@@ -46,7 +67,17 @@ export const generateMinLength = async (pertanyaan: string) => {
 export const generateKeyword = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan beberapa kata kunci yang relevan agar nantinya digunakan untuk kesesuaian jawaban untuk pertanyaan berikut.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dengan format ["kata kunci 1", "kata kunci 2"]`,
+    input: `Role:
+Anda menyusun kata kunci untuk mengevaluasi kualitas jawaban interview.
+
+Task:
+Buat beberapa kata kunci yang spesifik, relevan, dan benar-benar mencerminkan inti jawaban yang baik.
+
+Data:
+Pertanyaan: ${pertanyaan}
+
+Format:
+Kembalikan hanya JSON array string, misalnya ["kata kunci 1", "kata kunci 2"].`,
   });
   return JSON.parse(output_text);
 };
@@ -54,7 +85,17 @@ export const generateKeyword = async (pertanyaan: string) => {
 export const generateQuestion = async () => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan satu pertanyaan yang relevan untuk wawancara kerja di bidang teknologi informasi.\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
+    input: `Role:
+Anda adalah pembuat pertanyaan interview untuk bidang teknologi informasi.
+
+Task:
+Buat satu pertanyaan yang natural, relevan, dan berguna untuk menilai kandidat.
+
+Data:
+Gunakan gaya pertanyaan interview yang singkat dan jelas.
+
+Format:
+Kembalikan hanya satu pertanyaan dalam teks biasa.`,
   });
   return output_text;
 };
@@ -65,7 +106,18 @@ export const generateAnswerAI = async (
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan jawaban yang relevan untuk pertanyaan berikut dengan memasukkan beberapa kata kunci berikut.\n\nPertanyaan: ${pertanyaan}\n\nKata Kunci: ${keyword.join(", ")}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
+    input: `Role:
+Anda adalah kandidat interview yang harus menjawab secara profesional dan natural.
+
+Task:
+Buat jawaban yang relevan, ringkas, dan menyatu secara wajar dengan kata kunci yang tersedia.
+
+Data:
+Pertanyaan: ${pertanyaan}
+Kata Kunci: ${keyword.join(", ")}
+
+Format:
+Kembalikan hanya jawaban dalam teks biasa tanpa daftar kata kunci atau penjelasan tambahan.`,
   });
   return output_text;
 };
@@ -73,49 +125,95 @@ export const generateAnswerAI = async (
 export const generateAIScore = async (pertanyaan: string, jawaban: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Nilai jawaban mahasiswa berdasarkan rubrik berikut:
-- Pemahaman Konsep (0-5)
-- Logika Berpikir (0-5)
-- Problem Solving (0-5)
-- Komunikasi Teknis (0-5)
+    input: `Role:
+Anda adalah penilai jawaban interview teknis.
 
-Aturan:
-- Abaikan panjang jawaban
-- Jangan beri nilai tinggi jika konsep dangkal
-- Berikan alasan singkat
+Task:
+Nilai jawaban berdasarkan rubrik Pemahaman Konsep, Logika Berpikir, Problem Solving, dan Komunikasi Teknis.
 
-Jawaban mahasiswa:
-${jawaban}
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
 
-Pertanyaan:
-${pertanyaan}
-
-Output berformat JSON dengan format berikut:
-{
-  pemahaman: nilai,
-  logika: nilai,
-  problem_solving: nilai,
-  komunikasi: nilai,
-  alasan: "alasan singkat"
-}`,
+Format:
+Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "logika": 0-5, "problem_solving": 0-5, "komunikasi": 0-5, "alasan": "singkat"}.`,
   });
+  return JSON.parse(output_text);
+};
+
+export const generateTechnicalRubricScore = async (
+  pertanyaan: string,
+  jawaban: string,
+) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Role:
+Anda adalah penilai jawaban interview teknis dengan fokus pada kualitas isi.
+
+Task:
+Nilai jawaban menggunakan rubrik Pemahaman Konsep, Ketepatan Teknis, Logika Berpikir, dan Komunikasi Jawaban.
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+
+Format:
+Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "teknis": 0-5, "logika": 0-5, "komunikasi": 0-5, "confidence": 0-1, "alasan": "singkat"}.`,
+  });
+
+  return JSON.parse(output_text);
+};
+
+export const classifySoftSkillAnswer = async (
+  pertanyaan: string,
+  jawaban: string,
+  categories: Array<{ label: string; score: number }>,
+) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Role:
+Anda adalah classifier jawaban soft skill untuk interview.
+
+Task:
+Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+Kategori tersedia:
+${categories
+  .map((category, index) => `${index + 1}. ${category.label} (bobot: ${category.score})`)
+  .join("\n")}
+
+Format:
+Kembalikan hanya JSON dengan format {"label": "kategori", "confidence": 0-1, "alasan": "singkat"}.
+Pastikan label yang dikembalikan persis cocok dengan salah satu kategori yang tersedia.`,
+  });
+
   return JSON.parse(output_text);
 };
 
 export const generateAnswerCategories = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Tolong buatkan beberapa kategori penilaian untuk pertanyaan wawancara kerja berikut.\n\nPertanyaan: ${pertanyaan}\n\n
-    Contoh: {
-      "question": "Bagaimana anda menyesuaikan diri dengan aturan yang berlaku di tempat magang?",
-      "options": [
-        { "label": "Mudah beradaptasi", "score": 4 },
-        { "label": "Bisa beradaptasi", "score": 3 },
-        { "label": "Sulit beradaptasi", "score": 2 },
-        { "label": "Tidak mau beradaptasi", "score": 1 }
-      ]
-    }
-    \n\nKembalinkan jawaban dengan format [{"label": "kategori 1", "score": 0-5}, {"label": "kategori 2", "score": 0-5}]`,
+    input: `Role:
+Anda adalah perancang kategori penilaian untuk pertanyaan interview soft skill.
+
+Task:
+Buat beberapa kategori jawaban yang realistis, berurutan, dan memiliki bobot yang masuk akal.
+
+Data:
+Pertanyaan: ${pertanyaan}
+Contoh kategori yang baik:
+[
+  { "label": "Mudah beradaptasi", "score": 4 },
+  { "label": "Bisa beradaptasi", "score": 3 },
+  { "label": "Sulit beradaptasi", "score": 2 },
+  { "label": "Tidak mau beradaptasi", "score": 1 }
+]
+
+Format:
+Kembalikan hanya JSON array dengan format [{"label": "kategori", "score": 0-5}].`,
   });
   return JSON.parse(output_text);
 };
@@ -123,7 +221,17 @@ export const generateAnswerCategories = async (pertanyaan: string) => {
 export const generateIdealAnswer = async (pertanyaan: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Anda adalah mahasiswa yang akan menjawab pertanyaan wawancara kerja. Tolong buatkan jawaban ideal untuk pertanyaan wawancara kerja berikut. jawab dengan singkat dan jelas.\n\nPertanyaan: ${pertanyaan}\n\nKembalinkan jawaban dalam bentuk teks biasa.`,
+    input: `Role:
+Anda adalah mahasiswa yang sedang menjawab pertanyaan interview kerja.
+
+Task:
+Buat jawaban ideal yang singkat, jelas, natural, dan meyakinkan.
+
+Data:
+Pertanyaan: ${pertanyaan}
+
+Format:
+Kembalikan hanya jawaban dalam teks biasa tanpa penjelasan tambahan.`,
   });
   return output_text;
 }
@@ -136,6 +244,8 @@ export default {
   generateKeyword,
   generateQuestion,
   generateAIScore,
+  generateTechnicalRubricScore,
+  classifySoftSkillAnswer,
   generateAnswerAI,
   generateAnswerCategories,
   generateIdealAnswer,
