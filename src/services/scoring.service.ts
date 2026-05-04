@@ -6,6 +6,24 @@ import {
 } from "@/services/ai.service";
 import qdrantService from "@/services/qdrant.service";
 
+const LOW_CONFIDENCE_THRESHOLD = 0.65;
+
+const clampConfidence = (value: unknown) => {
+  const confidence = Number(value ?? 0);
+  if (Number.isNaN(confidence)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(confidence, 1));
+};
+
+const pickBetterResult = <T extends { confidence?: number }>(current: T, next: T) => {
+  const currentConfidence = clampConfidence(current.confidence);
+  const nextConfidence = clampConfidence(next.confidence);
+
+  return nextConfidence > currentConfidence ? next : current;
+};
+
 const normalizeText = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ");
 
@@ -79,7 +97,18 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
   }
 
-  const aiRubric = await generateTechnicalRubricScore(questionText, userAnswer);
+  const firstRubric = await generateTechnicalRubricScore(questionText, userAnswer);
+  const aiRubric =
+    clampConfidence(firstRubric.confidence) < LOW_CONFIDENCE_THRESHOLD
+      ? pickBetterResult(
+          firstRubric,
+          await generateTechnicalRubricScore(
+            questionText,
+            userAnswer,
+            "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.",
+          ),
+        )
+      : firstRubric;
   const rubricScore = Math.max(
     0,
     Math.min(
@@ -88,7 +117,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     ),
   );
 
-  const rubricConfidence = Math.max(0, Math.min(Number(aiRubric.confidence ?? 0), 1));
+  const rubricConfidence = clampConfidence(aiRubric.confidence);
   const keywordCoverage = keywordScore;
   const similarityConfidence = similarityScore;
 
@@ -177,7 +206,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     return null;
   }
 
-  const classification = await classifySoftSkillAnswer(
+  const firstClassification = await classifySoftSkillAnswer(
     answer.question.content,
     answer.content,
     categories.map((category) => ({
@@ -185,6 +214,22 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       score: category.score,
     })),
   );
+
+  const classification =
+    clampConfidence(firstClassification.confidence) < LOW_CONFIDENCE_THRESHOLD
+      ? pickBetterResult(
+          firstClassification,
+          await classifySoftSkillAnswer(
+            answer.question.content,
+            answer.content,
+            categories.map((category) => ({
+              label: category.label,
+              score: category.score,
+            })),
+            "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.",
+          ),
+        )
+      : firstClassification;
 
   const bestCategory =
     categories.find(
@@ -195,7 +240,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const maxCategoryScore = Math.max(...categories.map((category) => category.score), 1);
   const categoryStrength = Math.max(0, Math.min(bestCategory.score / maxCategoryScore, 1));
-  const aiConfidence = Math.max(0, Math.min(Number(classification?.confidence ?? 0), 1));
+  const aiConfidence = clampConfidence(classification?.confidence);
   const exactLabelMatch =
     bestCategory.label.toLowerCase() ===
     String(classification?.label || "").toLowerCase();

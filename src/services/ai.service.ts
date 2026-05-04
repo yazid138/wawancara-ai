@@ -144,6 +144,7 @@ Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "logika": 0-5, "problem_s
 export const generateTechnicalRubricScore = async (
   pertanyaan: string,
   jawaban: string,
+  retryHint?: string,
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
@@ -152,6 +153,11 @@ Anda adalah penilai jawaban interview teknis dengan fokus pada kualitas isi.
 
 Task:
 Nilai jawaban menggunakan rubrik Pemahaman Konsep, Ketepatan Teknis, Logika Berpikir, dan Komunikasi Jawaban.
+
+${retryHint ? `Tambahan instruksi:
+${retryHint}
+
+` : ""}
 
 Data:
 Pertanyaan: ${pertanyaan}
@@ -168,6 +174,7 @@ export const classifySoftSkillAnswer = async (
   pertanyaan: string,
   jawaban: string,
   categories: Array<{ label: string; score: number }>,
+  retryHint?: string,
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
@@ -176,6 +183,11 @@ Anda adalah classifier jawaban soft skill untuk interview.
 
 Task:
 Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.
+
+${retryHint ? `Tambahan instruksi:
+${retryHint}
+
+` : ""}
 
 Data:
 Pertanyaan: ${pertanyaan}
