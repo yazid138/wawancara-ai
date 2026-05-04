@@ -24,6 +24,23 @@ const pickBetterResult = <T extends { confidence?: number }>(current: T, next: T
   return nextConfidence > currentConfidence ? next : current;
 };
 
+const buildCategoryOptions = (
+  categories: Array<{ label: string; score: number }>,
+) => categories.map((category) => ({ label: category.label, score: category.score }));
+
+const retryIfLowConfidence = async <T extends { confidence?: number }>(
+  request: () => Promise<T>,
+  retryRequest: () => Promise<T>,
+) => {
+  const firstResult = await request();
+
+  if (clampConfidence(firstResult.confidence) >= LOW_CONFIDENCE_THRESHOLD) {
+    return firstResult;
+  }
+
+  return pickBetterResult(firstResult, await retryRequest());
+};
+
 const normalizeText = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ");
 
@@ -44,7 +61,6 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       question: {
         include: {
           keywords: true,
-          idealAnswer: true,
         },
       },
     },
@@ -97,18 +113,15 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
   }
 
-  const firstRubric = await generateTechnicalRubricScore(questionText, userAnswer);
-  const aiRubric =
-    clampConfidence(firstRubric.confidence) < LOW_CONFIDENCE_THRESHOLD
-      ? pickBetterResult(
-          firstRubric,
-          await generateTechnicalRubricScore(
-            questionText,
-            userAnswer,
-            "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.",
-          ),
-        )
-      : firstRubric;
+  const aiRubric = await retryIfLowConfidence(
+    () => generateTechnicalRubricScore(questionText, userAnswer),
+    () =>
+      generateTechnicalRubricScore(
+        questionText,
+        userAnswer,
+        "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.",
+      ),
+  );
   const rubricScore = Math.max(
     0,
     Math.min(
@@ -215,21 +228,22 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     })),
   );
 
-  const classification =
-    clampConfidence(firstClassification.confidence) < LOW_CONFIDENCE_THRESHOLD
-      ? pickBetterResult(
-          firstClassification,
-          await classifySoftSkillAnswer(
-            answer.question.content,
-            answer.content,
-            categories.map((category) => ({
-              label: category.label,
-              score: category.score,
-            })),
-            "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.",
-          ),
-        )
-      : firstClassification;
+  const categoryOptions = buildCategoryOptions(categories);
+  const classification = await retryIfLowConfidence(
+    () =>
+      classifySoftSkillAnswer(
+        answer.question.content,
+        answer.content,
+        categoryOptions,
+      ),
+    () =>
+      classifySoftSkillAnswer(
+        answer.question.content,
+        answer.content,
+        categoryOptions,
+        "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.",
+      ),
+  );
 
   const bestCategory =
     categories.find(
