@@ -100,10 +100,6 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     const matches = await qdrantService.searchSimilarVectors(userEmbedding, 1, {
       must: [
         {
-          key: "questionId",
-          match: { value: questionId },
-        },
-        {
           key: "type",
           match: { value: "ideal_answer" },
         },
