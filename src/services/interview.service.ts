@@ -114,6 +114,37 @@ const getResult = (id: number) => {
   });
 };
 
+const getInterviewHistory = (id: number) => {
+  return prisma.interview.findUnique({
+    where: { id },
+    include: {
+      answers: {
+        include: {
+          question: true,
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
+      company: true,
+      position: true,
+    },
+  });
+};
+
+const getUserInterviews = (userId: number) => {
+  return prisma.interview.findMany({
+    where: { userId },
+    include: {
+      company: true,
+      position: true,
+    },
+    orderBy: {
+      updatedAt: 'desc',
+    },
+  });
+};
+
 export default {
   startInterview,
   getInterviewById,
@@ -121,4 +152,6 @@ export default {
   createAnswer,
   getNextQuestion,
   getResult,
+  getInterviewHistory,
+  getUserInterviews,
 };

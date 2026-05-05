@@ -213,6 +213,38 @@ export const getResult = async (req: Request, res: Response) => {
   });
 };
 
+// HISTORY
+export const getInterviewHistory = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  
+  const history = await interviewService.getInterviewHistory(id);
+
+  if (!history) {
+    return sendResponse(res, {
+      status: 404,
+      message: "Interview tidak ditemukan",
+    });
+  }
+
+  sendResponse(res, {
+    status: 200,
+    message: "Riwayat interview",
+    data: history,
+  });
+};
+
+// USER INTERVIEWS
+export const getUserInterviews = async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const interviews = await interviewService.getUserInterviews(userId);
+
+  sendResponse(res, {
+    status: 200,
+    message: "Daftar interview berhasil diambil",
+    data: interviews,
+  });
+};
+
 export default {
   startInterview,
   getCurrent,
@@ -220,4 +252,6 @@ export default {
   getNext,
   finishInterview,
   getResult,
+  getInterviewHistory,
+  getUserInterviews,
 };
