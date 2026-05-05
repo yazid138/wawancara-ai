@@ -220,10 +220,7 @@ export const getInterviewHistory = async (req: Request, res: Response) => {
   const history = await interviewService.getInterviewHistory(id);
 
   if (!history) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Interview tidak ditemukan",
-    });
+    throw new NotFoundException("Interview tidak ditemukan");
   }
 
   sendResponse(res, {
