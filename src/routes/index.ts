@@ -9,6 +9,7 @@ import auth from '@/middleware/auth';
 import settingRouter from "./setting.route";
 import role from "@/middleware/role";
 import companyRouter from "./company.routes";
+import positionRouter from "./position.routes";
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use("/interviews", auth, interviewRouter);
 router.use("/questions", auth, questionRouter);
 router.use("/setting", auth, role('ADMIN'), settingRouter);
 router.use("/company", auth, companyRouter);
+router.use("/position", auth, positionRouter);
 
 export default router;
