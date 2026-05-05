@@ -97,14 +97,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   if (userAnswer) {
     const userEmbedding = await createEmbedding(userAnswer);
-    const matches = await qdrantService.searchSimilarVectors(userEmbedding, 1, {
-      must: [
-        {
-          key: "type",
-          match: { value: "ideal_answer" },
-        },
-      ],
-    });
+    const matches = await qdrantService.searchSimilarVectors(userEmbedding, 1);
 
     similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
   }
