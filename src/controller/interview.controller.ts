@@ -5,6 +5,7 @@ import interviewService from "@/services/interview.service";
 import NotFoundException from "@/exception/NotFoundException";
 import BadRequestException from "@/exception/BadRequestException";
 import scoringService from "@/services/scoring.service";
+import fs from "fs";
 
 type StartInterviewRequest = {
   companyId: number;
@@ -121,15 +122,21 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   try {
     if (currentQuestion.type === "TECHNICAL") {
-      scoringService.scoreTechnicalAnswer(savedAnswer.id).catch((err) => {
-        console.error("Background scoring error (TECHNICAL):", err);
-      });
+      scoringService.scoreTechnicalAnswer(savedAnswer.id)
+        .then(() => fs.appendFileSync('scoring.log', `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}\n`))
+        .catch((err) => {
+          fs.appendFileSync('scoring.log', `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`);
+          console.error("Background scoring error (TECHNICAL):", err);
+        });
     }
 
     if (currentQuestion.type === "SOFTSKILL") {
-      scoringService.scoreSoftSkillAnswer(savedAnswer.id).catch((err) => {
-        console.error("Background scoring error (SOFTSKILL):", err);
-      });
+      scoringService.scoreSoftSkillAnswer(savedAnswer.id)
+        .then(() => fs.appendFileSync('scoring.log', `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}\n`))
+        .catch((err) => {
+          fs.appendFileSync('scoring.log', `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`);
+          console.error("Background scoring error (SOFTSKILL):", err);
+        });
     }
   } catch (err) {
     console.error("Scoring error:", err);
