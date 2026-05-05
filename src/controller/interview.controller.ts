@@ -3,6 +3,7 @@ import sendResponse from "@/utils/responseHandler";
 import validate from "@/utils/validation";
 import interviewService from "@/services/interview.service";
 import NotFoundException from "@/exception/NotFoundException";
+import BadRequestException from "@/exception/BadRequestException";
 import scoringService from "@/services/scoring.service";
 
 type StartInterviewRequest = {
@@ -21,6 +22,11 @@ export const startInterview = async (req: Request, res: Response) => {
   );
 
   const userId = req.user!.id;
+
+  const existingInterview = await interviewService.getInterviewByUserCompanyPosition(userId, companyId, positionId);
+  if (existingInterview) {
+    throw new BadRequestException("Anda sudah melakukan interview untuk posisi ini");
+  }
 
   const interview = await interviewService.startInterview({
     userId,
@@ -112,8 +118,6 @@ export const submitAnswer = async (req: Request, res: Response) => {
     interviewId,
     userId,
   });
-
-  let score = null;
 
   try {
     if (currentQuestion.type === "TECHNICAL") {

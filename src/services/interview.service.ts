@@ -31,6 +31,16 @@ const startInterview = (data: StartInterviewInput) => {
   });
 };
 
+const getInterviewByUserCompanyPosition = (userId: number, companyId: number, positionId: number) => {
+  return prisma.interview.findFirst({
+    where: {
+      userId,
+      companyId,
+      positionId,
+    },
+  });
+};
+
 const getInterviewById = (id: number) => {
   return prisma.interview.findUnique({
     where: { id },
@@ -148,6 +158,7 @@ const getUserInterviews = (userId: number) => {
 export default {
   startInterview,
   getInterviewById,
+  getInterviewByUserCompanyPosition,
   finishInterview,
   createAnswer,
   getNextQuestion,

@@ -170,7 +170,6 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
-      reason: reasonParts.join(" | "),
       breakdown: {
         rubricScore,
         similarityScore,
@@ -185,7 +184,6 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
-      reason: reasonParts.join(" | "),
       breakdown: {
         rubricScore,
         similarityScore,
