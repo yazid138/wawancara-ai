@@ -117,11 +117,15 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   try {
     if (currentQuestion.type === "TECHNICAL") {
-      score = await scoringService.scoreTechnicalAnswer(savedAnswer.id);
+      scoringService.scoreTechnicalAnswer(savedAnswer.id).catch((err) => {
+        console.error("Background scoring error (TECHNICAL):", err);
+      });
     }
 
     if (currentQuestion.type === "SOFTSKILL") {
-      score = await scoringService.scoreSoftSkillAnswer(savedAnswer.id);
+      scoringService.scoreSoftSkillAnswer(savedAnswer.id).catch((err) => {
+        console.error("Background scoring error (SOFTSKILL):", err);
+      });
     }
   } catch (err) {
     console.error("Scoring error:", err);
@@ -135,7 +139,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     return sendResponse(res, {
       status: 200,
       message: "Interview selesai",
-      data: { answer: savedAnswer, score },
+      data: { answer: savedAnswer },
     });
   }
 
@@ -144,7 +148,6 @@ export const submitAnswer = async (req: Request, res: Response) => {
     message: "Jawaban berhasil",
     data: {
       answer: savedAnswer,
-      score,
       nextQuestion,
     },
   });
