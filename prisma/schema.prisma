@@ -35,16 +35,19 @@ model Company {
   updatedAt DateTime @updatedAt
 
   interviews Interview[]
+  positions Position[]
 }
 
 model Position {
   id   Int    @id @default(autoincrement())
+  companyId Int
   name String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   interviews Interview[]
+  company Company @relation(fields: [companyId], references: [id])
 }
 
 enum Status {

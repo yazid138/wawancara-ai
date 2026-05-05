@@ -27,16 +27,16 @@ const main = async () => {
   });
 
   // COMPANY & POSITION
-  await prisma.company.createMany({
+  const companies = await prisma.company.createManyAndReturn({
     data: [{ name: "Tokopedia" }, { name: "Gojek" }, { name: "Shopee" }],
     skipDuplicates: true,
   });
 
   await prisma.position.createMany({
     data: [
-      { name: "Backend Developer" },
-      { name: "Frontend Developer" },
-      { name: "Fullstack Developer" },
+      { name: "Backend Developer",  companyId: companies[0].id },
+      { name: "Frontend Developer", companyId: companies[1].id },
+      { name: "Fullstack Developer", companyId: companies[2].id },
     ],
     skipDuplicates: true,
   });

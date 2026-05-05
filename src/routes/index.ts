@@ -8,6 +8,7 @@ import questionRouter from "./question.route";
 import auth from '@/middleware/auth';
 import settingRouter from "./setting.route";
 import role from "@/middleware/role";
+import companyRouter from "./company.routes";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/interviews", auth, interviewRouter);
 // router.use("/answer", auth, answerRouter);
 router.use("/questions", auth, questionRouter);
 router.use("/setting", auth, role('ADMIN'), settingRouter);
+router.use("/company", auth, companyRouter);
 
 export default router;
