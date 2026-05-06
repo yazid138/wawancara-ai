@@ -128,6 +128,25 @@ const retryIfLowConfidence = async <T extends { confidence?: number }>(
 const normalizeText = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ");
 
+const stringSimilarity = (s1: string, s2: string): number => {
+  const a = String(s1 || "").toLowerCase().trim();
+  const b = String(s2 || "").toLowerCase().trim();
+
+  if (a === b) return 1;
+  if (!a || !b) return 0;
+
+  // check if one is a substring of the other
+  if (a.includes(b) || b.includes(a)) return 0.9;
+
+  // split into words and check overlap
+  const aWords = new Set(a.split(/\s+/));
+  const bWords = new Set(b.split(/\s+/));
+  const intersection = new Set([...aWords].filter((w) => bWords.has(w)));
+  const union = new Set([...aWords, ...bWords]);
+
+  return union.size > 0 ? intersection.size / union.size : 0;
+};
+
 const hasWholeWord = (text: string, keyword: string) => {
   const normText = normalizeText(String(text || ""));
   const normKeyword = normalizeText(String(keyword || "")).trim();
@@ -348,18 +367,38 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   const classification = classificationWithPrompt.result;
   const softSkillPrompt = classificationWithPrompt.prompt;
 
-  const bestCategory =
-    categories.find(
-      (category) =>
-        category.label.toLowerCase() ===
-        String(classification?.label || "").toLowerCase(),
-    ) ?? categories[0];
+  // Find best matching category
+  let bestCategory = categories.find(
+    (category) =>
+      category.label.toLowerCase() ===
+      String(classification?.label || "").toLowerCase(),
+  );
+
+  // if no exact match, find most similar category
+  if (!bestCategory && classification?.label) {
+    let maxSimilarity = 0;
+    for (const cat of categories) {
+      const similarity = stringSimilarity(cat.label, classification.label);
+      if (similarity > maxSimilarity) {
+        maxSimilarity = similarity;
+        bestCategory = cat;
+      }
+    }
+  }
+
+  // fallback if still not found
+  if (!bestCategory) {
+    bestCategory = { id: 0, label: "Uncategorized", score: 0, questionId: answer.question.id } as any;
+  }
+
+  // TypeScript type guard
+  const matchedCategory = bestCategory!;
 
   const maxCategoryScore = Math.max(...categories.map((category) => category.score), 1);
-  const categoryStrength = Math.max(0, Math.min(bestCategory.score / maxCategoryScore, 1));
+  const categoryStrength = Math.max(0, Math.min(matchedCategory.score / maxCategoryScore, 1));
   const aiConfidence = clampConfidence(classification?.confidence);
   const exactLabelMatch =
-    bestCategory.label.toLowerCase() ===
+    matchedCategory.label.toLowerCase() ===
     String(classification?.label || "").toLowerCase();
 
   const confidenceScore = Math.max(
@@ -371,8 +410,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   );
 
   const reasonParts = [
-    `Kategori terpilih: ${bestCategory.label}`,
-    `Bobot kategori: ${bestCategory.score}`,
+    `Kategori terpilih: ${matchedCategory.label}`,
+    `Bobot kategori: ${matchedCategory.score}`,
     `Keyakinan AI: ${Math.round(aiConfidence * 100)}%`,
     classification?.alasan ? `Alasan AI: ${classification.alasan}` : null,
     exactLabelMatch ? "Label cocok persis dengan hasil klasifikasi" : "Label diambil dari kategori terdekat yang tersedia",
@@ -381,18 +420,18 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   return prisma.scoreSoftSkill.upsert({
     where: { answerId },
     update: {
-      categoryId: bestCategory.id,
-      categoryLabel: bestCategory.label,
-      finalScore: bestCategory.score,
+      categoryId: matchedCategory.id,
+      categoryLabel: matchedCategory.label,
+      finalScore: matchedCategory.score,
       confidenceScore,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
     },
     create: {
       answerId,
-      categoryId: bestCategory.id,
-      categoryLabel: bestCategory.label,
-      finalScore: bestCategory.score,
+      categoryId: matchedCategory.id,
+      categoryLabel: matchedCategory.label,
+      finalScore: matchedCategory.score,
       confidenceScore,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
