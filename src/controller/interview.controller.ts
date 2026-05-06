@@ -82,8 +82,8 @@ export const getCurrent = async (req: Request, res: Response) => {
 export const submitAnswer = async (req: Request, res: Response) => {
   const interviewId = +req.params.id;
 
-  const { answer } = validate<{ answer: string }>(
-    { answer: "string" },
+  const { answer, questionId } = validate<{ answer: string; questionId?: number }>(
+    { answer: "string", questionId: {type: 'number', optional: true} },
     req.body
   );
 
@@ -101,16 +101,30 @@ export const submitAnswer = async (req: Request, res: Response) => {
     });
   }
 
-  const currentQuestion = await interviewService.getNextQuestion(interviewId);
+  // Prefer the questionId provided by client to avoid race between client/server
+  let currentQuestion = null as any;
+  if (questionId) {
+    currentQuestion = await interviewService.getQuestionById(questionId);
+    if (!currentQuestion) {
+      return sendResponse(res, { status: 404, message: "Pertanyaan tidak ditemukan" });
+    }
 
-  if (!currentQuestion) {
-    await interviewService.finishInterview(interviewId);
+    // ensure this interview hasn't answered this question yet
+    const already = await interviewService.hasAnsweredQuestion(interviewId, questionId);
+    if (already) {
+      return sendResponse(res, { status: 400, message: "Pertanyaan sudah dijawab" });
+    }
+  } else {
+    currentQuestion = await interviewService.getNextQuestion(interviewId);
+    if (!currentQuestion) {
+      await interviewService.finishInterview(interviewId);
 
-    return sendResponse(res, {
-      status: 200,
-      message: "Interview selesai",
-      data: null,
-    });
+      return sendResponse(res, {
+        status: 200,
+        message: "Interview selesai",
+        data: null,
+      });
+    }
   }
 
   const savedAnswer = await interviewService.createAnswer({
@@ -150,7 +164,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     return sendResponse(res, {
       status: 200,
       message: "Interview selesai",
-      data: { answer: savedAnswer },
+      data: { answer: savedAnswer, questionId: currentQuestion.id },
     });
   }
 
@@ -159,6 +173,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     message: "Jawaban berhasil",
     data: {
       answer: savedAnswer,
+      questionId: currentQuestion.id,
       nextQuestion,
     },
   });

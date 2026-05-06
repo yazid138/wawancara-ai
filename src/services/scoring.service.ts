@@ -71,6 +71,18 @@ const clampConfidence = (value: unknown) => {
   return Math.max(0, Math.min(confidence, 1));
 };
 
+const parseRubricNumber = (v: unknown) => {
+  if (v == null) return 0;
+  if (typeof v === "number") return Math.max(0, Math.min(v, 5));
+  if (typeof v === "string") {
+    // extract first number (e.g. "4", "4/5", "4.0")
+    const m = v.match(/\d+(?:\.\d+)?/);
+    if (m) return Math.max(0, Math.min(Number(m[0]), 5));
+    return 0;
+  }
+  return 0;
+};
+
 const pickBetterResult = <T extends { confidence?: number }>(current: T, next: T) => {
   const currentConfidence = clampConfidence(current.confidence);
   const nextConfidence = clampConfidence(next.confidence);
@@ -117,13 +129,23 @@ const normalizeText = (text: string) =>
   text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ");
 
 const hasWholeWord = (text: string, keyword: string) => {
-  const escapedKeyword = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (!escapedKeyword) {
-    return false;
-  }
+  const normText = normalizeText(String(text || ""));
+  const normKeyword = normalizeText(String(keyword || "")).trim();
+  if (!normKeyword) return false;
 
-  const pattern = new RegExp(`(^|\\s)${escapedKeyword}(?=\\s|$)`, "u");
-  return pattern.test(text);
+  // try exact whole word match
+  const escaped = normKeyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const wholeWordPattern = new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, "u");
+  if (wholeWordPattern.test(normText)) return true;
+
+  // fallback: substring match
+  if (normText.includes(normKeyword)) return true;
+
+  // fallback: if keyword has multiple words, check all words exist in text
+  const parts = normKeyword.split(/\s+/).filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => normText.includes(p))) return true;
+
+  return false;
 };
 
 const scoreTechnicalAnswer = async (answerId: number) => {
@@ -192,15 +214,17 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const aiRubricResult = aiRubric.result;
   const technicalPrompt = aiRubric.prompt;
   
+  const pemahamanNum = parseRubricNumber(aiRubricResult.pemahaman);
+  const teknisNum = parseRubricNumber(aiRubricResult.teknis);
+  const logikaNum = parseRubricNumber(aiRubricResult.logika ?? aiRubricResult.problema_solving ?? aiRubricResult.problem_solving);
+  const komunikasiNum = parseRubricNumber(aiRubricResult.komunikasi);
+
   const rubricScore = Math.max(
     0,
-    Math.min(
-      ((aiRubricResult.pemahaman ?? 0) + (aiRubricResult.teknis ?? 0) + (aiRubricResult.logika ?? 0) + (aiRubricResult.komunikasi ?? 0)) / 20,
-      1,
-    ),
+    Math.min((pemahamanNum + teknisNum + logikaNum + komunikasiNum) / 20, 1),
   );
 
-  const rubricConfidence = clampConfidence(aiRubricResult.confidence);
+  const rubricConfidence = clampConfidence((aiRubricResult as any).confidence);
   const keywordCoverage = keywordScore;
   const similarityConfidence = similarityScore;
 

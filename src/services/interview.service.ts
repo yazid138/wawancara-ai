@@ -63,6 +63,15 @@ const createAnswer = (data: {
   return prisma.answer.create({ data });
 };
 
+const getQuestionById = (id: number) => {
+  return prisma.question.findUnique({ where: { id } });
+};
+
+const hasAnsweredQuestion = async (interviewId: number, questionId: number) => {
+  const existing = await prisma.answer.findFirst({ where: { interviewId, questionId } });
+  return Boolean(existing);
+};
+
 const TOTAL_QUESTIONS = 10;
 
 const getNextQuestion = async (interviewId: number) => {
@@ -87,7 +96,8 @@ const getNextQuestion = async (interviewId: number) => {
     countByType[ans.question.type]++;
   }
 
-  const usedQuestionIds = answers.map((a) => a.questionId);
+  // Gunakan Set untuk tracking yang lebih efisien dan pasti tidak ada duplikat
+  const usedQuestionIds = new Set(answers.map((a) => a.questionId));
 
   for (const type of FLOW) {
     const remaining = DISTRIBUTION[type] - countByType[type];
@@ -96,12 +106,20 @@ const getNextQuestion = async (interviewId: number) => {
       const candidates = await prisma.question.findMany({
         where: {
           type,
-          id: { notIn: usedQuestionIds },
+          id: { notIn: Array.from(usedQuestionIds) },
         },
       });
 
-      if (candidates.length > 0) {
-        return candidates[Math.floor(Math.random() * candidates.length)];
+      // Filter tambahan untuk memastikan benar-benar tidak ada duplikat
+      const validCandidates = candidates.filter((q) => !usedQuestionIds.has(q.id));
+
+      if (validCandidates.length > 0) {
+        const selected = validCandidates[Math.floor(Math.random() * validCandidates.length)];
+        
+        // Validasi akhir sebelum return
+        if (!usedQuestionIds.has(selected.id)) {
+          return selected;
+        }
       }
     }
   }
@@ -161,6 +179,8 @@ export default {
   getInterviewByUserCompanyPosition,
   finishInterview,
   createAnswer,
+  getQuestionById,
+  hasAnsweredQuestion,
   getNextQuestion,
   getResult,
   getInterviewHistory,
