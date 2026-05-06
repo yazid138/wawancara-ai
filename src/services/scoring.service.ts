@@ -8,6 +8,60 @@ import qdrantService from "@/services/qdrant.service";
 
 const LOW_CONFIDENCE_THRESHOLD = 0.65;
 
+const buildTechnicalRubricPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  retryHint?: string,
+): string => {
+  return `Role:
+Anda adalah penilai jawaban interview teknis dengan fokus pada kualitas isi.
+
+Task:
+Nilai jawaban menggunakan rubrik Pemahaman Konsep, Ketepatan Teknis, Logika Berpikir, dan Komunikasi Jawaban.
+
+${retryHint ? `Tambahan instruksi:
+${retryHint}
+
+` : ""}
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+
+Format:
+Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "teknis": 0-5, "logika": 0-5, "komunikasi": 0-5, "confidence": 0-1, "alasan": "singkat"}.`;
+};
+
+const buildSoftSkillClassificationPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  categories: Array<{ label: string; score: number }>,
+  retryHint?: string,
+): string => {
+  return `Role:
+Anda adalah classifier jawaban soft skill untuk interview.
+
+Task:
+Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.
+
+${retryHint ? `Tambahan instruksi:
+${retryHint}
+
+` : ""}
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+Kategori tersedia:
+${categories
+  .map((category, index) => `${index + 1}. ${category.label} (bobot: ${category.score})`)
+  .join("\n")}
+
+Format:
+Kembalikan hanya JSON dengan format {"label": "kategori", "confidence": 0-1, "alasan": "singkat"}.
+Pastikan label yang dikembalikan persis cocok dengan salah satu kategori yang tersedia.`;
+};
+
 const clampConfidence = (value: unknown) => {
   const confidence = Number(value ?? 0);
   if (Number.isNaN(confidence)) {
@@ -27,6 +81,24 @@ const pickBetterResult = <T extends { confidence?: number }>(current: T, next: T
 const buildCategoryOptions = (
   categories: Array<{ label: string; score: number }>,
 ) => categories.map((category) => ({ label: category.label, score: category.score }));
+
+const retryIfLowConfidenceWithPrompt = async <T extends { confidence?: number }>(
+  request: () => Promise<T>,
+  retryRequest: () => Promise<T>,
+  getPrompt: (isRetry: boolean) => string,
+): Promise<{ result: T; prompt: string }> => {
+  const firstResult = await request();
+
+  if (clampConfidence(firstResult.confidence) >= LOW_CONFIDENCE_THRESHOLD) {
+    return { result: firstResult, prompt: getPrompt(false) };
+  }
+
+  const retryResult = await retryRequest();
+  const betterResult = pickBetterResult(firstResult, retryResult);
+  const isRetry = betterResult === retryResult;
+  
+  return { result: betterResult, prompt: getPrompt(isRetry) };
+};
 
 const retryIfLowConfidence = async <T extends { confidence?: number }>(
   request: () => Promise<T>,
@@ -102,7 +174,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
   }
 
-  const aiRubric = await retryIfLowConfidence(
+  const aiRubric = await retryIfLowConfidenceWithPrompt(
     () => generateTechnicalRubricScore(questionText, userAnswer),
     () =>
       generateTechnicalRubricScore(
@@ -110,16 +182,25 @@ const scoreTechnicalAnswer = async (answerId: number) => {
         userAnswer,
         "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.",
       ),
+    (isRetry) => buildTechnicalRubricPrompt(
+      questionText,
+      userAnswer,
+      isRetry ? "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi." : undefined
+    ),
   );
+  
+  const aiRubricResult = aiRubric.result;
+  const technicalPrompt = aiRubric.prompt;
+  
   const rubricScore = Math.max(
     0,
     Math.min(
-      ((aiRubric.pemahaman ?? 0) + (aiRubric.teknis ?? 0) + (aiRubric.logika ?? 0) + (aiRubric.komunikasi ?? 0)) / 20,
+      ((aiRubricResult.pemahaman ?? 0) + (aiRubricResult.teknis ?? 0) + (aiRubricResult.logika ?? 0) + (aiRubricResult.komunikasi ?? 0)) / 20,
       1,
     ),
   );
 
-  const rubricConfidence = clampConfidence(aiRubric.confidence);
+  const rubricConfidence = clampConfidence(aiRubricResult.confidence);
   const keywordCoverage = keywordScore;
   const similarityConfidence = similarityScore;
 
@@ -140,11 +221,11 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   );
 
   const reasonParts = [
-    `Rubrik AI: pemahaman ${(aiRubric.pemahaman ?? 0)}/5, teknis ${(aiRubric.teknis ?? 0)}/5, logika ${(aiRubric.logika ?? 0)}/5, komunikasi ${(aiRubric.komunikasi ?? 0)}/5`,
+    `Rubrik AI: pemahaman ${(aiRubricResult.pemahaman ?? 0)}/5, teknis ${(aiRubricResult.teknis ?? 0)}/5, logika ${(aiRubricResult.logika ?? 0)}/5, komunikasi ${(aiRubricResult.komunikasi ?? 0)}/5`,
     `Confidence rubrik AI: ${Math.round(rubricConfidence * 100)}%`,
     `Similarity vector: ${Math.round(similarityScore * 100)}%`,
     `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
-    aiRubric.alasan ? `Alasan AI: ${aiRubric.alasan}` : null,
+    aiRubricResult.alasan ? `Alasan AI: ${aiRubricResult.alasan}` : null,
   ].filter(Boolean);
 
   const feedback =
@@ -163,6 +244,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      prompt: technicalPrompt,
       breakdown: {
         rubricScore,
         similarityScore,
@@ -177,6 +259,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      prompt: technicalPrompt,
       breakdown: {
         rubricScore,
         similarityScore,
@@ -216,7 +299,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   );
 
   const categoryOptions = buildCategoryOptions(categories);
-  const classification = await retryIfLowConfidence(
+  const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
     () =>
       classifySoftSkillAnswer(
         answer.question.content,
@@ -230,7 +313,16 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
         categoryOptions,
         "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.",
       ),
+    (isRetry) => buildSoftSkillClassificationPrompt(
+      answer.question.content,
+      answer.content,
+      categoryOptions,
+      isRetry ? "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan." : undefined
+    ),
   );
+
+  const classification = classificationWithPrompt.result;
+  const softSkillPrompt = classificationWithPrompt.prompt;
 
   const bestCategory =
     categories.find(
@@ -270,6 +362,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       finalScore: bestCategory.score,
       confidenceScore,
       reason: reasonParts.join(" | "),
+      prompt: softSkillPrompt,
     },
     create: {
       answerId,
@@ -278,6 +371,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       finalScore: bestCategory.score,
       confidenceScore,
       reason: reasonParts.join(" | "),
+      prompt: softSkillPrompt,
     },
   });
 };
