@@ -149,6 +149,8 @@ const getInterviewHistory = (id: number) => {
       answers: {
         include: {
           question: true,
+          technicalScore: true,
+          softSkillScore: true,
         },
         orderBy: {
           createdAt: 'asc',
