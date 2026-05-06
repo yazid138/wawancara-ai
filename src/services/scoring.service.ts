@@ -63,12 +63,43 @@ Pastikan label yang dikembalikan persis cocok dengan salah satu kategori yang te
 };
 
 const clampConfidence = (value: unknown) => {
-  const confidence = Number(value ?? 0);
+  const confidence = parseConfidence(value);
   if (Number.isNaN(confidence)) {
     return 0;
   }
 
   return Math.max(0, Math.min(confidence, 1));
+};
+
+const parseConfidence = (value: unknown) => {
+  if (value == null) return 0;
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === "string") {
+    const match = value.match(/\d+(?:\.\d+)?/);
+    if (!match) return 0;
+
+    const parsed = Number(match[0]);
+    if (!Number.isFinite(parsed)) return 0;
+
+    // Accept values like "82%" or "82" as 0.82, while preserving 0-1 values.
+    return parsed > 1 ? parsed / 100 : parsed;
+  }
+
+  if (typeof value === "object") {
+    const candidate =
+      (value as any).confidence ??
+      (value as any).confidence_score ??
+      (value as any).confidenceScore ??
+      (value as any).keyakinan;
+
+    return parseConfidence(candidate);
+  }
+
+  return 0;
 };
 
 const parseRubricNumber = (v: unknown) => {
@@ -100,8 +131,9 @@ const retryIfLowConfidenceWithPrompt = async <T extends { confidence?: number }>
   getPrompt: (isRetry: boolean) => string,
 ): Promise<{ result: T; prompt: string }> => {
   const firstResult = await request();
+  const firstConfidence = clampConfidence((firstResult as any)?.confidence);
 
-  if (clampConfidence(firstResult.confidence) >= LOW_CONFIDENCE_THRESHOLD) {
+  if (firstConfidence >= LOW_CONFIDENCE_THRESHOLD) {
     return { result: firstResult, prompt: getPrompt(false) };
   }
 
@@ -117,8 +149,9 @@ const retryIfLowConfidence = async <T extends { confidence?: number }>(
   retryRequest: () => Promise<T>,
 ) => {
   const firstResult = await request();
+  const firstConfidence = clampConfidence((firstResult as any)?.confidence);
 
-  if (clampConfidence(firstResult.confidence) >= LOW_CONFIDENCE_THRESHOLD) {
+  if (firstConfidence >= LOW_CONFIDENCE_THRESHOLD) {
     return firstResult;
   }
 
