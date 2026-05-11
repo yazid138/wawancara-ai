@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wawancara-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ''
+      POSTGRES_DB: wawancara_db
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: development
+    container_name: wawancara-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:@postgres:5432/wawancara_db
+      BASE_URL: http://localhost
+      PORT: 5000
+      SECRET_KEY: secretkey
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL}
+      HF_KEY: ${HF_KEY}
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      PINECONE_HOST_URL: ${PINECONE_HOST_URL}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      QDRANT_HOST_URL: ${QDRANT_HOST_URL}
+    ports:
+      - "5000:5000"
+    volumes:
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+          ignore:
+            - node_modules/
+        - action: sync
+          path: ./prisma
+          target: /app/prisma
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
+        - action: rebuild
+          path: tsconfig.json
+
+volumes:
+  postgres_data:
