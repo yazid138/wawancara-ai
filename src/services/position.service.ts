@@ -2,11 +2,11 @@ import prisma from "@/database/prisma";
 
 export const getAllPositions = () => {
   return prisma.position.findMany({
-      include: {
-        company: true,
-      },
+    include: {
+      company: true,
+    },
   });
-}
+};
 
 export const getCompanyPositions = (companyId: number) => {
   return prisma.position.findMany({
@@ -14,7 +14,7 @@ export const getCompanyPositions = (companyId: number) => {
       companyId,
     },
   });
-}
+};
 
 export default {
   getAllPositions,

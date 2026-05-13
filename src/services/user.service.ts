@@ -7,7 +7,12 @@ type CreateUserData = {
   password: string;
   role: Role;
 };
-export const createUser = async ({ name, username, password, role }: CreateUserData) => {
+export const createUser = async ({
+  name,
+  username,
+  password,
+  role,
+}: CreateUserData) => {
   const user = await prisma.user.create({
     data: { name, username, password, role },
   });
@@ -24,7 +29,13 @@ export const findUserByUsername = async (username: string) => {
 export const findUserById = async (id: number) => {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, username: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      role: true,
+      createdAt: true,
+    },
   });
   return user;
 };

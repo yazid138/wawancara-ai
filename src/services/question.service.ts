@@ -85,7 +85,7 @@ export const updateQuestion = async (
   },
 ) => {
   const { content, keywords, type, difficulty, category } = questionData;
-  
+
   let categoryResult: {
     id: number;
   } | null = null;
@@ -257,6 +257,38 @@ export const removeIdealAnswer = async (
   return deletedIdealAnswer;
 };
 
+export const searchVector = async (
+  userEmbedding: number[],
+  questionId: number,
+) => {
+  const idealAnswers = await prisma.idealAnswer.findMany({
+    where: { questionId },
+  });
+
+  if (idealAnswers.length > 0) {
+    let maxSim = 0;
+    for (const ia of idealAnswers) {
+      const iaEmb = ia.embedding as number[];
+      if (Array.isArray(iaEmb) && iaEmb.length === userEmbedding.length) {
+        let dotProduct = 0;
+        let normA = 0;
+        let normB = 0;
+        for (let i = 0; i < userEmbedding.length; i++) {
+          dotProduct += userEmbedding[i] * iaEmb[i];
+          normA += userEmbedding[i] * userEmbedding[i];
+          normB += iaEmb[i] * iaEmb[i];
+        }
+        if (normA > 0 && normB > 0) {
+          const sim = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+          if (sim > maxSim) maxSim = sim;
+        }
+      }
+    }
+    return Math.max(0, Math.min(maxSim, 1));
+  }
+  return 0;
+};
+
 export default {
   getAllQuestions,
   getQuestionById,
@@ -265,4 +297,5 @@ export default {
   deleteQuestion,
   addIdealAnswer,
   removeIdealAnswer,
+  searchVector,
 };

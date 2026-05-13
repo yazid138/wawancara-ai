@@ -131,7 +131,7 @@ const generateQuestion = async (req: Request, res: Response) => {
     message: "berhasil generate question",
     data: {
       question,
-      answer
+      answer,
     },
   });
 };
@@ -159,10 +159,15 @@ const ruleKeywordScore = (jawaban: string, keywords: string[]) => {
   }
 };
 
-const ruleAIScore = ({ pemahaman, logika, problem_solving, komunikasi }: any) => {
+const ruleAIScore = ({
+  pemahaman,
+  logika,
+  problem_solving,
+  komunikasi,
+}: any) => {
   const aiScore = (pemahaman + logika + problem_solving + komunikasi) / 20;
   return aiScore;
-}
+};
 
 const scoreAnswer = async (req: Request, res: Response) => {
   type EvaluateAnswerRequest = { pertanyaan: string; jawaban: string };
@@ -175,12 +180,14 @@ const scoreAnswer = async (req: Request, res: Response) => {
   );
   const { pertanyaan, jawaban } = req.body as EvaluateAnswerRequest;
 
-  const minLengthResult = await aiService.generateMinLength(pertanyaan)
+  const minLengthResult = await aiService.generateMinLength(pertanyaan);
   const keywordResult = await aiService.generateKeyword(pertanyaan);
   const aiScoreResult = await aiService.generateAIScore(pertanyaan, jawaban);
 
   const aiScore = ruleAIScore(aiScoreResult) * 0.4;
-  const ruleScore = ruleLengthScore(jawaban, minLengthResult) * 0.3 + ruleKeywordScore(jawaban, keywordResult) * 0.3;
+  const ruleScore =
+    ruleLengthScore(jawaban, minLengthResult) * 0.3 +
+    ruleKeywordScore(jawaban, keywordResult) * 0.3;
 
   const finalScoreRaw = ruleScore + aiScore;
   const finalScore = finalScoreRaw * 100;
@@ -188,7 +195,13 @@ const scoreAnswer = async (req: Request, res: Response) => {
   sendResponse(res, {
     status: 200,
     message: "berhasil ",
-    data: { finalScore, aiScore: aiScore * 100, ruleScore: ruleScore * 100, finalScoreRaw, alasan: aiScoreResult.alasan },
+    data: {
+      finalScore,
+      aiScore: aiScore * 100,
+      ruleScore: ruleScore * 100,
+      finalScoreRaw,
+      alasan: aiScoreResult.alasan,
+    },
   });
 };
 

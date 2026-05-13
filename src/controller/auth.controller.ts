@@ -71,7 +71,7 @@ const register = async (req: Request, res: Response) => {
       role: {
         type: "enum",
         values: Object.values(Role),
-      }
+      },
     },
     req.body,
   );
@@ -80,7 +80,12 @@ const register = async (req: Request, res: Response) => {
     throw new BadRequestException("Username already exists");
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  await userService.createUser({ name, username, password: hashedPassword, role });
+  await userService.createUser({
+    name,
+    username,
+    password: hashedPassword,
+    role,
+  });
   sendResponse(res, { status: 200, message: "Register successful" });
 };
 

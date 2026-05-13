@@ -34,7 +34,7 @@ const main = async () => {
 
   await prisma.position.createMany({
     data: [
-      { name: "Backend Developer",  companyId: companies[0].id },
+      { name: "Backend Developer", companyId: companies[0].id },
       { name: "Frontend Developer", companyId: companies[1].id },
       { name: "Fullstack Developer", companyId: companies[2].id },
     ],

@@ -5,7 +5,7 @@ import aiRouter from "./ai.routes";
 import interviewRouter from "./interview.route";
 import answerRouter from "./answer.route";
 import questionRouter from "./question.route";
-import auth from '@/middleware/auth';
+import auth from "@/middleware/auth";
 import settingRouter from "./setting.route";
 import role from "@/middleware/role";
 import companyRouter from "./company.routes";
@@ -22,7 +22,7 @@ router.use("/ai", auth, aiRouter);
 router.use("/interviews", auth, interviewRouter);
 // router.use("/answer", auth, answerRouter);
 router.use("/questions", auth, questionRouter);
-router.use("/setting", auth, role('ADMIN'), settingRouter);
+router.use("/setting", auth, role("ADMIN"), settingRouter);
 router.use("/company", auth, companyRouter);
 router.use("/position", auth, positionRouter);
 

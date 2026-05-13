@@ -6,7 +6,11 @@ const pc = new Pinecone({ apiKey: config.pineConeKey });
 
 const pineconeIndex = pc.Index(config.pineConeIndex, config.pineConeHostUrl);
 
-export const upsertVector = async (vector: number[], metadata: RecordMetadata, id?: string) => {
+export const upsertVector = async (
+  vector: number[],
+  metadata: RecordMetadata,
+  id?: string,
+) => {
   await pineconeIndex.upsert([
     {
       id: id || uuidv4(),

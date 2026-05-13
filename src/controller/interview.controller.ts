@@ -19,14 +19,21 @@ export const startInterview = async (req: Request, res: Response) => {
       companyId: "number",
       positionId: "number",
     },
-    req.body
+    req.body,
   );
 
   const userId = req.user!.id;
 
-  const existingInterview = await interviewService.getInterviewByUserCompanyPosition(userId, companyId, positionId);
+  const existingInterview =
+    await interviewService.getInterviewByUserCompanyPosition(
+      userId,
+      companyId,
+      positionId,
+    );
   if (existingInterview) {
-    throw new BadRequestException("Anda sudah melakukan interview untuk posisi ini");
+    throw new BadRequestException(
+      "Anda sudah melakukan interview untuk posisi ini",
+    );
   }
 
   const interview = await interviewService.startInterview({
@@ -42,13 +49,16 @@ export const startInterview = async (req: Request, res: Response) => {
   });
 };
 
-// CURRENT QUESTION 
+// CURRENT QUESTION
 export const getCurrent = async (req: Request, res: Response) => {
   const id = +req.params.id;
 
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
-    return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
+    return sendResponse(res, {
+      status: 404,
+      message: "Interview tidak ditemukan",
+    });
   }
 
   if (interview.status === "FINISH") {
@@ -79,20 +89,26 @@ export const getCurrent = async (req: Request, res: Response) => {
   });
 };
 
-// SUBMIT ANSWER 
+// SUBMIT ANSWER
 export const submitAnswer = async (req: Request, res: Response) => {
   const interviewId = +req.params.id;
 
-  const { answer, questionId } = validate<{ answer: string; questionId?: number }>(
-    { answer: "string", questionId: {type: 'number', optional: true} },
-    req.body
+  const { answer, questionId } = validate<{
+    answer: string;
+    questionId?: number;
+  }>(
+    { answer: "string", questionId: { type: "number", optional: true } },
+    req.body,
   );
 
   const userId = req.user!.id;
 
   const interview = await interviewService.getInterviewById(interviewId);
   if (!interview) {
-    return sendResponse(res, { status: 404, message: "Interview tidak ditemukan" });
+    return sendResponse(res, {
+      status: 404,
+      message: "Interview tidak ditemukan",
+    });
   }
 
   if (interview.status === "FINISH") {
@@ -107,13 +123,22 @@ export const submitAnswer = async (req: Request, res: Response) => {
   if (questionId) {
     currentQuestion = await interviewService.getQuestionById(questionId);
     if (!currentQuestion) {
-      return sendResponse(res, { status: 404, message: "Pertanyaan tidak ditemukan" });
+      return sendResponse(res, {
+        status: 404,
+        message: "Pertanyaan tidak ditemukan",
+      });
     }
 
     // ensure this interview hasn't answered this question yet
-    const already = await interviewService.hasAnsweredQuestion(interviewId, questionId);
+    const already = await interviewService.hasAnsweredQuestion(
+      interviewId,
+      questionId,
+    );
     if (already) {
-      return sendResponse(res, { status: 400, message: "Pertanyaan sudah dijawab" });
+      return sendResponse(res, {
+        status: 400,
+        message: "Pertanyaan sudah dijawab",
+      });
     }
   } else {
     currentQuestion = await interviewService.getNextQuestion(interviewId);
@@ -138,19 +163,37 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   try {
     if (currentQuestion.type === "TECHNICAL") {
-      scoringService.scoreTechnicalAnswer(savedAnswer.id)
-        .then(() => fs.appendFileSync('scoring.log', `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}\n`))
+      scoringService
+        .scoreTechnicalAnswer(savedAnswer.id)
+        .then(() =>
+          fs.appendFileSync(
+            "scoring.log",
+            `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}\n`,
+          ),
+        )
         .catch((err) => {
-          fs.appendFileSync('scoring.log', `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`);
+          fs.appendFileSync(
+            "scoring.log",
+            `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`,
+          );
           console.error("Background scoring error (TECHNICAL):", err);
         });
     }
 
     if (currentQuestion.type === "SOFTSKILL") {
-      scoringService.scoreSoftSkillAnswer(savedAnswer.id)
-        .then(() => fs.appendFileSync('scoring.log', `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}\n`))
+      scoringService
+        .scoreSoftSkillAnswer(savedAnswer.id)
+        .then(() =>
+          fs.appendFileSync(
+            "scoring.log",
+            `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}\n`,
+          ),
+        )
         .catch((err) => {
-          fs.appendFileSync('scoring.log', `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`);
+          fs.appendFileSync(
+            "scoring.log",
+            `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`,
+          );
           console.error("Background scoring error (SOFTSKILL):", err);
         });
     }
@@ -250,7 +293,7 @@ export const getResult = async (req: Request, res: Response) => {
 // HISTORY
 export const getInterviewHistory = async (req: Request, res: Response) => {
   const id = +req.params.id;
-  
+
   const history = await interviewService.getInterviewHistory(id);
 
   if (!history) {

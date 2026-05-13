@@ -292,10 +292,12 @@ Kembalikan hanya jawaban dalam teks biasa tanpa penjelasan tambahan.`,
 };
 
 export const generateInterviewResume = async (
-  qnaList: Array<{ question: string; answer: string }>
+  qnaList: Array<{ question: string; answer: string }>,
 ) => {
   const qnaText = qnaList
-    .map((qna, idx) => `Q${idx + 1}: ${qna.question}\nA${idx + 1}: ${qna.answer}`)
+    .map(
+      (qna, idx) => `Q${idx + 1}: ${qna.question}\nA${idx + 1}: ${qna.answer}`,
+    )
     .join("\n\n");
 
   const { output_text } = await client.responses.create({
