@@ -175,6 +175,27 @@ const getUserInterviews = (userId: number) => {
   });
 };
 
+const processResume = async (interviewId: number) => {
+  const history = await getInterviewHistory(interviewId);
+  if (!history || !history.answers) return;
+
+  const qnaList = history.answers.map(ans => ({
+    question: ans.question.content,
+    answer: ans.content
+  }));
+
+  const { generateInterviewResume } = await import("./ai.service");
+  try {
+    const resume = await generateInterviewResume(qnaList);
+    await prisma.interview.update({
+      where: { id: interviewId },
+      data: { resume }
+    });
+  } catch (error) {
+    console.error("Failed to generate resume:", error);
+  }
+};
+
 export default {
   startInterview,
   getInterviewById,
@@ -187,4 +208,5 @@ export default {
   getResult,
   getInterviewHistory,
   getUserInterviews,
+  processResume,
 };

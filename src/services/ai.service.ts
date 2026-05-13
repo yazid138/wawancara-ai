@@ -291,6 +291,31 @@ Kembalikan hanya jawaban dalam teks biasa tanpa penjelasan tambahan.`,
   return output_text;
 };
 
+export const generateInterviewResume = async (
+  qnaList: Array<{ question: string; answer: string }>
+) => {
+  const qnaText = qnaList
+    .map((qna, idx) => `Q${idx + 1}: ${qna.question}\nA${idx + 1}: ${qna.answer}`)
+    .join("\n\n");
+
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Role:
+Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview kandidat.
+
+Task:
+Buatlah resume (ringkasan) singkat dari hasil interview berikut. Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
+
+Data Interview:
+${qnaText}
+
+Format:
+Kembalikan resume dalam bentuk teks paragraf biasa, gunakan bahasa yang profesional, jelas, dan memotivasi.`,
+  });
+
+  return output_text;
+};
+
 export default {
   createEmbedding,
   generateMessage,
@@ -304,4 +329,5 @@ export default {
   generateAnswerAI,
   generateAnswerCategories,
   generateIdealAnswer,
+  generateInterviewResume,
 };

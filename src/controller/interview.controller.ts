@@ -63,6 +63,7 @@ export const getCurrent = async (req: Request, res: Response) => {
 
   if (!question) {
     await interviewService.finishInterview(id);
+    interviewService.processResume(id).catch(console.error);
 
     return sendResponse(res, {
       status: 200,
@@ -118,6 +119,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     currentQuestion = await interviewService.getNextQuestion(interviewId);
     if (!currentQuestion) {
       await interviewService.finishInterview(interviewId);
+      interviewService.processResume(interviewId).catch(console.error);
 
       return sendResponse(res, {
         status: 200,
@@ -160,6 +162,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   if (!nextQuestion) {
     await interviewService.finishInterview(interviewId);
+    interviewService.processResume(interviewId).catch(console.error);
 
     return sendResponse(res, {
       status: 200,
@@ -187,6 +190,7 @@ export const getNext = async (req: Request, res: Response) => {
 
   if (!nextQuestion) {
     await interviewService.finishInterview(id);
+    interviewService.processResume(id).catch(console.error);
 
     return sendResponse(res, {
       status: 200,
@@ -215,6 +219,7 @@ export const finishInterview = async (req: Request, res: Response) => {
   }
 
   await interviewService.finishInterview(id);
+  interviewService.processResume(id).catch(console.error);
 
   sendResponse(res, {
     status: 200,
