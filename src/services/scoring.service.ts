@@ -146,6 +146,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      reason: reasonParts.join(" | "),
       prompt: technicalPrompt,
       breakdown: {
         rubricScore,
@@ -161,6 +162,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       finalScore,
       confidenceScore,
       feedback,
+      reason: reasonParts.join(" | "),
       prompt: technicalPrompt,
       breakdown: {
         rubricScore,
