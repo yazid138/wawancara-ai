@@ -6,6 +6,7 @@ import NotFoundException from "@/exception/NotFoundException";
 import BadRequestException from "@/exception/BadRequestException";
 import scoringService from "@/services/scoring.service";
 import fs from "fs";
+import ForbiddenException from "@/exception/ForbiddenException";
 
 type StartInterviewRequest = {
   companyId: number;
@@ -55,18 +56,11 @@ export const getCurrent = async (req: Request, res: Response) => {
 
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Interview tidak ditemukan",
-    });
+    throw new ForbiddenException("Interview tidak ditemukan");
   }
 
   if (interview.status === "FINISH") {
-    return sendResponse(res, {
-      status: 200,
-      message: "Interview sudah selesai",
-      data: null,
-    });
+    throw new ForbiddenException("Interview sudah selesai");
   }
 
   const question = await interviewService.getNextQuestion(id);
@@ -105,17 +99,11 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   const interview = await interviewService.getInterviewById(interviewId);
   if (!interview) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Interview tidak ditemukan",
-    });
+    throw new NotFoundException("Interview tidak ditemukan");
   }
 
   if (interview.status === "FINISH") {
-    return sendResponse(res, {
-      status: 400,
-      message: "Interview sudah selesai",
-    });
+    throw new ForbiddenException("Interview sudah selesai");
   }
 
   // Prefer the questionId provided by client to avoid race between client/server
@@ -123,10 +111,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
   if (questionId) {
     currentQuestion = await interviewService.getQuestionById(questionId);
     if (!currentQuestion) {
-      return sendResponse(res, {
-        status: 404,
-        message: "Pertanyaan tidak ditemukan",
-      });
+      throw new NotFoundException("Pertanyaan tidak ditemukan");
     }
 
     // ensure this interview hasn't answered this question yet
@@ -135,10 +120,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
       questionId,
     );
     if (already) {
-      return sendResponse(res, {
-        status: 400,
-        message: "Pertanyaan sudah dijawab",
-      });
+      throw new ForbiddenException("Pertanyaan sudah dijawab");
     }
   } else {
     currentQuestion = await interviewService.getNextQuestion(interviewId);
@@ -255,10 +237,7 @@ export const finishInterview = async (req: Request, res: Response) => {
 
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Interview tidak ditemukan",
-    });
+    throw new NotFoundException("Interview tidak ditemukan")
   }
 
   await interviewService.finishInterview(id);
@@ -277,10 +256,7 @@ export const getResult = async (req: Request, res: Response) => {
   const result = await interviewService.getResult(id);
 
   if (!result) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Interview tidak ditemukan",
-    });
+    throw new NotFoundException("Interview tidak ditemukan");
   }
 
   sendResponse(res, {
