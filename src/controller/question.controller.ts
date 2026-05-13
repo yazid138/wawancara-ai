@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
 import validate from "@/utils/validation";
 import { QuestionType } from "@/prisma/client";
+import NotFoundException from "@/exception/NotFoundException";
 
 export const getAllQuestions = async (req: Request, res: Response) => {
   const questions = await questionService.getAllQuestions();
@@ -16,12 +17,11 @@ export const getAllQuestions = async (req: Request, res: Response) => {
 export const getQuestionById = async (req: Request, res: Response) => {
   const id = +req.params.id;
   const question = await questionService.getQuestionById(id);
+
   if (!question) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Pertanyaan tidak ditemukan",
-    });
+    throw new NotFoundException("Pertanyaan tidak ditemukan");
   }
+
   sendResponse(res, {
     status: 200,
     message: "Berhasil mendapatkan pertanyaan",
@@ -126,12 +126,11 @@ export const updateQuestion = async (req: Request, res: Response) => {
 export const deleteQuestion = async (req: Request, res: Response) => {
   const id = +req.params.id;
   const question = await questionService.deleteQuestion(id);
+
   if (!question) {
-    return sendResponse(res, {
-      status: 404,
-      message: "Pertanyaan tidak ditemukan",
-    });
+    throw new NotFoundException("Pertanyaan tidak ditemukan");
   }
+  
   sendResponse(res, {
     status: 200,
     message: "Berhasil menghapus pertanyaan",
