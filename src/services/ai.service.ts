@@ -71,13 +71,17 @@ export const generateKeyword = async (pertanyaan: string) => {
 Anda menyusun kata kunci untuk mengevaluasi kualitas jawaban interview.
 
 Task:
-Buat beberapa kata kunci yang spesifik, relevan, dan benar-benar mencerminkan inti jawaban yang baik.
+Buat 5 kata kunci yang spesifik, relevan, dan benar-benar mencerminkan inti jawaban yang baik dari pertanyaan ini. hindari penggunaan simbol, untuk garis miring (/), pisahkan jadi 2 kata kunci.
 
 Data:
 Pertanyaan: ${pertanyaan}
 
+Example:
+Input: "Apa itu API?"
+Output: ["API", "Antarmuka", "Komunikasi", "Software", "Data"]
+
 Format:
-Kembalikan hanya JSON array string, misalnya ["kata kunci 1", "kata kunci 2"].`,
+Kembalikan hanya JSON array string dengan 5 kata kunci. Dilarang menambahkan karakter lain selain JSON array string.`,
   });
   return JSON.parse(output_text);
 };
@@ -154,10 +158,14 @@ Anda adalah penilai jawaban interview teknis dengan fokus pada kualitas isi.
 Task:
 Nilai jawaban menggunakan rubrik Pemahaman Konsep, Ketepatan Teknis, Logika Berpikir, dan Komunikasi Jawaban.
 
-${retryHint ? `Tambahan instruksi:
+${
+  retryHint
+    ? `Tambahan instruksi:
 ${retryHint}
 
-` : ""}
+`
+    : ""
+}
 
 Data:
 Pertanyaan: ${pertanyaan}
@@ -184,17 +192,24 @@ Anda adalah classifier jawaban soft skill untuk interview.
 Task:
 Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.
 
-${retryHint ? `Tambahan instruksi:
+${
+  retryHint
+    ? `Tambahan instruksi:
 ${retryHint}
 
-` : ""}
+`
+    : ""
+}
 
 Data:
 Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
 Kategori tersedia:
 ${categories
-  .map((category, index) => `${index + 1}. ${category.label} (bobot: ${category.score})`)
+  .map(
+    (category, index) =>
+      `${index + 1}. ${category.label} (bobot: ${category.score})`,
+  )
   .join("\n")}
 
 Format:
@@ -212,17 +227,45 @@ export const generateAnswerCategories = async (pertanyaan: string) => {
 Anda adalah perancang kategori penilaian untuk pertanyaan interview soft skill.
 
 Task:
-Buat beberapa kategori jawaban yang realistis, berurutan, dan memiliki bobot yang masuk akal.
+Buat 5 kategori jawaban yang realistis, berurutan, dan memiliki bobot yang masuk akal dari pertanyaan ini. label harus singkat dan jelas. score 1-5.
 
 Data:
 Pertanyaan: ${pertanyaan}
-Contoh kategori yang baik:
-[
-  { "label": "Mudah beradaptasi", "score": 4 },
+
+Example:
+<start_of_example>
+input: Bagaimana anda menyesuaikan diri dengan aturan yang berlaku di tempat magang?
+output: [
+  { "label": "Mudah Beradaptasi", "score": 4 },
   { "label": "Bisa beradaptasi", "score": 3 },
   { "label": "Sulit beradaptasi", "score": 2 },
   { "label": "Tidak mau beradaptasi", "score": 1 }
 ]
+
+input: Bagaimana Anda menilai diri sendiri dibandingkan dengan teman-teman Anda dalam bidang yang Anda lamar saat ini?
+output: [
+  { "label": "Sangat Unggul", "score": 4 },
+  { "label": "Unggul", "score": 3 },
+  { "label": "Rata-rata", "score": 2 },
+  { "label": "Dibawah rata-rata", "score": 1 }
+]
+
+input: Jika anda memiliki tugas yang sudah tenggat waktu, Apa yang anda lakukan?
+output: [
+  { "label": "Berusaha menyelesaikan", "score": 3 },
+  { "label": "Mencoba menyelesaikan lalu kumpulkan seadanya", "score": 2 },
+  { "label": "Menyerah", "score": 1 }
+]
+
+input: Seberapa sering anda memimpin sebuah tim atau kelompok?
+output: [
+  { "label": "Sangat sering", "score": 5 },
+  { "label": "Sering", "score": 4 },
+  { "label": "Jarang", "score": 3 },
+  { "label": "Sangat jarang", "score": 2 },
+  { "label": "Tidak pernah", "score": 1 }
+]
+</end_of_example>
 
 Format:
 Kembalikan hanya JSON array dengan format [{"label": "kategori", "score": 0-5}].`,
@@ -246,7 +289,7 @@ Format:
 Kembalikan hanya jawaban dalam teks biasa tanpa penjelasan tambahan.`,
   });
   return output_text;
-}
+};
 
 export default {
   createEmbedding,

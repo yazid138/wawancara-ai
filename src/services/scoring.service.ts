@@ -5,6 +5,7 @@ import {
   generateTechnicalRubricScore,
 } from "@/services/ai.service";
 import qdrantService from "@/services/qdrant.service";
+import pineconeService from "./pinecone.service";
 
 const LOW_CONFIDENCE_THRESHOLD = 0.65;
 
@@ -243,7 +244,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   if (userAnswer) {
     const userEmbedding = await createEmbedding(userAnswer);
-    const matches = await qdrantService.searchSimilarVectors(userEmbedding, 1);
+    const matches = await pineconeService.searchVector(userEmbedding, 1);
 
     similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
   }
