@@ -7,6 +7,7 @@ import BadRequestException from "@/exception/BadRequestException";
 import scoringService from "@/services/scoring.service";
 import fs from "fs";
 import ForbiddenException from "@/exception/ForbiddenException";
+import { Status, QuestionType } from "@/prisma/enums";
 
 type StartInterviewRequest = {
   companyId: number;
@@ -32,7 +33,7 @@ export const startInterview = async (req: Request, res: Response) => {
       positionId,
     );
   if (existingInterview) {
-    throw new BadRequestException(
+    throw new ForbiddenException(
       "Anda sudah melakukan interview untuk posisi ini",
     );
   }
@@ -56,10 +57,10 @@ export const getCurrent = async (req: Request, res: Response) => {
 
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
-    throw new ForbiddenException("Interview tidak ditemukan");
+    throw new NotFoundException("Interview tidak ditemukan");
   }
 
-  if (interview.status === "FINISH") {
+  if (interview.status === Status.FINISH) {
     throw new ForbiddenException("Interview sudah selesai");
   }
 
@@ -83,15 +84,23 @@ export const getCurrent = async (req: Request, res: Response) => {
   });
 };
 
+type SubmitAnswerRequest = {
+  answer: string;
+  questionId?: number;
+};
+
 // SUBMIT ANSWER
 export const submitAnswer = async (req: Request, res: Response) => {
   const interviewId = +req.params.id;
 
-  const { answer, questionId } = validate<{
-    answer: string;
-    questionId?: number;
-  }>(
-    { answer: "string", questionId: { type: "number", optional: true } },
+  const { answer, questionId } = validate<SubmitAnswerRequest>(
+    { 
+      answer: "string", 
+      questionId: { 
+        type: "number", 
+        optional: true 
+      } 
+    },
     req.body,
   );
 
@@ -102,7 +111,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     throw new NotFoundException("Interview tidak ditemukan");
   }
 
-  if (interview.status === "FINISH") {
+  if (interview.status === Status.FINISH) {
     throw new ForbiddenException("Interview sudah selesai");
   }
 
@@ -144,15 +153,9 @@ export const submitAnswer = async (req: Request, res: Response) => {
   });
 
   try {
-    if (currentQuestion.type === "TECHNICAL") {
+    if (currentQuestion.type === QuestionType.TECHNICAL) {
       scoringService
         .scoreTechnicalAnswer(savedAnswer.id)
-        .then(() =>
-          fs.appendFileSync(
-            "scoring.log",
-            `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}\n`,
-          ),
-        )
         .catch((err) => {
           fs.appendFileSync(
             "scoring.log",
@@ -162,15 +165,9 @@ export const submitAnswer = async (req: Request, res: Response) => {
         });
     }
 
-    if (currentQuestion.type === "SOFTSKILL") {
+    if (currentQuestion.type === QuestionType.SOFTSKILL) {
       scoringService
         .scoreSoftSkillAnswer(savedAnswer.id)
-        .then(() =>
-          fs.appendFileSync(
-            "scoring.log",
-            `SUCCESS: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}\n`,
-          ),
-        )
         .catch((err) => {
           fs.appendFileSync(
             "scoring.log",
