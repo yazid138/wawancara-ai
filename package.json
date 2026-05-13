@@ -27,7 +27,6 @@
     "prettier": "^3.6.2",
     "prisma": "7",
     "ts-node": "^10.9.2",
-    "tsc": "^2.0.4",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
