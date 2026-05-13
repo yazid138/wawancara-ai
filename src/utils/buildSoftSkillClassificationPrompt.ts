@@ -8,7 +8,7 @@ export const buildSoftSkillClassificationPrompt = (
 Anda adalah classifier jawaban soft skill untuk interview.
 
 Task:
-Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.
+Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia.  Jika tidak ada kategori yang cocok, kembalikan label "Tidak Sesuai" (dengan score 0).
 
 ${
   retryHint

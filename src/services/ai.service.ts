@@ -1,5 +1,7 @@
 import config from "@/config";
 import Message from "@/types/aiMessage";
+import { buildSoftSkillClassificationPrompt } from "@/utils/buildSoftSkillClassificationPrompt";
+import { buildTechnicalRubricPrompt } from "@/utils/buildTechnicalRubricPrompt";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -152,27 +154,7 @@ export const generateTechnicalRubricScore = async (
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Role:
-Anda adalah penilai jawaban interview teknis dengan fokus pada kualitas isi.
-
-Task:
-Nilai jawaban menggunakan rubrik Pemahaman Konsep, Ketepatan Teknis, Logika Berpikir, dan Komunikasi Jawaban.
-
-${
-  retryHint
-    ? `Tambahan instruksi:
-${retryHint}
-
-`
-    : ""
-}
-
-Data:
-Pertanyaan: ${pertanyaan}
-Jawaban: ${jawaban}
-
-Format:
-Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "teknis": 0-5, "logika": 0-5, "komunikasi": 0-5, "confidence": 0-1, "alasan": "singkat"}.`,
+    input: buildTechnicalRubricPrompt(pertanyaan, jawaban, retryHint),
   });
 
   return JSON.parse(output_text);
@@ -186,35 +168,7 @@ export const classifySoftSkillAnswer = async (
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: `Role:
-Anda adalah classifier jawaban soft skill untuk interview.
-
-Task:
-Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia. Jika tidak ada kategori yang cocok, kembalikan label "Tidak Sesuai" (dengan score 0).
-
-${
-  retryHint
-    ? `Tambahan instruksi:
-${retryHint}
-
-`
-    : ""
-}
-
-Data:
-Pertanyaan: ${pertanyaan}
-Jawaban: ${jawaban}
-Kategori tersedia:
-${categories
-  .map(
-    (category, index) =>
-      `${index + 1}. ${category.label} (bobot: ${category.score})`,
-  )
-  .join("\n")}
-
-Format:
-Kembalikan hanya JSON dengan format {"label": "kategori", "confidence": 0-1, "alasan": "singkat"}.
-Pastikan label yang dikembalikan persis cocok dengan salah satu kategori yang tersedia.`,
+    input: buildSoftSkillClassificationPrompt(pertanyaan, jawaban, categories, retryHint),
   });
 
   return JSON.parse(output_text);
