@@ -193,7 +193,7 @@ model ScoreSoftSkill {
   id       Int @id @default(autoincrement())
   answerId Int @unique
 
-  categoryId    Int
+  categoryId    Int?
   categoryLabel String
 
   finalScore Float
@@ -206,5 +206,5 @@ model ScoreSoftSkill {
   updatedAt DateTime @updatedAt
 
   answer   Answer         @relation(fields: [answerId], references: [id])
-  category AnswerCategory @relation(fields: [categoryId], references: [id])
+  category AnswerCategory? @relation(fields: [categoryId], references: [id])
 }
