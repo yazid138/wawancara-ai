@@ -6,7 +6,6 @@
     "build": "tsc && tsc-alias -f",
     "start": "node dist/index.js",
     "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec tsx index.ts",
-    "postinstall": "prisma generate",
     "format": "prettier --write .",
     "db:seed": "tsx prisma/seed.ts"
   },
