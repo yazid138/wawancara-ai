@@ -227,7 +227,7 @@ export const generateAnswerCategories = async (pertanyaan: string) => {
 Anda adalah perancang kategori penilaian untuk pertanyaan interview soft skill.
 
 Task:
-Buat 5 kategori jawaban yang realistis, berurutan, dan memiliki bobot yang masuk akal dari pertanyaan ini. label harus singkat dan jelas. score 1-5.
+Buat beberapa kategori jawaban yang realistis, berurutan, dan memiliki bobot yang masuk akal dari pertanyaan ini. label harus singkat dan jelas. score 1-5.
 
 Data:
 Pertanyaan: ${pertanyaan}
