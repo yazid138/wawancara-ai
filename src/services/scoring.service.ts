@@ -201,6 +201,35 @@ const hasWholeWord = (text: string, keyword: string) => {
   return false;
 };
 
+const searchVector = async (userEmbedding: number[], questionId: number) => {
+  const idealAnswers = await prisma.idealAnswer.findMany({
+      where: { questionId }
+    });
+
+    if (idealAnswers.length > 0) {
+      let maxSim = 0;
+      for (const ia of idealAnswers) {
+        const iaEmb = ia.embedding as number[];
+        if (Array.isArray(iaEmb) && iaEmb.length === userEmbedding.length) {
+          let dotProduct = 0;
+          let normA = 0;
+          let normB = 0;
+          for (let i = 0; i < userEmbedding.length; i++) {
+            dotProduct += userEmbedding[i] * iaEmb[i];
+            normA += userEmbedding[i] * userEmbedding[i];
+            normB += iaEmb[i] * iaEmb[i];
+          }
+          if (normA > 0 && normB > 0) {
+            const sim = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+            if (sim > maxSim) maxSim = sim;
+          }
+        }
+      }
+      return Math.max(0, Math.min(maxSim, 1));
+    }
+    return 0;
+}
+
 const scoreTechnicalAnswer = async (answerId: number) => {
   const answer = await prisma.answer.findUnique({
     where: { id: answerId },
@@ -244,9 +273,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   if (userAnswer) {
     const userEmbedding = await createEmbedding(userAnswer);
-    const matches = await pineconeService.searchVector(userEmbedding, 1);
-
-    similarityScore = Math.max(0, Math.min(matches?.[0]?.score ?? 0, 1));
+    similarityScore = await searchVector(userEmbedding, questionId);
   }
 
   const aiRubric = await retryIfLowConfidenceWithPrompt(

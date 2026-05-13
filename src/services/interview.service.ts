@@ -114,7 +114,14 @@ const getNextQuestion = async (interviewId: number) => {
       const validCandidates = candidates.filter((q) => !usedQuestionIds.has(q.id));
 
       if (validCandidates.length > 0) {
-        const selected = validCandidates[Math.floor(Math.random() * validCandidates.length)];
+        validCandidates.sort((a, b) => a.id - b.id);
+        const seed = interviewId + usedQuestionIds.size * 1000;
+        const pseudoRandom = (s: number) => {
+          let x = Math.sin(s) * 10000;
+          return x - Math.floor(x);
+        };
+        const randomIndex = Math.floor(pseudoRandom(seed) * validCandidates.length);
+        const selected = validCandidates[randomIndex];
         
         // Validasi akhir sebelum return
         if (!usedQuestionIds.has(selected.id)) {
