@@ -182,12 +182,13 @@ const scoreAnswer = async (req: Request, res: Response) => {
   const aiScore = ruleAIScore(aiScoreResult) * 0.4;
   const ruleScore = ruleLengthScore(jawaban, minLengthResult) * 0.3 + ruleKeywordScore(jawaban, keywordResult) * 0.3;
 
-  const finalScore = ruleScore + aiScore;
-  
+  const finalScoreRaw = ruleScore + aiScore;
+  const finalScore = finalScoreRaw * 100;
+
   sendResponse(res, {
     status: 200,
     message: "berhasil ",
-    data: { finalScore, aiScore, ruleScore, alasan: aiScoreResult.alasan },
+    data: { finalScore, aiScore: aiScore * 100, ruleScore: ruleScore * 100, finalScoreRaw, alasan: aiScoreResult.alasan },
   });
 };
 
