@@ -281,10 +281,12 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const keywordCoverage = keywordScore;
   const similarityConfidence = similarityScore;
 
-  const finalScore =
+  const finalScoreRaw =
     rubricScore * 0.4 +
     similarityScore * 0.3 +
     keywordScore * 0.3;
+
+  const finalScore = finalScoreRaw * 100;
 
   const evidenceAlignment =
     rubricScore * 0.5 + similarityConfidence * 0.25 + keywordCoverage * 0.25;
@@ -292,7 +294,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const confidenceScore = Math.max(
     0,
     Math.min(
-      rubricConfidence * 0.45 + evidenceAlignment * 0.45 + (finalScore >= 0.5 ? 0.1 : 0),
+      rubricConfidence * 0.45 + evidenceAlignment * 0.45 + (finalScoreRaw >= 0.5 ? 0.1 : 0),
       1,
     ),
   );
@@ -306,9 +308,9 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   ].filter(Boolean);
 
   const feedback =
-    finalScore > 0.7
+    finalScoreRaw > 0.7
       ? "Jawaban sangat baik"
-      : finalScore > 0.4
+      : finalScoreRaw > 0.4
       ? "Jawaban cukup baik"
       : "Jawaban perlu diperbaiki";
 
