@@ -5,6 +5,7 @@ import hfService from "@/services/huggingface.service";
 import validate from "@/utils/validation";
 import pineconeService from "@/services/pinecone.service";
 import qdrantService from "@/services/qdrant.service";
+import BadRequestException from "@/exception/BadRequestException";
 
 type GenerateMessageRequest = { message: string };
 const generateMessage = async (req: Request, res: Response) => {
@@ -20,11 +21,7 @@ const generateMessage = async (req: Request, res: Response) => {
   );
   const resultObj = JSON.parse(result);
   if (resultObj.valid !== true) {
-    return sendResponse(res, {
-      status: 400,
-      message: "Input tidak sesuai dengan ketentuan wawancara",
-      error: resultObj.keterangan,
-    });
+    throw new BadRequestException("Input tidak sesuai dengan ketentuan wawancara", resultObj.keterangan);
   }
   const data = await aiService.generateMessage([
     { role: "system", content: "You are a helpful assistant." },
