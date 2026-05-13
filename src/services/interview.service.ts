@@ -31,7 +31,11 @@ const startInterview = (data: StartInterviewInput) => {
   });
 };
 
-const getInterviewByUserCompanyPosition = (userId: number, companyId: number, positionId: number) => {
+const getInterviewByUserCompanyPosition = (
+  userId: number,
+  companyId: number,
+  positionId: number,
+) => {
   return prisma.interview.findFirst({
     where: {
       userId,
@@ -68,7 +72,9 @@ const getQuestionById = (id: number) => {
 };
 
 const hasAnsweredQuestion = async (interviewId: number, questionId: number) => {
-  const existing = await prisma.answer.findFirst({ where: { interviewId, questionId } });
+  const existing = await prisma.answer.findFirst({
+    where: { interviewId, questionId },
+  });
   return Boolean(existing);
 };
 
@@ -111,7 +117,9 @@ const getNextQuestion = async (interviewId: number) => {
       });
 
       // Filter tambahan untuk memastikan benar-benar tidak ada duplikat
-      const validCandidates = candidates.filter((q) => !usedQuestionIds.has(q.id));
+      const validCandidates = candidates.filter(
+        (q) => !usedQuestionIds.has(q.id),
+      );
 
       if (validCandidates.length > 0) {
         validCandidates.sort((a, b) => a.id - b.id);
@@ -120,9 +128,11 @@ const getNextQuestion = async (interviewId: number) => {
           let x = Math.sin(s) * 10000;
           return x - Math.floor(x);
         };
-        const randomIndex = Math.floor(pseudoRandom(seed) * validCandidates.length);
+        const randomIndex = Math.floor(
+          pseudoRandom(seed) * validCandidates.length,
+        );
         const selected = validCandidates[randomIndex];
-        
+
         // Validasi akhir sebelum return
         if (!usedQuestionIds.has(selected.id)) {
           return selected;
@@ -143,7 +153,7 @@ const getResult = (id: number) => {
           technicalScore: true,
           softSkillScore: true,
           question: true,
-        }
+        },
       },
     },
   });
@@ -155,12 +165,16 @@ const getInterviewHistory = (id: number) => {
     include: {
       answers: {
         include: {
-          question: true,
+          question: {
+            include: {
+              category: true,
+            },
+          },
           technicalScore: true,
           softSkillScore: true,
         },
         orderBy: {
-          createdAt: 'asc',
+          createdAt: "asc",
         },
       },
       company: true,
@@ -177,7 +191,7 @@ const getUserInterviews = (userId: number) => {
       position: true,
     },
     orderBy: {
-      updatedAt: 'desc',
+      updatedAt: "desc",
     },
   });
 };
@@ -186,9 +200,9 @@ const processResume = async (interviewId: number) => {
   const history = await getInterviewHistory(interviewId);
   if (!history || !history.answers) return;
 
-  const qnaList = history.answers.map(ans => ({
+  const qnaList = history.answers.map((ans) => ({
     question: ans.question.content,
-    answer: ans.content
+    answer: ans.content,
   }));
 
   const { generateInterviewResume } = await import("./ai.service");
@@ -196,7 +210,7 @@ const processResume = async (interviewId: number) => {
     const resume = await generateInterviewResume(qnaList);
     await prisma.interview.update({
       where: { id: interviewId },
-      data: { resume }
+      data: { resume },
     });
   } catch (error) {
     console.error("Failed to generate resume:", error);
