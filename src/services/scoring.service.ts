@@ -191,15 +191,6 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     return null;
   }
 
-  const firstClassification = await classifySoftSkillAnswer(
-    answer.question.content,
-    answer.content,
-    categories.map((category) => ({
-      label: category.label,
-      score: category.score,
-    })),
-  );
-
   const categoryOptions = buildCategoryOptions(categories);
   const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
     () =>
