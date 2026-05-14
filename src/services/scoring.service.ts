@@ -231,8 +231,10 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   // if no exact match, find most similar category
   if (!bestCategory && classification?.label) {
+    const categoriesCopy = [...categories];
+    categoriesCopy.push({ label: "Tidak ada kategori yang sesuai", score: 0 } as any);
     let maxSimilarity = 0;
-    for (const cat of categories) {
+    for (const cat of categoriesCopy) {
       const similarity = stringSimilarity(cat.label, classification.label);
       if (similarity > maxSimilarity) {
         maxSimilarity = similarity;
@@ -244,10 +246,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   // fallback if still not found
   if (!bestCategory) {
     bestCategory = {
-      id: 0,
       label: "Uncategorized",
       score: 0,
-      questionId: answer.question.id,
     } as any;
   }
 
