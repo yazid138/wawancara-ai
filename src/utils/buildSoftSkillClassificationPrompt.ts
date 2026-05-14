@@ -4,6 +4,7 @@ export const buildSoftSkillClassificationPrompt = (
   categories: Array<{ label: string; score: number }>,
   retryHint?: string,
 ): string => {
+  categories.push({ label: "Tidak ada kategori yang sesuai", score: 0 });
   return `Role:
 Anda adalah classifier jawaban soft skill untuk interview.
 
