@@ -4,7 +4,9 @@ export const buildSoftSkillClassificationPrompt = (
   categories: Array<{ label: string; score: number }>,
   retryHint?: string,
 ): string => {
-  categories.push({ label: "Tidak ada kategori yang sesuai", score: 0 });
+  // Create a copy to avoid modifying the original array
+  const categoriesCopy = [...categories];
+  categoriesCopy.push({ label: "Tidak ada kategori yang sesuai", score: 0 });
   return `Role:
 Anda adalah classifier jawaban soft skill untuk interview.
 
@@ -24,7 +26,7 @@ Data:
 Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
 Kategori tersedia:
-${categories
+${categoriesCopy
   .map(
     (category, index) =>
       `${index + 1}. ${category.label} (bobot: ${category.score})`,
