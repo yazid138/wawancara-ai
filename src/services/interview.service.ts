@@ -10,8 +10,8 @@ type StartInterviewInput = {
 const DISTRIBUTION: Record<QuestionType, number> = {
   INTRO: 1,
   GENERAL: 1,
-  SOFTSKILL: 4,
-  TECHNICAL: 4,
+  SOFTSKILL: 5,
+  TECHNICAL: 3,
 };
 
 const FLOW: QuestionType[] = [
@@ -117,9 +117,24 @@ const getNextQuestion = async (interviewId: number) => {
       });
 
       // Filter tambahan untuk memastikan benar-benar tidak ada duplikat
-      const validCandidates = candidates.filter(
+      let validCandidates = candidates.filter(
         (q) => !usedQuestionIds.has(q.id),
       );
+
+      // Prioritaskan kategori softskill yang belum ditanyakan
+      if (type === QuestionType.SOFTSKILL && validCandidates.length > 0) {
+        const usedCategoryIds = new Set(
+          answers
+            .filter((a) => a.question.type === QuestionType.SOFTSKILL)
+            .map((a) => a.question.categoryId),
+        );
+        const candidatesWithNewCategory = validCandidates.filter(
+          (q) => !usedCategoryIds.has(q.categoryId),
+        );
+        if (candidatesWithNewCategory.length > 0) {
+          validCandidates = candidatesWithNewCategory;
+        }
+      }
 
       if (validCandidates.length > 0) {
         validCandidates.sort((a, b) => a.id - b.id);

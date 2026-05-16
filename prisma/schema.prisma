@@ -197,8 +197,11 @@ model ScoreSoftSkill {
   categoryId    Int?
   categoryLabel String
 
-  finalScore Float
-  reason     String?
+  finalScore      Float
+  similarityScore Float @default(0)
+  keywordScore    Float @default(0)
+  
+  reason          String?
 
   confidenceScore Float
   prompt          String?

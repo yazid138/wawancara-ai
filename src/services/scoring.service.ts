@@ -180,6 +180,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       question: {
         include: {
           categories: true,
+          keywords: true,
         },
       },
     },
@@ -191,6 +192,39 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   if (!categories.length) {
     return null;
+  }
+
+  let similarityScore = 0;
+  let keywordScore = 0;
+  if (answer.content) {
+    const userEmbedding = await createEmbedding(answer.content);
+    similarityScore = await searchVector(userEmbedding, answer.question.id);
+
+    const keywords = answer.question.keywords || [];
+    if (keywords.length > 0) {
+      const normalizedAnswer = normalizeText(answer.content);
+      const coreKeywords = [...keywords]
+        .sort((a, b) => b.weight - a.weight)
+        .slice(0, Math.min(5, keywords.length));
+
+      let matchedWeight = 0;
+      let totalCoreWeight = 0;
+      let matchedCount = 0;
+
+      for (const k of coreKeywords) {
+        totalCoreWeight += k.weight;
+        if (hasWholeWord(normalizedAnswer, normalizeText(k.word))) {
+          matchedWeight += k.weight;
+          matchedCount += 1;
+        }
+      }
+
+      const weightCoverage = totalCoreWeight ? matchedWeight / totalCoreWeight : 0;
+      const countCoverage = coreKeywords.length
+        ? matchedCount / coreKeywords.length
+        : 0;
+      keywordScore = Math.min(1, weightCoverage * 0.7 + countCoverage * 0.3);
+    }
   }
 
   const categoryOptions = buildCategoryOptions(categories);
@@ -279,6 +313,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     `Kategori terpilih: ${matchedCategory.label}`,
     `Bobot kategori: ${matchedCategory.score}`,
     `Keyakinan AI: ${Math.round(aiConfidence * 100)}%`,
+    `Similarity vector: ${Math.round(similarityScore * 100)}%`,
+    `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
     classification?.alasan ? `Alasan AI: ${classification.alasan}` : null,
     exactLabelMatch
       ? "Label cocok persis dengan hasil klasifikasi"
@@ -291,6 +327,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
       finalScore: matchedCategory.score,
+      similarityScore,
+      keywordScore,
       confidenceScore,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
@@ -300,6 +338,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
       finalScore: matchedCategory.score,
+      similarityScore,
+      keywordScore,
       confidenceScore,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
