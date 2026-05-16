@@ -117,7 +117,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   // Prefer the questionId provided by client to avoid race between client/server
   let currentQuestion = null as any;
-  if (questionId) {
+  if (questionId && questionId !== -1) {
     currentQuestion = await interviewService.getQuestionById(questionId);
     if (!currentQuestion) {
       throw new NotFoundException("Pertanyaan tidak ditemukan");
@@ -131,6 +131,8 @@ export const submitAnswer = async (req: Request, res: Response) => {
     if (already) {
       throw new ForbiddenException("Pertanyaan sudah dijawab");
     }
+  } else if (questionId === -1) {
+    currentQuestion = { id: -1, type: "INTRO" };
   } else {
     currentQuestion = await interviewService.getNextQuestion(interviewId);
     if (!currentQuestion) {
@@ -143,6 +145,15 @@ export const submitAnswer = async (req: Request, res: Response) => {
         data: null,
       });
     }
+  }
+
+  if (currentQuestion.id === -1) {
+    await interviewService.createUserChat(interviewId, answer);
+    return sendResponse(res, {
+      status: 201,
+      message: "Jawaban berhasil disimpan",
+      data: null,
+    });
   }
 
   const savedAnswer = await interviewService.createAnswer({

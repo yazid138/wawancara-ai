@@ -272,6 +272,50 @@ Kembalikan resume dalam bentuk teks paragraf biasa, gunakan bahasa yang profesio
   return output_text;
 };
 
+export const generateIntroMessage = async (
+  userName: string,
+  companyName: string,
+  positionName: string,
+) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Role:
+Anda adalah HR yang ramah dan sedang memulai sesi interview dengan seorang kandidat.
+
+Task:
+Buatlah satu pertanyaan sapaan pembuka (Intro) yang menyapa kandidat, menyebutkan nama perusahaan, dan posisi yang dilamar. Mintalah kandidat untuk memperkenalkan diri secara singkat dan alasan mengapa mereka tertarik dengan posisi ini.
+
+Data:
+Nama Kandidat: ${userName}
+Perusahaan: ${companyName}
+Posisi: ${positionName}
+
+Format:
+Kembalikan hanya teks pertanyaan dalam bahasa Indonesia yang natural dan ramah, tanpa teks tambahan.`,
+  });
+
+  return output_text;
+};
+
+export const rephraseQuestion = async (originalQuestion: string) => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: `Role:
+Anda adalah HR atau User Interviewer yang sedang mewawancarai kandidat secara lisan/chat.
+
+Task:
+Tulis ulang (rephrase) pertanyaan interview berikut agar terdengar lebih natural, ramah, dan bervariasi layaknya percakapan nyata, tanpa mengubah inti kriteria pertanyaan tersebut.
+
+Data:
+Pertanyaan Asli: ${originalQuestion}
+
+Format:
+Kembalikan hanya teks pertanyaan hasil rephrase dalam bahasa Indonesia yang baik dan profesional, tanpa teks tambahan.`,
+  });
+
+  return output_text;
+};
+
 export default {
   createEmbedding,
   generateMessage,
@@ -286,4 +330,6 @@ export default {
   generateAnswerCategories,
   generateIdealAnswer,
   generateInterviewResume,
+  generateIntroMessage,
+  rephraseQuestion,
 };

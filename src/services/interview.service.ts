@@ -81,18 +81,32 @@ const hasAnsweredQuestion = async (interviewId: number, questionId: number) => {
 const TOTAL_QUESTIONS = 10;
 
 const getNextQuestion = async (interviewId: number) => {
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+    include: {
+      user: true,
+      company: true,
+      position: true,
+      chatHistories: true,
+    },
+  });
+
+  if (!interview) return null;
+
   const answers = await prisma.answer.findMany({
     where: { interviewId },
     include: { question: true },
   });
 
+  const aiChatCount = interview.chatHistories.filter((ch) => ch.role === "AI").length;
+
   // HARD LIMIT
-  if (answers.length >= TOTAL_QUESTIONS) {
+  if (answers.length + aiChatCount >= TOTAL_QUESTIONS) {
     return null;
   }
 
   const countByType: Record<QuestionType, number> = {
-    INTRO: 0,
+    INTRO: aiChatCount,
     GENERAL: 0,
     SOFTSKILL: 0,
     TECHNICAL: 0,
@@ -109,6 +123,29 @@ const getNextQuestion = async (interviewId: number) => {
     const remaining = DISTRIBUTION[type] - countByType[type];
 
     if (remaining > 0) {
+      if (type === "INTRO") {
+        const { generateIntroMessage } = await import("./ai.service");
+        const aiMessage = await generateIntroMessage(
+          interview.user.name,
+          interview.company.name,
+          interview.position.name,
+        );
+
+        const newChat = await prisma.chatHistory.create({
+          data: {
+            interviewId,
+            role: "AI",
+            content: aiMessage,
+          },
+        });
+
+        return {
+          id: -1,
+          content: aiMessage,
+          type: "INTRO",
+        };
+      }
+
       const candidates = await prisma.question.findMany({
         where: {
           type,
@@ -150,7 +187,32 @@ const getNextQuestion = async (interviewId: number) => {
 
         // Validasi akhir sebelum return
         if (!usedQuestionIds.has(selected.id)) {
-          return selected;
+          let chatHistory = await prisma.chatHistory.findFirst({
+            where: {
+              interviewId,
+              questionId: selected.id,
+              role: "AI",
+            },
+          });
+
+          if (!chatHistory) {
+            const { rephraseQuestion } = await import("./ai.service");
+            const rephrasedContent = await rephraseQuestion(selected.content);
+
+            chatHistory = await prisma.chatHistory.create({
+              data: {
+                interviewId,
+                role: "AI",
+                content: rephrasedContent,
+                questionId: selected.id,
+              },
+            });
+          }
+
+          return {
+            ...selected,
+            content: chatHistory.content,
+          };
         }
       }
     }
@@ -194,6 +256,11 @@ const getInterviewHistory = (id: number) => {
       },
       company: true,
       position: true,
+      chatHistories: {
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
     },
   });
 };
@@ -215,10 +282,28 @@ const processResume = async (interviewId: number) => {
   const history = await getInterviewHistory(interviewId);
   if (!history || !history.answers) return;
 
-  const qnaList = history.answers.map((ans) => ({
-    question: ans.question.content,
-    answer: ans.content,
-  }));
+  const qnaList: Array<{ question: string; answer: string }> = [];
+
+  // Add chat histories (INTRO) to qna
+  const aiChats = history.chatHistories?.filter(c => c.role === "AI") || [];
+  const userChats = history.chatHistories?.filter(c => c.role === "USER") || [];
+  
+  for (let i = 0; i < Math.max(aiChats.length, userChats.length); i++) {
+    if (aiChats[i] || userChats[i]) {
+       qnaList.push({
+         question: aiChats[i]?.content || "",
+         answer: userChats[i]?.content || "",
+       });
+    }
+  }
+
+  // Add normal answers to qna
+  history.answers.forEach((ans) => {
+    qnaList.push({
+      question: ans.question.content,
+      answer: ans.content,
+    });
+  });
 
   const { generateInterviewResume } = await import("./ai.service");
   try {
@@ -230,6 +315,16 @@ const processResume = async (interviewId: number) => {
   } catch (error) {
     console.error("Failed to generate resume:", error);
   }
+};
+
+const createUserChat = (interviewId: number, content: string) => {
+  return prisma.chatHistory.create({
+    data: {
+      interviewId,
+      role: "USER",
+      content,
+    },
+  });
 };
 
 export default {
@@ -245,4 +340,5 @@ export default {
   getInterviewHistory,
   getUserInterviews,
   processResume,
+  createUserChat,
 };
