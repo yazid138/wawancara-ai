@@ -310,7 +310,7 @@ Data:
 Pertanyaan Asli: ${originalQuestion}
 
 Format:
-Kembalikan hanya teks pertanyaan hasil rephrase dalam bahasa Indonesia yang baik dan profesional, tanpa teks tambahan.`,
+PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`,
   });
 
   return output_text;
