@@ -71,6 +71,7 @@ model Interview {
   company  Company  @relation(fields: [companyId], references: [id])
   position Position @relation(fields: [positionId], references: [id])
   answers  Answer[]
+  chatHistories ChatHistory[]
 }
 
 enum QuestionType {
@@ -207,4 +208,21 @@ model ScoreSoftSkill {
 
   answer   Answer         @relation(fields: [answerId], references: [id])
   category AnswerCategory? @relation(fields: [categoryId], references: [id])
+}
+
+enum ChatRole {
+  AI
+  USER
+}
+
+model ChatHistory {
+  id          Int      @id @default(autoincrement())
+  interviewId Int
+  role        ChatRole
+  content     String
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interview   Interview @relation(fields: [interviewId], references: [id])
 }
