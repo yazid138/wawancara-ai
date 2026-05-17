@@ -85,7 +85,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
           userId,
         });
 
-        await interviewService.createUserChat(interviewId, answer);
+        await interviewService.createUserChat(interviewId, answer, currentQuestion.id);
 
         // Async Scoring
         try {

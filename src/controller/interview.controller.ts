@@ -163,7 +163,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     userId,
   });
 
-  await interviewService.createUserChat(interviewId, answer);
+  await interviewService.createUserChat(interviewId, answer, currentQuestion.id);
 
   try {
     if (currentQuestion.type === QuestionType.TECHNICAL) {

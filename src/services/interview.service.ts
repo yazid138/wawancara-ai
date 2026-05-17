@@ -245,8 +245,8 @@ const getResult = (id: number) => {
   });
 };
 
-const getInterviewHistory = (id: number) => {
-  return prisma.interview.findUnique({
+const getInterviewHistory = async (id: number) => {
+  const interview = await prisma.interview.findUnique({
     where: { id },
     include: {
       answers: {
@@ -272,6 +272,52 @@ const getInterviewHistory = (id: number) => {
       },
     },
   });
+
+  if (!interview) return null;
+
+  const answers = interview.answers || [];
+  const chatHistories = [...(interview.chatHistories || [])] as any[];
+
+  // For backwards compatibility: add missing user chats from answers
+  answers.forEach((ans: any) => {
+    const hasChat = chatHistories.some(
+      (ch) => ch.role === "USER" && ch.questionId === ans.questionId
+    );
+    if (!hasChat) {
+      chatHistories.push({
+        id: `legacy-chat-${ans.id}`,
+        interviewId: interview.id,
+        role: "USER",
+        content: ans.content,
+        questionId: ans.questionId,
+        createdAt: ans.createdAt,
+        updatedAt: ans.createdAt,
+      });
+    }
+  });
+
+  chatHistories.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+  const mappedChatHistories = chatHistories.map((ch: any) => {
+    if (ch.role === "USER") {
+      let matchingAns = null;
+      if (typeof ch.id === "string" && ch.id.startsWith("legacy-chat-")) {
+        matchingAns = answers.find((a: any) => `legacy-chat-${a.id}` === ch.id);
+      } else if (ch.questionId) {
+        matchingAns = answers.find((a: any) => a.questionId === ch.questionId);
+      }
+
+      if (matchingAns) {
+        ch.answer = matchingAns;
+      }
+    }
+    return ch;
+  });
+
+  return {
+    ...interview,
+    chatHistories: mappedChatHistories,
+  };
 };
 
 const getUserInterviews = (userId: number) => {
@@ -326,12 +372,13 @@ const processResume = async (interviewId: number) => {
   }
 };
 
-const createUserChat = (interviewId: number, content: string) => {
+const createUserChat = (interviewId: number, content: string, questionId?: number) => {
   return prisma.chatHistory.create({
     data: {
       interviewId,
       role: "USER",
       content,
+      ...(questionId ? { questionId } : {}),
     },
   });
 };
