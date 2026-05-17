@@ -321,12 +321,24 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       : "Label diambil dari kategori terdekat yang tersedia",
   ].filter(Boolean);
 
+  const hasKeywords = answer.question.keywords && answer.question.keywords.length > 0;
+  const categoryScoreRaw = matchedCategory.score / maxCategoryScore;
+  
+  let finalScoreRaw = 0;
+  if (hasKeywords) {
+    finalScoreRaw = categoryScoreRaw * 0.5 + similarityScore * 0.25 + keywordScore * 0.25;
+  } else {
+    finalScoreRaw = categoryScoreRaw * 0.7 + similarityScore * 0.3;
+  }
+  
+  const finalScore = finalScoreRaw * 100;
+
   return prisma.scoreSoftSkill.upsert({
     where: { answerId },
     update: {
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
-      finalScore: matchedCategory.score,
+      finalScore,
       similarityScore,
       keywordScore,
       confidenceScore,
@@ -337,7 +349,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       answerId,
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
-      finalScore: matchedCategory.score,
+      finalScore,
       similarityScore,
       keywordScore,
       confidenceScore,
