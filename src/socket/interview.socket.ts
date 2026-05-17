@@ -85,6 +85,8 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
           userId,
         });
 
+        await interviewService.createUserChat(interviewId, answer);
+
         // Async Scoring
         try {
           if (currentQuestion.type === QuestionType.TECHNICAL) {
