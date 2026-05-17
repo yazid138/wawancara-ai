@@ -120,7 +120,7 @@ model AnswerCategory {
   score Int // 4
 
   question     Question     @relation(fields: [questionId], references: [id])
-  ScoreSoftSkill ScoreSoftSkill[]
+  scores       Score[]
 }
 
 model Answer {
@@ -136,8 +136,7 @@ model Answer {
   question  Question     @relation(fields: [questionId], references: [id])
   interview Interview    @relation(fields: [interviewId], references: [id])
   user      User         @relation(fields: [userId], references: [id])
-  technicalScore ScoreTechnical?
-  softSkillScore ScoreSoftSkill?
+  score     Score?
 
   @@index([questionId])
   @@index([interviewId])
@@ -167,46 +166,28 @@ model IdealAnswer {
   question Question @relation(fields: [questionId], references: [id])
 }
 
-model ScoreTechnical {
+model Score {
   id       Int @id @default(autoincrement())
   answerId Int @unique
 
-  rubricScore     Float
-  similarityScore Float
-  keywordScore    Float
+  type     QuestionType
 
-  finalScore Float
-
-  confidenceScore Float
-
-  feedback  String?
-  reason    String?
-  breakdown Json?
-  prompt    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  answer Answer @relation(fields: [answerId], references: [id])
-}
-
-
-model ScoreSoftSkill {
-  id       Int @id @default(autoincrement())
-  answerId Int @unique
-
-  categoryId    Int?
-  categoryLabel String
-
+  // General Fields
   finalScore      Float
   similarityScore Float @default(0)
   keywordScore    Float @default(0)
-  
+  confidenceScore Float
+
   feedback        String?
   reason          String?
-
-  confidenceScore Float
   prompt          String?
+
+  // Specific to Technical
+  rubricScore     Float?
+
+  // Specific to Soft Skill
+  categoryId      Int?
+  categoryLabel   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

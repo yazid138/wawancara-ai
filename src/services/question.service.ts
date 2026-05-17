@@ -141,15 +141,7 @@ export const deleteQuestion = async (id: number) => {
 
     const answerIds = answers.map((answer) => answer.id);
 
-    await tx.scoreTechnical.deleteMany({
-      where: {
-        answerId: {
-          in: answerIds,
-        },
-      },
-    });
-
-    await tx.scoreSoftSkill.deleteMany({
+    await tx.score.deleteMany({
       where: {
         answerId: {
           in: answerIds,

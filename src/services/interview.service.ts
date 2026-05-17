@@ -26,7 +26,6 @@ const startInterview = (data: StartInterviewInput) => {
     data: {
       ...data,
       status: Status.ONGOING,
-      currentIndex: 0,
     },
   });
 };
@@ -236,8 +235,7 @@ const getResult = (id: number) => {
     include: {
       answers: {
         include: {
-          technicalScore: true,
-          softSkillScore: true,
+          score: true,
           question: true,
         },
       },
@@ -256,8 +254,7 @@ const getInterviewHistory = async (id: number) => {
               category: true,
             },
           },
-          technicalScore: true,
-          softSkillScore: true,
+          score: true,
         },
         orderBy: {
           createdAt: "asc",

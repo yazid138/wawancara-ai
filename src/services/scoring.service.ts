@@ -1,4 +1,5 @@
 import prisma from "@/database/prisma";
+import { QuestionType } from "@/prisma/enums";
 import {
   classifySoftSkillAnswer,
   createEmbedding,
@@ -137,9 +138,10 @@ const scoreTechnicalAnswer = async (answerId: number) => {
         ? "Jawaban cukup baik"
         : "Jawaban perlu diperbaiki";
 
-  return prisma.scoreTechnical.upsert({
+  return prisma.score.upsert({
     where: { answerId },
     update: {
+      type: QuestionType.TECHNICAL,
       rubricScore,
       similarityScore,
       keywordScore,
@@ -148,14 +150,10 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       prompt: technicalPrompt,
-      breakdown: {
-        rubricScore,
-        similarityScore,
-        keywordScore,
-      },
     },
     create: {
       answerId,
+      type: QuestionType.TECHNICAL,
       rubricScore,
       similarityScore,
       keywordScore,
@@ -164,11 +162,6 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       prompt: technicalPrompt,
-      breakdown: {
-        rubricScore,
-        similarityScore,
-        keywordScore,
-      },
     },
   });
 };
@@ -340,9 +333,10 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
         ? "Jawaban cukup baik"
         : "Jawaban perlu diperbaiki";
 
-  return prisma.scoreSoftSkill.upsert({
+  return prisma.score.upsert({
     where: { answerId },
     update: {
+      type: QuestionType.SOFTSKILL,
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
       finalScore,
@@ -355,6 +349,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     },
     create: {
       answerId,
+      type: QuestionType.SOFTSKILL,
       categoryId: matchedCategory.id,
       categoryLabel: matchedCategory.label,
       finalScore,
