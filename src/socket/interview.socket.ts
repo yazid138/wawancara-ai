@@ -73,7 +73,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
         }
       }
 
-      let savedAnswer;
+      let savedAnswer: { id: number; createdAt: Date; updatedAt: Date; userId: number; interviewId: number; questionId: number; content: string; };
       if (currentQuestion.id === -1) {
         await interviewService.createUserChat(interviewId, answer);
         io.to(roomName).emit("answer-saved", { questionId: -1, answer });
