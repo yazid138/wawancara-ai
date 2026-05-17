@@ -8,14 +8,13 @@ import {
 import { searchVector } from "@/services/question.service";
 import {
   clampConfidence,
-  hasWholeWord,
-  normalizeText,
   stringSimilarity,
   parseRubricNumber,
   buildCategoryOptions,
   retryIfLowConfidenceWithPrompt,
   buildTechnicalRubricPrompt,
   buildSoftSkillClassificationPrompt,
+  calculateKeywordScore,
 } from "@/utils";
 
 const scoreTechnicalAnswer = async (answerId: number) => {
@@ -36,28 +35,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const keywords = answer.question.keywords;
   const questionId = answer.question.id;
   const questionText = answer.question.content;
-  const normalizedAnswer = normalizeText(userAnswer);
-  const coreKeywords = [...keywords]
-    .sort((a, b) => b.weight - a.weight)
-    .slice(0, Math.min(5, keywords.length));
-
-  let matchedWeight = 0;
-  let totalCoreWeight = 0;
-  let matchedCount = 0;
-
-  for (const k of coreKeywords) {
-    totalCoreWeight += k.weight;
-    if (hasWholeWord(normalizedAnswer, normalizeText(k.word))) {
-      matchedWeight += k.weight;
-      matchedCount += 1;
-    }
-  }
-
-  const weightCoverage = totalCoreWeight ? matchedWeight / totalCoreWeight : 0;
-  const countCoverage = coreKeywords.length
-    ? matchedCount / coreKeywords.length
-    : 0;
-  const keywordScore = Math.min(1, weightCoverage * 0.7 + countCoverage * 0.3);
+  const keywordScore = calculateKeywordScore(userAnswer, keywords);
 
   let similarityScore = 0;
 
@@ -66,22 +44,11 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     similarityScore = await searchVector(userEmbedding, questionId);
   }
 
+  const retryHint = "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.";
   const aiRubric = await retryIfLowConfidenceWithPrompt(
     () => generateTechnicalRubricScore(questionText, userAnswer),
-    () =>
-      generateTechnicalRubricScore(
-        questionText,
-        userAnswer,
-        "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.",
-      ),
-    (isRetry) =>
-      buildTechnicalRubricPrompt(
-        questionText,
-        userAnswer,
-        isRetry
-          ? "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi."
-          : undefined,
-      ),
+    () => generateTechnicalRubricScore(questionText, userAnswer, retryHint),
+    (isRetry) => buildTechnicalRubricPrompt(questionText, userAnswer, isRetry ? retryHint : undefined),
   );
 
   const aiRubricResult = aiRubric.result;
@@ -194,56 +161,15 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     similarityScore = await searchVector(userEmbedding, answer.question.id);
 
     const keywords = answer.question.keywords || [];
-    if (keywords.length > 0) {
-      const normalizedAnswer = normalizeText(answer.content);
-      const coreKeywords = [...keywords]
-        .sort((a, b) => b.weight - a.weight)
-        .slice(0, Math.min(5, keywords.length));
-
-      let matchedWeight = 0;
-      let totalCoreWeight = 0;
-      let matchedCount = 0;
-
-      for (const k of coreKeywords) {
-        totalCoreWeight += k.weight;
-        if (hasWholeWord(normalizedAnswer, normalizeText(k.word))) {
-          matchedWeight += k.weight;
-          matchedCount += 1;
-        }
-      }
-
-      const weightCoverage = totalCoreWeight ? matchedWeight / totalCoreWeight : 0;
-      const countCoverage = coreKeywords.length
-        ? matchedCount / coreKeywords.length
-        : 0;
-      keywordScore = Math.min(1, weightCoverage * 0.7 + countCoverage * 0.3);
-    }
+    keywordScore = calculateKeywordScore(answer.content, keywords);
   }
 
+  const retryHint = "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.";
   const categoryOptions = buildCategoryOptions(categories);
   const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
-    () =>
-      classifySoftSkillAnswer(
-        answer.question.content,
-        answer.content,
-        categoryOptions,
-      ),
-    () =>
-      classifySoftSkillAnswer(
-        answer.question.content,
-        answer.content,
-        categoryOptions,
-        "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.",
-      ),
-    (isRetry) =>
-      buildSoftSkillClassificationPrompt(
-        answer.question.content,
-        answer.content,
-        categoryOptions,
-        isRetry
-          ? "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan."
-          : undefined,
-      ),
+    () => classifySoftSkillAnswer(answer.question.content, answer.content, categoryOptions),
+    () => classifySoftSkillAnswer(answer.question.content, answer.content, categoryOptions, retryHint),
+    (isRetry) => buildSoftSkillClassificationPrompt(answer.question.content, answer.content, categoryOptions, isRetry ? retryHint : undefined),
   );
 
   const classification = classificationWithPrompt.result;
