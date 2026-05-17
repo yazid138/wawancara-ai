@@ -140,6 +140,14 @@ const _getNextQuestion = async (interviewId: number) => {
           interview.position.name,
         );
 
+        await prisma.chatHistory.create({
+          data: {
+            interviewId,
+            role: "AI",
+            content: aiMessage,
+          },
+        });
+
         return {
           id: -1,
           content: aiMessage,
