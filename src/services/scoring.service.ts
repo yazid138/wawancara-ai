@@ -333,6 +333,13 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   
   const finalScore = finalScoreRaw * 100;
 
+  const feedback =
+    finalScoreRaw > 0.7
+      ? "Jawaban sangat baik"
+      : finalScoreRaw > 0.4
+        ? "Jawaban cukup baik"
+        : "Jawaban perlu diperbaiki";
+
   return prisma.scoreSoftSkill.upsert({
     where: { answerId },
     update: {
@@ -342,6 +349,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       similarityScore,
       keywordScore,
       confidenceScore,
+      feedback,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
     },
@@ -353,6 +361,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       similarityScore,
       keywordScore,
       confidenceScore,
+      feedback,
       reason: reasonParts.join(" | "),
       prompt: softSkillPrompt,
     },

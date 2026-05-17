@@ -202,6 +202,7 @@ model ScoreSoftSkill {
   similarityScore Float @default(0)
   keywordScore    Float @default(0)
   
+  feedback        String?
   reason          String?
 
   confidenceScore Float
