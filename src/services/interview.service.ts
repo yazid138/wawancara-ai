@@ -1,5 +1,5 @@
 import prisma from "@/database/prisma";
-import { QuestionType } from "@/prisma/client";
+import { QuestionType, Status } from "@/prisma/client";
 
 type StartInterviewInput = {
   userId: number;
@@ -25,7 +25,7 @@ const startInterview = (data: StartInterviewInput) => {
   return prisma.interview.create({
     data: {
       ...data,
-      status: "ONGOING",
+      status: Status.ONGOING,
       currentIndex: 0,
     },
   });
@@ -54,7 +54,7 @@ const getInterviewById = (id: number) => {
 const finishInterview = (id: number) => {
   return prisma.interview.update({
     where: { id },
-    data: { status: "FINISH" },
+    data: { status: Status.FINISH },
   });
 };
 
@@ -132,7 +132,7 @@ const _getNextQuestion = async (interviewId: number) => {
     const remaining = DISTRIBUTION[type] - countByType[type];
 
     if (remaining > 0) {
-      if (type === "INTRO") {
+      if (type === QuestionType.INTRO) {
         const { generateIntroMessage } = await import("./ai.service");
         const aiMessage = await generateIntroMessage(
           interview.user.name,
@@ -140,18 +140,10 @@ const _getNextQuestion = async (interviewId: number) => {
           interview.position.name,
         );
 
-        const newChat = await prisma.chatHistory.create({
-          data: {
-            interviewId,
-            role: "AI",
-            content: aiMessage,
-          },
-        });
-
         return {
           id: -1,
           content: aiMessage,
-          type: "INTRO",
+          type: QuestionType.INTRO,
         };
       }
 
