@@ -10,8 +10,8 @@ type StartInterviewInput = {
 const DISTRIBUTION: Record<QuestionType, number> = {
   INTRO: 1,
   GENERAL: 1,
-  SOFTSKILL: 5,
-  TECHNICAL: 3,
+  SOFTSKILL: 6,
+  TECHNICAL: 2,
 };
 
 const FLOW: QuestionType[] = [
@@ -78,9 +78,23 @@ const hasAnsweredQuestion = async (interviewId: number, questionId: number) => {
   return Boolean(existing);
 };
 
-const TOTAL_QUESTIONS = 10;
+const generationLocks = new Map<number, Promise<any>>();
 
 const getNextQuestion = async (interviewId: number) => {
+  if (generationLocks.has(interviewId)) {
+    return generationLocks.get(interviewId);
+  }
+
+  const promise = _getNextQuestion(interviewId);
+  generationLocks.set(interviewId, promise);
+  try {
+    return await promise;
+  } finally {
+    generationLocks.delete(interviewId);
+  }
+};
+
+const _getNextQuestion = async (interviewId: number) => {
   const interview = await prisma.interview.findUnique({
     where: { id: interviewId },
     include: {
@@ -98,15 +112,10 @@ const getNextQuestion = async (interviewId: number) => {
     include: { question: true },
   });
 
-  const aiChatCount = interview.chatHistories.filter((ch) => ch.role === "AI").length;
-
-  // HARD LIMIT
-  if (answers.length + aiChatCount >= TOTAL_QUESTIONS) {
-    return null;
-  }
+  const introAsked = interview.chatHistories.some((ch) => ch.role === "AI" && ch.questionId === null);
 
   const countByType: Record<QuestionType, number> = {
-    INTRO: aiChatCount,
+    INTRO: introAsked ? 1 : 0,
     GENERAL: 0,
     SOFTSKILL: 0,
     TECHNICAL: 0,
