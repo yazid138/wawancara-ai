@@ -100,11 +100,40 @@ const _getNextQuestion = async (interviewId: number) => {
       user: true,
       company: true,
       position: true,
-      chatHistories: true,
+      chatHistories: {
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
     },
   });
 
   if (!interview) return null;
+
+  const chatHistories = interview.chatHistories || [];
+  if (chatHistories.length > 0) {
+    const lastChat = chatHistories[chatHistories.length - 1];
+    if (lastChat.role === "AI") {
+      // User hasn't answered the last question yet, so just re-return it
+      if (lastChat.questionId === null) {
+        return {
+          id: -1,
+          content: lastChat.content,
+          type: QuestionType.INTRO,
+        };
+      } else {
+        const q = await prisma.question.findUnique({
+          where: { id: lastChat.questionId },
+        });
+        if (q) {
+          return {
+            ...q,
+            content: lastChat.content,
+          };
+        }
+      }
+    }
+  }
 
   const answers = await prisma.answer.findMany({
     where: { interviewId },
