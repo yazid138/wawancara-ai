@@ -254,9 +254,7 @@ export const generateInterviewResume = async (
     )
     .join("\n\n");
 
-  const { output_text } = await client.responses.create({
-    model: config.openAIModel,
-    input: `Role:
+  const prompt = `Role:
 Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview kandidat.
 
 Task:
@@ -266,10 +264,14 @@ Data Interview:
 ${qnaText}
 
 Format:
-Kembalikan resume dalam bentuk teks paragraf biasa, gunakan bahasa yang profesional, jelas, dan memotivasi.`,
+Kembalikan resume dalam bentuk teks paragraf biasa, gunakan bahasa yang profesional, jelas, dan memotivasi.`;
+
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: prompt,
   });
 
-  return output_text;
+  return { resume: output_text, prompt };
 };
 
 export const generateIntroMessage = async (

@@ -362,10 +362,10 @@ const processResume = async (interviewId: number) => {
 
   const { generateInterviewResume } = await import("./ai.service");
   try {
-    const resume = await generateInterviewResume(qnaList);
+    const { resume, prompt } = await generateInterviewResume(qnaList);
     await prisma.interview.update({
       where: { id: interviewId },
-      data: { resume },
+      data: { resume, resumePrompt: prompt },
     });
   } catch (error) {
     console.error("Failed to generate resume:", error);
