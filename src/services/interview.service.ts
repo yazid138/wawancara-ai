@@ -105,10 +105,14 @@ const _getNextQuestion = async (interviewId: number) => {
           createdAt: "asc",
         },
       },
+      answers: {
+        include: { question: true },
+      },
     },
   });
 
   if (!interview) return null;
+  const answers = interview.answers || [];
 
   const chatHistories = interview.chatHistories || [];
   if (chatHistories.length > 0) {
@@ -134,11 +138,6 @@ const _getNextQuestion = async (interviewId: number) => {
       }
     }
   }
-
-  const answers = await prisma.answer.findMany({
-    where: { interviewId },
-    include: { question: true },
-  });
 
   const introAsked = interview.chatHistories.some((ch) => ch.role === "AI" && ch.questionId === null);
 
@@ -190,10 +189,8 @@ const _getNextQuestion = async (interviewId: number) => {
         },
       });
 
-      // Filter tambahan untuk memastikan benar-benar tidak ada duplikat
-      let validCandidates = candidates.filter(
-        (q) => !usedQuestionIds.has(q.id),
-      );
+      // Filter tambahan untuk memastikan benar-benar tidak ada duplikat (Meski query where sudah menyaring, dipastikan ulang)
+      let validCandidates = candidates;
 
       // Prioritaskan kategori softskill yang belum ditanyakan
       if (type === QuestionType.SOFTSKILL && validCandidates.length > 0) {
@@ -224,13 +221,9 @@ const _getNextQuestion = async (interviewId: number) => {
 
         // Validasi akhir sebelum return
         if (!usedQuestionIds.has(selected.id)) {
-          let chatHistory = await prisma.chatHistory.findFirst({
-            where: {
-              interviewId,
-              questionId: selected.id,
-              role: "AI",
-            },
-          });
+          let chatHistory = interview.chatHistories.find(
+            (ch) => ch.questionId === selected.id && ch.role === "AI",
+          );
 
           if (!chatHistory) {
             const { rephraseQuestion } = await import("./ai.service");
@@ -365,26 +358,18 @@ const processResume = async (interviewId: number) => {
 
   const qnaList: Array<{ question: string; answer: string }> = [];
 
-  // Add chat histories (INTRO) to qna
-  const aiChats = history.chatHistories?.filter(c => c.role === "AI") || [];
-  const userChats = history.chatHistories?.filter(c => c.role === "USER") || [];
-  
-  for (let i = 0; i < Math.max(aiChats.length, userChats.length); i++) {
-    if (aiChats[i] || userChats[i]) {
-       qnaList.push({
-         question: aiChats[i]?.content || "",
-         answer: userChats[i]?.content || "",
-       });
+  let currentQuestion = "";
+  for (const chat of history.chatHistories) {
+    if (chat.role === "AI") {
+      currentQuestion = chat.content;
+    } else if (chat.role === "USER") {
+      qnaList.push({
+        question: currentQuestion || "Pertanyaan tidak diketahui",
+        answer: chat.content,
+      });
+      currentQuestion = ""; // Reset for the next pair
     }
   }
-
-  // Add normal answers to qna
-  history.answers.forEach((ans) => {
-    qnaList.push({
-      question: ans.question.content,
-      answer: ans.content,
-    });
-  });
 
   const { generateInterviewResume } = await import("./ai.service");
   try {
