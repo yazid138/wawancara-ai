@@ -1,4 +1,5 @@
 import prisma from "@/database/prisma";
+import NotFoundException from "@/exception/NotFoundException";
 import { QuestionType } from "@/prisma/enums";
 import {
   classifySoftSkillAnswer,
@@ -29,7 +30,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     },
   });
 
-  if (!answer) throw new Error("Answer tidak ditemukan");
+  if (!answer) throw new NotFoundException("Answer tidak ditemukan");
 
   const userAnswer = answer.content;
   const keywords = answer.question.keywords;
@@ -146,7 +147,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     },
   });
 
-  if (!answer) throw new Error("Answer tidak ditemukan");
+  if (!answer) throw new NotFoundException("Answer tidak ditemukan");
 
   const categories = answer.question.categories;
 
