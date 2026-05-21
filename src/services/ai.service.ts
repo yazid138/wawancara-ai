@@ -39,8 +39,10 @@ Task:
 Periksa apakah jawaban relevan, sopan, dan benar-benar menjawab pertanyaan.
 
 Data:
+<start_of_data>
 Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
+<end_of_data>
 
 Format:
 Kembalikan hanya JSON dengan format {"valid": true/false, "alasan": "alasan singkat jika tidak valid"}.`,
@@ -138,8 +140,10 @@ Task:
 Nilai jawaban berdasarkan rubrik Pemahaman Konsep, Logika Berpikir, Problem Solving, dan Komunikasi Teknis.
 
 Data:
+<start_of_data>
 Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
+<end_of_data>
 
 Format:
 Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "logika": 0-5, "problem_solving": 0-5, "komunikasi": 0-5, "alasan": "singkat"}.`,
@@ -260,8 +264,11 @@ Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview k
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut. Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
 
-Data Interview:
+Data:
+<start_of_data>
+Hasil Wawancara:
 ${qnaText}
+<end_of_data>
 
 Format:
 Kembalikan resume dalam bentuk teks paragraf biasa, gunakan bahasa yang profesional, jelas, dan memotivasi.`;
