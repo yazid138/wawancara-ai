@@ -6,7 +6,7 @@ import {
   createEmbedding,
   generateTechnicalRubricScore,
 } from "@/services/ai.service";
-import { searchVector } from "@/services/question.service";
+import { searchVector, addIdealAnswer } from "@/services/question.service";
 import {
   clampConfidence,
   stringSimilarity,
@@ -106,7 +106,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
         ? "Jawaban cukup baik"
         : "Jawaban perlu diperbaiki";
 
-  return prisma.score.upsert({
+  const scoreResult = await prisma.score.upsert({
     where: { answerId },
     update: {
       type: QuestionType.TECHNICAL,
@@ -132,6 +132,18 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       prompt: technicalPrompt,
     },
   });
+
+  // Promote to ideal answer if finalScore >= 80
+  if (finalScore >= 80) {
+    try {
+      await addIdealAnswer(answer.questionId, answer.content);
+      console.log(`[Auto-Promotion] High-scoring technical answer (ID: ${answerId}, Score: ${finalScore.toFixed(2)}) promoted to Ideal Answer.`);
+    } catch (err: any) {
+      console.error(`[Auto-Promotion Error] Failed to promote technical answer to Ideal Answer:`, err.message);
+    }
+  }
+
+  return scoreResult;
 };
 
 const scoreSoftSkillAnswer = async (answerId: number) => {
@@ -260,7 +272,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
         ? "Jawaban cukup baik"
         : "Jawaban perlu diperbaiki";
 
-  return prisma.score.upsert({
+  const scoreResult = await prisma.score.upsert({
     where: { answerId },
     update: {
       type: QuestionType.SOFTSKILL,
@@ -288,6 +300,18 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       prompt: softSkillPrompt,
     },
   });
+
+  // Promote to ideal answer if finalScore >= 80
+  if (finalScore >= 80) {
+    try {
+      await addIdealAnswer(answer.questionId, answer.content);
+      console.log(`[Auto-Promotion] High-scoring softskill answer (ID: ${answerId}, Score: ${finalScore.toFixed(2)}) promoted to Ideal Answer.`);
+    } catch (err: any) {
+      console.error(`[Auto-Promotion Error] Failed to promote softskill answer to Ideal Answer:`, err.message);
+    }
+  }
+
+  return scoreResult;
 };
 
 export default {

@@ -178,10 +178,20 @@ export const addIdealAnswer = async (
     throw new NotFoundException(`Question with id ${questionId} not found`);
   }
 
-  // Delete existing ideal answer if any
-  await prisma.idealAnswer.deleteMany({
-    where: { questionId },
+  // Check if this exact ideal answer content already exists for this question
+  const existing = await prisma.idealAnswer.findFirst({
+    where: {
+      questionId,
+      content: {
+        equals: idealAnswer,
+        mode: "insensitive",
+      },
+    },
   });
+
+  if (existing) {
+    return existing;
+  }
 
   const embedding = await createEmbedding(idealAnswer);
   const idealAnswerResult = await prisma.idealAnswer.create({
