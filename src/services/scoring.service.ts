@@ -6,7 +6,7 @@ import {
   createEmbedding,
   generateTechnicalRubricScore,
 } from "@/services/ai.service";
-import { searchVector, addIdealAnswer } from "@/services/question.service";
+import { getSimilarityScore, addIdealAnswer } from "@/services/question.service";
 import {
   clampConfidence,
   stringSimilarity,
@@ -42,7 +42,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   if (userAnswer) {
     const userEmbedding = await createEmbedding(userAnswer);
-    similarityScore = await searchVector(userEmbedding, questionId);
+    similarityScore = await getSimilarityScore(userEmbedding, questionId);
   }
 
   const retryHint = "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.";
@@ -171,7 +171,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   let keywordScore = 0;
   if (answer.content) {
     const userEmbedding = await createEmbedding(answer.content);
-    similarityScore = await searchVector(userEmbedding, answer.question.id);
+    similarityScore = await getSimilarityScore(userEmbedding, answer.question.id);
 
     const keywords = answer.question.keywords || [];
     keywordScore = calculateKeywordScore(answer.content, keywords);

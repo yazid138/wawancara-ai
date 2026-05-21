@@ -263,32 +263,23 @@ export const searchVector = async (
   const idealAnswers = await prisma.idealAnswer.findMany({
     where: { questionId },
   });
-
   if (idealAnswers.length > 0) {
-    const maxSim: { id: number; distance: number }[] = await prisma.$queryRaw`SELECT
-    id,
-    embedding <=> ${`[${userEmbedding.join(",")}]`}::vector AS distance
-  FROM "IdealAnswer" 
-  WHERE "questionId" = ${questionId} AND "embedding" IS NOT NULL
-  ORDER BY distance
-  LIMIT 1`;
+    const similarity: { id: number; cosine_similarity: number }[] = await prisma.$queryRaw`
+    SELECT id, 1 - (embedding <=> ${`[${userEmbedding.join(",")}]`}::vector) AS cosine_similarity 
+    FROM "IdealAnswer" 
+    WHERE "questionId" = ${questionId} 
+    ORDER BY embedding <=> ${`[${userEmbedding.join(",")}]`}::vector ASC 
+    LIMIT 1`;
 
-    if (!maxSim || maxSim.length === 0) {
+    if (!similarity || similarity.length === 0) {
       return 0;
     }
-
-    const { id, distance } = maxSim[0];
-    if (!id) {
-      return 0;
-    }
-
-    // <=> represents Cosine Distance (1 - Cosine Similarity)
-    // We want to return Cosine Similarity
-    const similarity = 1 - Number(distance);
-    return Math.max(0, Math.min(similarity, 1));
+    return similarity[0].cosine_similarity ?? 0;
   }
   return 0;
 };
+
+export const getSimilarityScore = searchVector;
 
 export default {
   getAllQuestions,
@@ -299,4 +290,5 @@ export default {
   addIdealAnswer,
   removeIdealAnswer,
   searchVector,
+  getSimilarityScore,
 };
