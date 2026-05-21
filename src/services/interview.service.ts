@@ -1,5 +1,6 @@
 import prisma from "@/database/prisma";
 import { QuestionType, Status } from "@/prisma/client";
+import { generateInterviewResume, generateIntroMessage, rephraseQuestion } from "@/services/ai.service";
 
 type StartInterviewInput = {
   userId: number;
@@ -160,7 +161,6 @@ const _getNextQuestion = async (interviewId: number) => {
 
     if (remaining > 0) {
       if (type === QuestionType.INTRO) {
-        const { generateIntroMessage } = await import("./ai.service");
         const aiMessage = await generateIntroMessage(
           interview.user.name,
           interview.company.name,
@@ -226,7 +226,6 @@ const _getNextQuestion = async (interviewId: number) => {
           );
 
           if (!chatHistory) {
-            const { rephraseQuestion } = await import("./ai.service");
             const rephrasedContent = await rephraseQuestion(selected.content);
 
             chatHistory = await prisma.chatHistory.create({
@@ -378,7 +377,6 @@ const processResume = async (interviewId: number) => {
     }
   }
 
-  const { generateInterviewResume } = await import("./ai.service");
   try {
     const { resume, prompt } = await generateInterviewResume(qnaList);
     await prisma.interview.update({
