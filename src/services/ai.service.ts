@@ -310,10 +310,10 @@ export const rephraseQuestion = async (originalQuestion: string) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: `Role:
-Anda adalah HR atau User Interviewer yang sedang mewawancarai kandidat secara lisan/chat.
+Anda adalah HR atau User Interviewer yang sedang mewawancarai kandidat mahasiswa secara lisan/chat.
 
 Task:
-Tulis ulang (rephrase) pertanyaan interview berikut agar terdengar lebih natural, ramah, tidak usah terlalu formal, dan bervariasi layaknya percakapan nyata, tanpa mengubah inti kriteria pertanyaan tersebut.
+Tulis ulang (rephrase) pertanyaan interview berikut agar terdengar lebih natural, ramah dan bervariasi layaknya percakapan nyata, tanpa mengubah inti kriteria pertanyaan tersebut.
 
 Data:
 Pertanyaan Asli: ${originalQuestion}
