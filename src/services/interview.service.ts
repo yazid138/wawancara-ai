@@ -276,7 +276,14 @@ const getInterviewHistory = async (id: number) => {
               category: true,
             },
           },
-          score: true,
+          score: {
+            select: {
+              id: true,
+              finalScore: true,
+              feedback: true,
+              reason: true,
+            }
+          },
         },
         orderBy: {
           createdAt: "asc",
