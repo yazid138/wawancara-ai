@@ -11,8 +11,8 @@ type StartInterviewInput = {
 const DISTRIBUTION: Record<QuestionType, number> = {
   INTRO: 1,
   GENERAL: 1,
-  SOFTSKILL: 9,
-  TECHNICAL: 4,
+  SOFTSKILL: 8,
+  TECHNICAL: 3,
 };
 
 const FLOW: QuestionType[] = [
