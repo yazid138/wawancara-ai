@@ -195,8 +195,8 @@ export const addIdealAnswer = async (
 
   const embedding = await createEmbedding(idealAnswer);
   const idealAnswerResult = await prisma.$queryRaw`
-  INSERT INTO "IdealAnswer" ("questionId", "content", "embedding") 
-  VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector)
+  INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt") 
+  VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
   RETURNING id, "questionId", content, "createdAt", "updatedAt"
   ` as any[];
 
