@@ -254,7 +254,7 @@ export const generateInterviewResume = async (
 ) => {
   const qnaText = qnaList
     .map(
-      (qna, idx) => `Q${idx + 1}: ${qna.question}\nA${idx + 1}: ${qna.answer}`,
+      (qna, idx) => `Question ${idx + 1}: ${qna.question}\nAnswer ${idx + 1}: ${qna.answer}`,
     )
     .join("\n\n");
 
