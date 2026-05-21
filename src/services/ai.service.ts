@@ -259,7 +259,7 @@ export const generateInterviewResume = async (
     .join("\n\n");
 
   const prompt = `Role:
-Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview kandidat.
+Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview kandidat mahasiswa.
 
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut. Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
