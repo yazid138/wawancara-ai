@@ -240,7 +240,7 @@ Data:
 Pertanyaan: ${pertanyaan}
 
 Format:
-Kembalikan hanya jawaban dalam teks biasa tanpa penjelasan tambahan.`,
+PENTING: Kembalikan HANYA 1 (satu) kalimat jawaban dalam teks biasa. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`,
   });
   return output_text;
 };
