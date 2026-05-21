@@ -11,7 +11,7 @@ type StartInterviewInput = {
 const DISTRIBUTION: Record<QuestionType, number> = {
   INTRO: 1,
   GENERAL: 1,
-  SOFTSKILL: 8,
+  SOFTSKILL: 7,
   TECHNICAL: 3,
 };
 
