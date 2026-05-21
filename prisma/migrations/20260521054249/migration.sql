@@ -1,3 +1,6 @@
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "vector";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'COMPANY', 'STUDENT', 'PSYCHOLOGIST');
 
@@ -6,6 +9,9 @@ CREATE TYPE "Status" AS ENUM ('ONGOING', 'FINISH');
 
 -- CreateEnum
 CREATE TYPE "QuestionType" AS ENUM ('INTRO', 'GENERAL', 'TECHNICAL', 'SOFTSKILL');
+
+-- CreateEnum
+CREATE TYPE "ChatRole" AS ENUM ('AI', 'USER');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -33,6 +39,7 @@ CREATE TABLE "Company" (
 -- CreateTable
 CREATE TABLE "Position" (
     "id" SERIAL NOT NULL,
+    "companyId" INTEGER NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -47,7 +54,8 @@ CREATE TABLE "Interview" (
     "companyId" INTEGER NOT NULL,
     "positionId" INTEGER NOT NULL,
     "status" "Status",
-    "currentIndex" INTEGER NOT NULL DEFAULT 0,
+    "resume" TEXT,
+    "resumePrompt" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -117,7 +125,7 @@ CREATE TABLE "IdealAnswer" (
     "id" SERIAL NOT NULL,
     "questionId" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
-    "embedding" JSONB NOT NULL,
+    "embedding" vector NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -125,35 +133,37 @@ CREATE TABLE "IdealAnswer" (
 );
 
 -- CreateTable
-CREATE TABLE "ScoreTechnical" (
+CREATE TABLE "Score" (
     "id" SERIAL NOT NULL,
     "answerId" INTEGER NOT NULL,
-    "rubricScore" DOUBLE PRECISION NOT NULL,
-    "similarityScore" DOUBLE PRECISION NOT NULL,
-    "keywordScore" DOUBLE PRECISION NOT NULL,
+    "type" "QuestionType" NOT NULL,
     "finalScore" DOUBLE PRECISION NOT NULL,
+    "similarityScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "keywordScore" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "confidenceScore" DOUBLE PRECISION NOT NULL,
     "feedback" TEXT,
-    "breakdown" JSONB,
+    "reason" TEXT,
+    "prompt" TEXT,
+    "rubricScore" DOUBLE PRECISION,
+    "categoryId" INTEGER,
+    "categoryLabel" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ScoreTechnical_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Score_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "ScoreSoftSkill" (
+CREATE TABLE "ChatHistory" (
     "id" SERIAL NOT NULL,
-    "answerId" INTEGER NOT NULL,
-    "categoryId" INTEGER NOT NULL,
-    "categoryLabel" TEXT NOT NULL,
-    "finalScore" DOUBLE PRECISION NOT NULL,
-    "reason" TEXT,
-    "confidenceScore" DOUBLE PRECISION NOT NULL,
+    "interviewId" INTEGER NOT NULL,
+    "role" "ChatRole" NOT NULL,
+    "content" TEXT NOT NULL,
+    "questionId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "ScoreSoftSkill_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ChatHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -169,13 +179,13 @@ CREATE INDEX "Answer_questionId_idx" ON "Answer"("questionId");
 CREATE INDEX "Answer_interviewId_idx" ON "Answer"("interviewId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "IdealAnswer_questionId_key" ON "IdealAnswer"("questionId");
+CREATE INDEX "IdealAnswer_embedding_idx" ON "IdealAnswer"("embedding");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ScoreTechnical_answerId_key" ON "ScoreTechnical"("answerId");
+CREATE UNIQUE INDEX "Score_answerId_key" ON "Score"("answerId");
 
--- CreateIndex
-CREATE UNIQUE INDEX "ScoreSoftSkill_answerId_key" ON "ScoreSoftSkill"("answerId");
+-- AddForeignKey
+ALTER TABLE "Position" ADD CONSTRAINT "Position_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Interview" ADD CONSTRAINT "Interview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -208,10 +218,13 @@ ALTER TABLE "Keyword" ADD CONSTRAINT "Keyword_questionId_fkey" FOREIGN KEY ("que
 ALTER TABLE "IdealAnswer" ADD CONSTRAINT "IdealAnswer_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ScoreTechnical" ADD CONSTRAINT "ScoreTechnical_answerId_fkey" FOREIGN KEY ("answerId") REFERENCES "Answer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Score" ADD CONSTRAINT "Score_answerId_fkey" FOREIGN KEY ("answerId") REFERENCES "Answer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ScoreSoftSkill" ADD CONSTRAINT "ScoreSoftSkill_answerId_fkey" FOREIGN KEY ("answerId") REFERENCES "Answer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Score" ADD CONSTRAINT "Score_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "AnswerCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ScoreSoftSkill" ADD CONSTRAINT "ScoreSoftSkill_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "AnswerCategory"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ChatHistory" ADD CONSTRAINT "ChatHistory_interviewId_fkey" FOREIGN KEY ("interviewId") REFERENCES "Interview"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChatHistory" ADD CONSTRAINT "ChatHistory_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "Question"("id") ON DELETE SET NULL ON UPDATE CASCADE;

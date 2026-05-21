@@ -103,13 +103,12 @@ const main = async () => {
       Array.from({ length: 3 }).map(async () => {
         const idealAnswer = await aiService.generateIdealAnswer(q.content);
         const embedding = await aiService.createEmbedding(idealAnswer);
-        const idealAnswerRecord = await prisma.idealAnswer.create({
-          data: {
-            questionId: question.id,
-            content: idealAnswer,
-            embedding,
-          },
-        });
+        const idealAnswerResult = await prisma.$queryRaw`
+        INSERT INTO "IdealAnswer" ("questionId", "content", "embedding") 
+        VALUES (${question.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector)
+        RETURNING id
+        ` as { id: number }[];
+        const id = idealAnswerResult[0].id;
         await Promise.all([
           pineconeService.upsertVector(
             embedding,
@@ -118,7 +117,7 @@ const main = async () => {
               answer: idealAnswer,
               type: "ideal_answer",
             },
-            `ideal_${idealAnswerRecord.id}`,
+            `ideal_${id}`,
           ),
           qdrantService.upsertVector(
             embedding,
@@ -127,7 +126,7 @@ const main = async () => {
               answer: idealAnswer,
               type: "ideal_answer",
             },
-            idealAnswerRecord.id,
+            id,
           ),
         ]);
       }),

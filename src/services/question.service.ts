@@ -113,18 +113,18 @@ export const updateQuestion = async (
       difficulty,
       category: categoryResult
         ? {
-            connect: {
-              id: categoryResult.id,
-            },
-          }
+          connect: {
+            id: categoryResult.id,
+          },
+        }
         : undefined,
       keywords: keywords
         ? {
-            deleteMany: {},
-            createMany: {
-              data: keywords.map((word) => ({ word })),
-            },
-          }
+          deleteMany: {},
+          createMany: {
+            data: keywords.map((word) => ({ word })),
+          },
+        }
         : undefined,
     },
   });
@@ -194,17 +194,14 @@ export const addIdealAnswer = async (
   }
 
   const embedding = await createEmbedding(idealAnswer);
-  const idealAnswerResult = await prisma.idealAnswer.create({
-    data: {
-      question: {
-        connect: {
-          id: questionId,
-        },
-      },
-      content: idealAnswer,
-      embedding,
-    },
-  });
+  const idealAnswerResult = await prisma.$queryRaw`
+  INSERT INTO "IdealAnswer" ("questionId", "content", "embedding") 
+  VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector)
+  RETURNING id, "questionId", content, "createdAt", "updatedAt"
+  ` as any[];
+
+  const createdRecord = idealAnswerResult[0];
+  const id = createdRecord.id;
 
   // Upsert vectors to Pinecone and Qdrant
   await Promise.all([
@@ -215,7 +212,7 @@ export const addIdealAnswer = async (
         answer: idealAnswer,
         type: "ideal_answer",
       },
-      `ideal_${idealAnswerResult.id}`,
+      `ideal_${id}`,
     ),
     qdrantService.upsertVector(
       embedding,
@@ -224,11 +221,11 @@ export const addIdealAnswer = async (
         answer: idealAnswer,
         type: "ideal_answer",
       },
-      idealAnswerResult.id,
+      id,
     ),
   ]);
 
-  return idealAnswerResult;
+  return createdRecord;
 };
 
 export const removeIdealAnswer = async (
@@ -268,25 +265,27 @@ export const searchVector = async (
   });
 
   if (idealAnswers.length > 0) {
-    let maxSim = 0;
-    for (const ia of idealAnswers) {
-      const iaEmb = ia.embedding as number[];
-      if (Array.isArray(iaEmb) && iaEmb.length === userEmbedding.length) {
-        let dotProduct = 0;
-        let normA = 0;
-        let normB = 0;
-        for (let i = 0; i < userEmbedding.length; i++) {
-          dotProduct += userEmbedding[i] * iaEmb[i];
-          normA += userEmbedding[i] * userEmbedding[i];
-          normB += iaEmb[i] * iaEmb[i];
-        }
-        if (normA > 0 && normB > 0) {
-          const sim = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-          if (sim > maxSim) maxSim = sim;
-        }
-      }
+    const maxSim: { id: number; distance: number }[] = await prisma.$queryRaw`SELECT
+    id,
+    embedding <=> ${`[${userEmbedding.join(",")}]`}::vector AS distance
+  FROM "IdealAnswer" 
+  WHERE "questionId" = ${questionId} AND "embedding" IS NOT NULL
+  ORDER BY distance
+  LIMIT 1`;
+
+    if (!maxSim || maxSim.length === 0) {
+      return 0;
     }
-    return Math.max(0, Math.min(maxSim, 1));
+
+    const { id, distance } = maxSim[0];
+    if (!id) {
+      return 0;
+    }
+
+    // <=> represents Cosine Distance (1 - Cosine Similarity)
+    // We want to return Cosine Similarity
+    const similarity = 1 - Number(distance);
+    return Math.max(0, Math.min(similarity, 1));
   }
   return 0;
 };
