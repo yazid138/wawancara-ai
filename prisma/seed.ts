@@ -103,12 +103,12 @@ const main = async () => {
       Array.from({ length: 3 }).map(async () => {
         const idealAnswer = await aiService.generateIdealAnswer(q.content);
         const embedding = await aiService.createEmbedding(idealAnswer);
-        const idealAnswerResult = await prisma.$queryRaw`
+        await prisma.$queryRaw`
         INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt") 
         VALUES (${question.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
         RETURNING id
         ` as { id: number }[];
-        const id = idealAnswerResult[0].id;
+        // const id = idealAnswerResult[0].id;
         // await Promise.all([
         //   pineconeService.upsertVector(
         //     embedding,

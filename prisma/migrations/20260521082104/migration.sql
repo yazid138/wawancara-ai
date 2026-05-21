@@ -179,7 +179,6 @@ CREATE INDEX "Answer_questionId_idx" ON "Answer"("questionId");
 CREATE INDEX "Answer_interviewId_idx" ON "Answer"("interviewId");
 
 -- CreateIndex
-CREATE INDEX "IdealAnswer_embedding_idx" ON "IdealAnswer"("embedding");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Score_answerId_key" ON "Score"("answerId");

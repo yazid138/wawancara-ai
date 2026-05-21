@@ -166,8 +166,6 @@ model IdealAnswer {
   updatedAt DateTime @updatedAt
 
   question Question @relation(fields: [questionId], references: [id])
-
-  @@index([embedding])
 }
 
 model Score {
