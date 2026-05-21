@@ -2,8 +2,8 @@ import { PrismaClient, Role, QuestionType } from "@/prisma/client";
 import bcrypt from "bcrypt";
 import { PrismaPg } from "@prisma/adapter-pg";
 import aiService from "@/services/ai.service";
-import pineconeService from "@/services/pinecone.service";
-import qdrantService from "@/services/qdrant.service";
+// import pineconeService from "@/services/pinecone.service";
+// import qdrantService from "@/services/qdrant.service";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
@@ -104,31 +104,31 @@ const main = async () => {
         const idealAnswer = await aiService.generateIdealAnswer(q.content);
         const embedding = await aiService.createEmbedding(idealAnswer);
         const idealAnswerResult = await prisma.$queryRaw`
-        INSERT INTO "IdealAnswer" ("questionId", "content", "embedding") 
-        VALUES (${question.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector)
+        INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt") 
+        VALUES (${question.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
         RETURNING id
         ` as { id: number }[];
         const id = idealAnswerResult[0].id;
-        await Promise.all([
-          pineconeService.upsertVector(
-            embedding,
-            {
-              questionId: question.id,
-              answer: idealAnswer,
-              type: "ideal_answer",
-            },
-            `ideal_${id}`,
-          ),
-          qdrantService.upsertVector(
-            embedding,
-            {
-              questionId: question.id,
-              answer: idealAnswer,
-              type: "ideal_answer",
-            },
-            id,
-          ),
-        ]);
+        // await Promise.all([
+        //   pineconeService.upsertVector(
+        //     embedding,
+        //     {
+        //       questionId: question.id,
+        //       answer: idealAnswer,
+        //       type: "ideal_answer",
+        //     },
+        //     `ideal_${id}`,
+        //   ),
+        //   qdrantService.upsertVector(
+        //     embedding,
+        //     {
+        //       questionId: question.id,
+        //       answer: idealAnswer,
+        //       type: "ideal_answer",
+        //     },
+        //     id,
+        //   ),
+        // ]);
       }),
     );
 
