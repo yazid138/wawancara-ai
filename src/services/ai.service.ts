@@ -222,7 +222,7 @@ output: [
 </end_of_example>
 
 Format:
-Kembalikan hanya JSON array dengan format [{"label": "kategori", "score": 0-5}].`,
+PENTING: Kembalikan HANYA 1 JSON array. Tidak boleh ada teks lain. Format: [{"label": "kategori", "score": 0-5}].`,
   });
   return JSON.parse(output_text);
 };
