@@ -311,16 +311,17 @@ sequenceDiagram
         FE->>BE: POST /interviews/:id/answers (via REST atau Socket.IO)
         BE->>DB: Save Answer + ChatHistory (USER)
 
+        BE->>AI: createEmbedding(jawaban)
+        AI-->>BE: Vector Embedding
+
         alt Pertanyaan Technical
             BE->>AI: generateTechnicalRubricScore()
             AI-->>BE: Rubric Score (pemahaman, teknis, logika, komunikasi)
-            BE->>AI: createEmbedding(jawaban)
-            AI-->>BE: Vector Embedding
             BE->>DB: Hitung similarity + keyword + rubric → Save Score
         else Pertanyaan Softskill
             BE->>AI: classifySoftSkillAnswer()
             AI-->>BE: Klasifikasi Kategori + Confidence
-            BE->>DB: Match kategori + Hitung skor → Save Score
+            BE->>DB: Match kategori + Hitung similarity + keyword → Save Score
         end
 
         BE->>AI: rephraseQuestion(nextQuestion)
@@ -372,30 +373,41 @@ Penilaian jawaban teknis menggunakan **3 komponen** yang di-bobot:
 
 | Komponen | Bobot | Metode |
 |---|---|---|
-| **Rubric AI Score** | 40% | OpenAI menilai 4 aspek: Pemahaman (0-5), Teknis (0-5), Logika (0-5), Komunikasi (0-5) |
-| **Similarity Score** | 30% | Cosine similarity antara embedding jawaban user dengan Ideal Answer menggunakan pgvector |
-| **Keyword Score** | 30% | Persentase kata kunci yang muncul dalam jawaban user |
+| **Rubric AI Score** | 55% | OpenAI menilai 4 aspek: Pemahaman (0-5), Teknis (0-5), Logika (0-5), Komunikasi (0-5) |
+| **Similarity Score** | 25% | Cosine similarity antara embedding jawaban user dengan Ideal Answer menggunakan pgvector |
+| **Keyword Score** | 20% | Persentase kata kunci yang muncul dalam jawaban user |
 
 **Formula:**
 ```
-finalScore = (rubricScore × 0.4 + similarityScore × 0.3 + keywordScore × 0.3) × 100
+finalScore = (rubricScore × 0.55 + similarityScore × 0.25 + keywordScore × 0.20) × 100
 ```
 
 **Confidence Score:**
 ```
-evidenceAlignment = rubricScore × 0.5 + similarityConfidence × 0.25 + keywordCoverage × 0.25
+evidenceAlignment = rubricScore × 0.55 + similarityConfidence × 0.25 + keywordCoverage × 0.20
 confidenceScore = rubricConfidence × 0.45 + evidenceAlignment × 0.45 + (finalScore >= 50 ? 0.1 : 0)
 ```
 
 #### 7.4.2 Scoring Soft Skill
 
-Penilaian soft skill menggunakan **klasifikasi kategori + similarity**:
+Penilaian soft skill menggunakan **3 komponen** yang di-bobot:
 
-| Komponen | Bobot (dengan keyword) | Bobot (tanpa keyword) |
+| Komponen | Bobot | Deskirpsi |
 |---|---|---|
-| **Category Score** | 50% | 70% |
-| **Similarity Score** | 25% | 30% |
-| **Keyword Score** | 25% | — |
+| **Category Score** | 70% | OpenAI menilai kecocokan jawaban dengan kategori (0-5) |
+| **Similarity Score** | 15% | Cosine similarity antara embedding jawaban user dengan Ideal Answer menggunakan pgvector |
+| **Keyword Score** | 15% | Persentase kata kunci yang muncul dalam jawaban user |
+
+**Formula:**
+```
+finalScore = (categoryScore × 0.70 + similarityScore × 0.15 + keywordScore × 0.15) × 100
+```
+
+**Confidence Score:**
+```
+evidenceAlignment = categoryScore × 0.70 + similarityConfidence × 0.15 + keywordCoverage × 0.15
+confidenceScore = categoryConfidence × 0.45 + evidenceAlignment × 0.45 + (finalScore >= 50 ? 0.1 : 0)
+```
 
 **Proses:**
 1. AI mengklasifikasikan jawaban ke salah satu kategori yang sudah ditentukan per pertanyaan

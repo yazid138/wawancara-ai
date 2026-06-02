@@ -74,12 +74,12 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const similarityConfidence = similarityScore;
 
   const finalScoreRaw =
-    rubricScore * 0.4 + similarityScore * 0.3 + keywordScore * 0.3;
+    rubricScore * 0.55 + similarityScore * 0.25 + keywordScore * 0.20;
 
   const finalScore = finalScoreRaw * 100;
 
   const evidenceAlignment =
-    rubricScore * 0.5 + similarityConfidence * 0.25 + keywordCoverage * 0.25;
+    rubricScore * 0.55 + similarityConfidence * 0.25 + keywordCoverage * 0.20;
 
   const confidenceScore = Math.max(
     0,
@@ -233,14 +233,6 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     matchedCategory.label.toLowerCase() ===
     String(classification?.label || "").toLowerCase();
 
-  const confidenceScore = Math.max(
-    0,
-    Math.min(
-      aiConfidence * 0.6 + categoryStrength * 0.3 + (exactLabelMatch ? 0.1 : 0),
-      1,
-    ),
-  );
-
   const reasonParts = [
     `Kategori terpilih: ${matchedCategory.label}`,
     `Bobot kategori: ${matchedCategory.score}`,
@@ -253,17 +245,23 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       : "Label diambil dari kategori terdekat yang tersedia",
   ].filter(Boolean);
 
-  const hasKeywords = answer.question.keywords && answer.question.keywords.length > 0;
   const categoryScoreRaw = matchedCategory.score / maxCategoryScore;
   
-  let finalScoreRaw = 0;
-  if (hasKeywords) {
-    finalScoreRaw = categoryScoreRaw * 0.5 + similarityScore * 0.25 + keywordScore * 0.25;
-  } else {
-    finalScoreRaw = categoryScoreRaw * 0.7 + similarityScore * 0.3;
-  }
+  const finalScoreRaw = categoryScoreRaw * 0.70 + similarityScore * 0.15 + keywordScore * 0.15;
   
   const finalScore = finalScoreRaw * 100;
+
+  const evidenceAlignment = categoryStrength * 0.70 + similarityScore * 0.15 + keywordScore * 0.15;
+
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      aiConfidence * 0.45 +
+        evidenceAlignment * 0.45 +
+        (finalScoreRaw >= 0.5 ? 0.1 : 0),
+      1,
+    ),
+  );
 
   const feedback =
     finalScoreRaw > 0.7
