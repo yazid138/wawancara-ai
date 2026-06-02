@@ -1,6 +1,5 @@
 import { PrismaClient, QuestionType } from "@/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import aiService from "@/services/ai.service";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({
