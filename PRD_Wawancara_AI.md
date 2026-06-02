@@ -47,21 +47,22 @@ graph TB
         CTRL["Controllers"]
         SVC["Services"]
         AI["AI Service (OpenAI)"]
+        Score["Score Service"]
+        Interview["Interview Service"]
+        User["User Service"]
     end
 
     subgraph Database["Database Layer"]
-        PG["PostgreSQL 16 + pgvector"]
+        PG["PostgreSQL 16"]
         Prisma["Prisma ORM v7"]
     end
 
     subgraph VectorDB["Vector Database"]
-        Qdrant["Qdrant"]
-        Pinecone["Pinecone"]
+        PGVector["PG Vector"]
     end
 
     subgraph External["External Services"]
         OpenAI["OpenAI API"]
-        HF["HuggingFace API"]
     end
 
     UI --> Auth
@@ -71,10 +72,11 @@ graph TB
     SocketC --> SocketS
     API --> MW --> CTRL --> SVC
     SVC --> AI --> OpenAI
-    SVC --> Prisma --> PG
-    SVC --> Qdrant
-    SVC --> Pinecone
-    SVC --> HF
+    SVC --> Score --> Prisma
+    SVC --> Interview --> Prisma
+    SVC --> User --> Prisma
+    Prisma --> PG
+    PG --> PGVector
 ```
 
 ---
