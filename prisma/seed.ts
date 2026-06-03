@@ -98,56 +98,49 @@ const main = async () => {
       })),
     });
 
-    // ideal answer
-    await Promise.all(
-      Array.from({ length: 3 }).map(async () => {
-        const idealAnswer = await aiService.generateIdealAnswer(q.content);
-        const embedding = await aiService.createEmbedding(idealAnswer);
-        await prisma.$queryRaw`
-        INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt") 
-        VALUES (${question.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
-        RETURNING id
-        ` as { id: number }[];
-        // const id = idealAnswerResult[0].id;
-        // await Promise.all([
-        //   pineconeService.upsertVector(
-        //     embedding,
-        //     {
-        //       questionId: question.id,
-        //       answer: idealAnswer,
-        //       type: "ideal_answer",
-        //     },
-        //     `ideal_${id}`,
-        //   ),
-        //   qdrantService.upsertVector(
-        //     embedding,
-        //     {
-        //       questionId: question.id,
-        //       answer: idealAnswer,
-        //       type: "ideal_answer",
-        //     },
-        //     id,
-        //   ),
-        // ]);
-      }),
-    );
-
-    // SOFTSKILL CATEGORY (IMPORTANT)
+    // answer categories (SOFTSKILL only)
+    let createdCategories: { id: number; label: string; score: number }[] = [];
     if (q.type === QuestionType.SOFTSKILL) {
       let answerCategories: { label: string; score: number }[] = [];
       if (q.categoryAnswer) {
         answerCategories = q.categoryAnswer;
       } else {
-        answerCategories =
-          await aiService.generateAnswerCategories(q.content);
+        answerCategories = await aiService.generateAnswerCategories(q.content);
       }
-      await prisma.answerCategory.createMany({
+      createdCategories = await prisma.answerCategory.createManyAndReturn({
         data: answerCategories.map((cat) => ({
           questionId: question.id,
           label: cat.label,
           score: cat.score,
         })),
       });
+    }
+
+    // ideal answer
+    if (q.type === QuestionType.SOFTSKILL) {
+      // Generate 1 ideal answer for each category to ensure complete coverage for category-scoped similarity lookup
+      await Promise.all(
+        createdCategories.map(async (cat) => {
+          const idealAnswer = await aiService.generateIdealAnswer(q.content, cat.label);
+          const embedding = await aiService.createEmbedding(idealAnswer);
+          await prisma.$queryRaw`
+          INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "createdAt", "updatedAt") 
+          VALUES (${question.id}, ${cat.id}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+          `;
+        }),
+      );
+    } else {
+      // Generate 3 standard general ideal answers for other question types (answerCategoryId = null)
+      await Promise.all(
+        Array.from({ length: 3 }).map(async () => {
+          const idealAnswer = await aiService.generateIdealAnswer(q.content);
+          const embedding = await aiService.createEmbedding(idealAnswer);
+          await prisma.$queryRaw`
+          INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "createdAt", "updatedAt") 
+          VALUES (${question.id}, ${null}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+          `;
+        }),
+      );
     }
   };
 

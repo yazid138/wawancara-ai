@@ -264,10 +264,21 @@ PENTING: Kembalikan HANYA 1 JSON array. Tidak boleh ada teks lain. Format: [{"la
   return JSON.parse(output_text);
 };
 
-export const generateIdealAnswer = async (pertanyaan: string) => {
-  const { output_text } = await client.responses.create({
-    model: config.openAIModel,
-    input: `Role:
+export const generateIdealAnswer = async (pertanyaan: string, kategori?: string) => {
+  const inputPrompt = kategori
+    ? `Role:
+Anda adalah mahasiswa yang sedang menjawab pertanyaan interview kerja.
+
+Task:
+Buat contoh jawaban wawancara yang secara akurat mencerminkan karakteristik kategori: "${kategori}".
+Jawaban harus natural, realistis, dan dalam bahasa Indonesia sehari-hari.
+
+Data:
+Pertanyaan: ${pertanyaan}
+
+Format:
+PENTING: Kembalikan HANYA 1 (satu) kalimat jawaban dalam teks biasa. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`
+    : `Role:
 Anda adalah mahasiswa yang sedang menjawab pertanyaan interview kerja.
 
 Task:
@@ -277,7 +288,11 @@ Data:
 Pertanyaan: ${pertanyaan}
 
 Format:
-PENTING: Kembalikan HANYA 1 (satu) kalimat jawaban dalam teks biasa. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`,
+PENTING: Kembalikan HANYA 1 (satu) kalimat jawaban dalam teks biasa. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`;
+
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: inputPrompt,
   });
   return output_text;
 };
