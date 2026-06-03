@@ -169,6 +169,7 @@ export const addIdealAnswer = async (
   questionId: number,
   idealAnswer: string,
   answerCategoryId?: number | null,
+  sourceAnswerId?: number,
 ) => {
   // Verify question exists
   const question = await prisma.question.findUnique({
@@ -199,10 +200,10 @@ export const addIdealAnswer = async (
 
   // Use raw query because the `embedding` column is an unsupported vector type
   let idealAnswerResult: any[];
-  if (answerCategoryId != null) {
+  if (answerCategoryId != null && sourceAnswerId != null) {
     idealAnswerResult = await prisma.$queryRaw`
-      INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "createdAt", "updatedAt")
-      VALUES (${questionId}, ${answerCategoryId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+      INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "sourceAnswerId", "createdAt", "updatedAt")
+      VALUES (${questionId}, ${answerCategoryId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, ${sourceAnswerId}, NOW(), NOW())
       RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
     ` as any[];
   } else {

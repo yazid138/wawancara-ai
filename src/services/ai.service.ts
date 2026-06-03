@@ -198,8 +198,8 @@ export const generateSoftSkillRubricScore = async (
 ): Promise<{
   communication: number;
   selfAwareness: number;
-  evidence: number;
-  relevance: number;
+  behaviorEvidence: number;
+  growthMindset: number;
   confidence: number;
   reason: string;
 }> => {

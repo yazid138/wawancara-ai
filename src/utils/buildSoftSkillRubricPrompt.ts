@@ -22,10 +22,10 @@ Task:
 Nilai jawaban kandidat berdasarkan 4 rubrik berikut. Setiap rubrik dinilai 1-5.
 
 Rubrik:
-- communication   (1-5): Seberapa jelas dan terstruktur kandidat menyampaikan jawaban.
-- selfAwareness   (1-5): Seberapa baik kandidat mengenali kelebihan dan keterbatasan diri.
-- evidence        (1-5): Seberapa konkret contoh atau pengalaman nyata yang disebutkan.
-- relevance       (1-5): Seberapa langsung jawaban menjawab pertanyaan yang diajukan.
+- communication    (1-5): Seberapa jelas dan terstruktur kandidat menyampaikan jawaban.
+- selfAwareness    (1-5): Seberapa baik kandidat mengenali kelebihan dan keterbatasan diri.
+- behaviorEvidence (1-5): Apakah kandidat memberikan contoh konkret perilaku di masa lalu untuk mendukung klaimnya?
+- growthMindset    (1-5): Apakah kandidat menunjukkan kesadaran akan area pengembangan dan keinginan untuk belajar?
 ${
   retryHint
     ? `
@@ -44,8 +44,8 @@ Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
 {
   "communication": 0-5,
   "selfAwareness": 0-5,
-  "evidence": 0-5,
-  "relevance": 0-5,
+  "behaviorEvidence": 0-5,
+  "growthMindset": 0-5,
   "confidence": 0-1,
   "reason": "alasan singkat dalam satu kalimat"
 }`;

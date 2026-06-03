@@ -31,8 +31,8 @@ import {
 interface SoftSkillRubric {
   communication: number;
   selfAwareness: number;
-  evidence: number;
-  relevance: number;
+  behaviorEvidence: number;
+  growthMindset: number;
 }
 
 interface SoftSkillBreakdown {
@@ -220,7 +220,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   // ── 12. Auto-promotion ───────────────────────────────────────────────────
   // Promote to ReferenceAnswer knowledge base when ALL three quality gates pass
-  if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8) {
+  if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8 && rubricScore >= 0.8) {
     try {
       await addIdealAnswer(answer.questionId, answer.content);
       console.log(
@@ -396,13 +396,13 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const communicationNum = parseRubricNumber(rubricResult.communication);
   const selfAwarenessNum = parseRubricNumber(rubricResult.selfAwareness);
-  const evidenceNum = parseRubricNumber(rubricResult.evidence);
-  const relevanceNum = parseRubricNumber(rubricResult.relevance);
+  const behaviorEvidenceNum = parseRubricNumber(rubricResult.behaviorEvidence);
+  const growthMindsetNum = parseRubricNumber(rubricResult.growthMindset);
 
   const rubricScore = Math.max(
     0,
     Math.min(
-      (communicationNum + selfAwarenessNum + evidenceNum + relevanceNum) / 20,
+      (communicationNum + selfAwarenessNum + behaviorEvidenceNum + growthMindsetNum) / 20,
       1,
     ),
   );
@@ -424,7 +424,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   const confidenceScore = Math.max(
     0,
     Math.min(
-      (aiCategoryConfidence + aiRubricConfidence + similarityScore + keywordScore) / 4,
+      (aiCategoryConfidence * 0.4 + aiRubricConfidence * 0.3 + similarityScore * 0.2 + keywordScore * 0.1),
       1,
     ),
   );
@@ -445,8 +445,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     rubric: {
       communication: communicationNum,
       selfAwareness: selfAwarenessNum,
-      evidence: evidenceNum,
-      relevance: relevanceNum,
+      behaviorEvidence: behaviorEvidenceNum,
+      growthMindset: growthMindsetNum,
       rubricScore: Math.round(rubricScore * 100) / 100,
     },
     categoryScore: Math.round(categoryScore * 100) / 100,
@@ -458,7 +458,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   const reasonParts = [
     `Kategori terpilih: ${matchedCategory.label}`,
     `Bobot kategori: ${matchedCategory.score}/${maxCategoryScore}`,
-    `Rubrik AI: communication ${communicationNum}/5, selfAwareness ${selfAwarenessNum}/5, evidence ${evidenceNum}/5, relevance ${relevanceNum}/5`,
+    `Rubrik AI: communication ${communicationNum}/5, selfAwareness ${selfAwarenessNum}/5, behaviorEvidence ${behaviorEvidenceNum}/5, growthMindset ${growthMindsetNum}/5`,
     `Keyakinan AI: final ${Math.round(confidenceScore * 100)}%, rubrik ${Math.round(aiRubricConfidence * 100)}%, klasifikasi ${Math.round(aiCategoryConfidence * 100)}%`,
     `Similarity (top-3 avg): ${Math.round(similarityScore * 100)}%`,
     `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
@@ -508,10 +508,22 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   // confidenceScore >= 0.85 AND similarityScore >= 0.80)
   // The answerCategoryId is stored so future category-aware similarity
   // queries return only same-category reference answers.
-  if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8) {
+  const existingSimilarity = userEmbedding ? await getTop3SimilarityAverageByCategory(
+    userEmbedding,
+    answer.question.id,
+    matchedCategory.id
+  ) : 0;
+
+  if (
+    existingSimilarity < 0.95 &&
+    finalScore >= 85 &&
+    confidenceScore >= 0.85 &&
+    similarityScore >= 0.8 &&
+    rubricScore >= 0.8
+  ) {
     try {
       const promotedCategoryId = matchedCategory.id ?? null;
-      await addIdealAnswer(answer.questionId, answer.content, promotedCategoryId);
+      await addIdealAnswer(answer.questionId, answer.content, promotedCategoryId, answerId);
       console.log(
         `[Auto-Promotion] Softskill answer promoted to ReferenceAnswer ` +
           `(ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], ` +

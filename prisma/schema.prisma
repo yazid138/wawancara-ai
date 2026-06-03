@@ -140,6 +140,7 @@ model Answer {
   interview Interview    @relation(fields: [interviewId], references: [id])
   user      User         @relation(fields: [userId], references: [id])
   score     Score?
+  idealAnswers IdealAnswer[]
 
   @@index([questionId])
   @@index([interviewId])
@@ -164,11 +165,16 @@ model IdealAnswer {
   content    String
   embedding  Unsupported("vector")
 
+  sourceAnswerId Int?
+  
+  isApproved     Boolean   @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   question         Question         @relation(fields: [questionId], references: [id])
   answerCategories AnswerCategory? @relation(fields: [answerCategoryId], references: [id])
+  sourceAnswer     Answer?          @relation(fields: [sourceAnswerId], references: [id])
 }
 
 model Score {
