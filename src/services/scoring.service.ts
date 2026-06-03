@@ -6,6 +6,9 @@ import {
   createEmbedding,
   generateSoftSkillRubricScore,
   generateTechnicalRubricScore,
+  buildSoftSkillClassificationPrompt,
+  buildSoftSkillRubricPrompt,
+  buildTechnicalRubricPrompt,
 } from "@/services/ai.service";
 import {
   addIdealAnswer,
@@ -14,9 +17,6 @@ import {
 } from "@/services/question.service";
 import {
   buildCategoryOptions,
-  buildSoftSkillClassificationPrompt,
-  buildSoftSkillRubricPrompt,
-  buildTechnicalRubricPrompt,
   calculateKeywordScore,
   clampConfidence,
   parseRubricNumber,

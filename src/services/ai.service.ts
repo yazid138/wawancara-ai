@@ -1,8 +1,5 @@
 import config from "@/config";
 import Message from "@/types/aiMessage";
-import { buildSoftSkillClassificationPrompt } from "@/utils/buildSoftSkillClassificationPrompt";
-import { buildSoftSkillRubricPrompt } from "@/utils/buildSoftSkillRubricPrompt";
-import { buildTechnicalRubricPrompt } from "@/utils/buildTechnicalRubricPrompt";
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -373,6 +370,137 @@ PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan mem
   return output_text;
 };
 
+export const buildSoftSkillClassificationPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  categories: Array<{ label: string; score: number }>,
+  retryHint?: string,
+): string => {
+  // Append the escape-hatch category without mutating the caller's array
+  const categoriesWithFallback = [
+    ...categories,
+    { label: "Tidak ada kategori yang sesuai", score: 0 },
+  ];
+
+  return `Role:
+Anda adalah assessor jawaban soft skill untuk interview kerja.
+
+Task:
+Pilih SATU kategori dari daftar yang tersedia yang paling sesuai dengan isi jawaban kandidat.
+Anda DILARANG membuat kategori baru. Jika tidak ada yang cocok, pilih "Tidak ada kategori yang sesuai".
+${
+  retryHint
+    ? `
+Tambahan instruksi:
+${retryHint}
+
+`
+    : ""
+}
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+
+Kategori tersedia:
+${categoriesWithFallback
+  .map(
+    (cat, idx) => `${idx + 1}. ${cat.label} (bobot: ${cat.score})`,
+  )
+  .join("\n")}
+
+Format:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "categoryId": <nomor urut kategori terpilih (1-based)>,
+  "label": "<label kategori persis seperti dalam daftar>",
+  "confidence": 0-1,
+  "reason": "alasan singkat dalam satu kalimat"
+}
+Pastikan nilai "label" persis sama (termasuk huruf besar/kecil) dengan salah satu label dalam daftar.`;
+};
+
+export const buildSoftSkillRubricPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  retryHint?: string,
+): string => {
+  return `Role:
+Anda adalah penilai jawaban soft skill untuk interview kerja.
+
+Task:
+Nilai jawaban kandidat berdasarkan 4 rubrik berikut. Setiap rubrik dinilai 1-5.
+
+Rubrik:
+- communication    (1-5): Seberapa jelas dan terstruktur kandidat menyampaikan jawaban.
+- selfAwareness    (1-5): Seberapa baik kandidat mengenali kelebihan dan keterbatasan diri.
+- behaviorEvidence (1-5): Apakah kandidat memberikan contoh konkret perilaku di masa lalu untuk mendukung klaimnya?
+- growthMindset    (1-5): Apakah kandidat menunjukkan kesadaran akan area pengembangan dan keinginan untuk belajar?
+${
+  retryHint
+    ? `
+Tambahan instruksi:
+${retryHint}
+
+`
+    : ""
+}
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
+
+Format:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "communication": 0-5,
+  "selfAwareness": 0-5,
+  "behaviorEvidence": 0-5,
+  "growthMindset": 0-5,
+  "confidence": 0-1,
+  "reason": "alasan singkat dalam satu kalimat"
+}`;
+};
+
+export const buildTechnicalRubricPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  retryHint?: string,
+): string => {
+  return `Role:
+You are a technical interview evaluator assessing the quality of a candidate's answer.
+
+Task:
+Score the answer using the 4 rubric criteria below. Each criterion is rated 1–5.
+
+Rubric:
+- understanding          (1-5): Depth of conceptual understanding demonstrated in the answer.
+- technicalAccuracy      (1-5): Correctness of technical details, terminology, and facts.
+- problemSolving         (1-5): Quality of logical reasoning and approach to solving the problem.
+- technicalCommunication (1-5): Clarity and precision when explaining technical concepts.
+${
+  retryHint
+    ? `
+Additional instruction:
+${retryHint}
+
+`
+    : ""
+}
+Data:
+Question: ${pertanyaan}
+Answer: ${jawaban}
+
+Format:
+Return ONLY a JSON object with no other text:
+{
+  "understanding": 0-5,
+  "technicalAccuracy": 0-5,
+  "problemSolving": 0-5,
+  "technicalCommunication": 0-5,
+  "confidence": 0-1,
+  "reason": "brief justification in one sentence"
+}`;
+};
+
 export default {
   createEmbedding,
   generateMessage,
@@ -390,4 +518,7 @@ export default {
   generateInterviewResume,
   generateIntroMessage,
   rephraseQuestion,
+  buildSoftSkillClassificationPrompt,
+  buildSoftSkillRubricPrompt,
+  buildTechnicalRubricPrompt,
 };
