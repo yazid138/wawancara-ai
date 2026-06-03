@@ -64,7 +64,16 @@ const createAnswer = (data: {
   interviewId: number;
   userId: number;
 }) => {
-  return prisma.answer.create({ data });
+  return prisma.answer.create({
+    data,
+    include: {
+      question: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
 };
 
 const getQuestionById = (id: number) => {

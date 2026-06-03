@@ -90,23 +90,43 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
         // Async Scoring
         try {
           if (currentQuestion.type === QuestionType.TECHNICAL) {
-            scoringService.scoreTechnicalAnswer(savedAnswer.id).catch((err) => {
-              fs.appendFileSync(
-                "scoring.log",
-                `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
-              );
-              console.error("Background scoring error (TECHNICAL):", err);
-            });
+                scoringService.scoreTechnicalAnswer(savedAnswer.id)
+                  .then((score) => {
+                    if (score) {
+                      io.to(roomName).emit("answer-scored", {
+                        answerId: savedAnswer.id,
+                        questionId: currentQuestion.id,
+                        score,
+                      });
+                    }
+                  })
+                  .catch((err) => {
+                    fs.appendFileSync(
+                      "scoring.log",
+                      `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
+                    );
+                    console.error("Background scoring error (TECHNICAL):", err);
+                  });
           }
 
           if (currentQuestion.type === QuestionType.SOFTSKILL) {
-            scoringService.scoreSoftSkillAnswer(savedAnswer.id).catch((err) => {
-              fs.appendFileSync(
-                "scoring.log",
-                `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
-              );
-              console.error("Background scoring error (SOFTSKILL):", err);
-            });
+                scoringService.scoreSoftSkillAnswer(savedAnswer.id)
+                  .then((score) => {
+                    if (score) {
+                      io.to(roomName).emit("answer-scored", {
+                        answerId: savedAnswer.id,
+                        questionId: currentQuestion.id,
+                        score,
+                      });
+                    }
+                  })
+                  .catch((err) => {
+                    fs.appendFileSync(
+                      "scoring.log",
+                      `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
+                    );
+                    console.error("Background scoring error (SOFTSKILL):", err);
+                  });
           }
         } catch (err) {
           console.error("Scoring error:", err);
