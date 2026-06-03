@@ -352,12 +352,16 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   if (!matchedCategory && classifiedLabel) {
     let maxSimilarity = 0;
+    let bestCat = null;
     for (const cat of categories) {
       const sim = stringSimilarity(cat.label, classifiedLabel);
       if (sim > maxSimilarity) {
         maxSimilarity = sim;
-        matchedCategory = cat;
+        bestCat = cat;
       }
+    }
+    if (bestCat && maxSimilarity >= 0.4) {
+      matchedCategory = bestCat;
     }
   }
 
