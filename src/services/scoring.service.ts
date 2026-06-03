@@ -161,6 +161,14 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   if (!answer) throw new NotFoundException("Answer tidak ditemukan");
 
+  if (
+    answer.question.type === QuestionType.GENERAL ||
+    answer.question.type === QuestionType.INTRO ||
+    answer.question.type === QuestionType.TECHNICAL
+  ) {
+    return null;
+  }
+
   const categories = answer.question.categories;
 
   if (!categories.length) {
@@ -185,7 +193,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     (isRetry) => buildSoftSkillClassificationPrompt(answer.question.content, answer.content, categoryOptions, isRetry ? retryHint : undefined),
   );
 
-  const classification = classificationWithPrompt.result;
+  const { classification, rubric } = classificationWithPrompt.result;
   const softSkillPrompt = classificationWithPrompt.prompt;
 
   // Find best matching category
