@@ -129,7 +129,7 @@ const main = async () => {
           `;
         }),
       );
-    } else {
+    } else if (q.type === QuestionType.TECHNICAL) {
       // Generate 3 standard general ideal answers for other question types (answerCategoryId = null)
       await Promise.all(
         Array.from({ length: 3 }).map(async () => {
