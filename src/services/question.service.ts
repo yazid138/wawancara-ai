@@ -217,28 +217,28 @@ export const addIdealAnswer = async (
   const id = createdRecord.id;
 
   // Sync vectors to Pinecone and Qdrant
-  await Promise.all([
-    pineconeService.upsertVector(
-      embedding,
-      {
-        questionId,
-        ...(answerCategoryId != null ? { answerCategoryId } : {}),
-        answer: idealAnswer,
-        type: "ideal_answer",
-      },
-      `ideal_${id}`,
-    ),
-    qdrantService.upsertVector(
-      embedding,
-      {
-        questionId,
-        ...(answerCategoryId != null ? { answerCategoryId } : {}),
-        answer: idealAnswer,
-        type: "ideal_answer",
-      },
-      id,
-    ),
-  ]);
+  // await Promise.all([
+  //   pineconeService.upsertVector(
+  //     embedding,
+  //     {
+  //       questionId,
+  //       ...(answerCategoryId != null ? { answerCategoryId } : {}),
+  //       answer: idealAnswer,
+  //       type: "ideal_answer",
+  //     },
+  //     `ideal_${id}`,
+  //   ),
+  //   qdrantService.upsertVector(
+  //     embedding,
+  //     {
+  //       questionId,
+  //       ...(answerCategoryId != null ? { answerCategoryId } : {}),
+  //       answer: idealAnswer,
+  //       type: "ideal_answer",
+  //     },
+  //     id,
+  //   ),
+  // ]);
 
   return createdRecord;
 };
