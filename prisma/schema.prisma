@@ -123,6 +123,7 @@ model AnswerCategory {
 
   question     Question     @relation(fields: [questionId], references: [id])
   scores       Score[]
+  idealAnswers IdealAnswer[]
 }
 
 model Answer {
@@ -158,14 +159,16 @@ model Keyword {
 
 model IdealAnswer {
   id         Int    @id @default(autoincrement())
-  questionId Int    
+  questionId Int
+  answerCategoryId Int?
   content    String
   embedding  Unsupported("vector")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  question Question @relation(fields: [questionId], references: [id])
+  question         Question         @relation(fields: [questionId], references: [id])
+  answerCategories AnswerCategory? @relation(fields: [answerCategoryId], references: [id])
 }
 
 model Score {
@@ -182,6 +185,7 @@ model Score {
 
   feedback        String?
   reason          String?
+  breakdown       Json?
   prompt          String?
 
   // Specific to Technical

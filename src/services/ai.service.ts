@@ -1,6 +1,7 @@
 import config from "@/config";
 import Message from "@/types/aiMessage";
 import { buildSoftSkillClassificationPrompt } from "@/utils/buildSoftSkillClassificationPrompt";
+import { buildSoftSkillRubricPrompt } from "@/utils/buildSoftSkillRubricPrompt";
 import { buildTechnicalRubricPrompt } from "@/utils/buildTechnicalRubricPrompt";
 import OpenAI from "openai";
 
@@ -155,7 +156,14 @@ export const generateTechnicalRubricScore = async (
   pertanyaan: string,
   jawaban: string,
   retryHint?: string,
-) => {
+): Promise<{
+  understanding: number;
+  technicalAccuracy: number;
+  problemSolving: number;
+  technicalCommunication: number;
+  confidence: number;
+  reason: string;
+}> => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: buildTechnicalRubricPrompt(pertanyaan, jawaban, retryHint),
@@ -173,6 +181,31 @@ export const classifySoftSkillAnswer = async (
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
     input: buildSoftSkillClassificationPrompt(pertanyaan, jawaban, categories, retryHint),
+  });
+
+  return JSON.parse(output_text);
+};
+
+/**
+ * Evaluates a softskill answer against the 4-criterion rubric:
+ *   communication, selfAwareness, evidence, relevance (each 1–5)
+ * Returns an overall `confidence` (0–1) used by the retry mechanism.
+ */
+export const generateSoftSkillRubricScore = async (
+  pertanyaan: string,
+  jawaban: string,
+  retryHint?: string,
+): Promise<{
+  communication: number;
+  selfAwareness: number;
+  evidence: number;
+  relevance: number;
+  confidence: number;
+  reason: string;
+}> => {
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: buildSoftSkillRubricPrompt(pertanyaan, jawaban, retryHint),
   });
 
   return JSON.parse(output_text);
@@ -334,6 +367,7 @@ export default {
   generateQuestion,
   generateAIScore,
   generateTechnicalRubricScore,
+  generateSoftSkillRubricScore,
   classifySoftSkillAnswer,
   generateAnswerAI,
   generateAnswerCategories,

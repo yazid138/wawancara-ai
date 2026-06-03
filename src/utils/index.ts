@@ -10,5 +10,7 @@ export * from "./buildCategoryOptions";
 export * from "./retryIfLowConfidenceWithPrompt";
 export * from "./buildTechnicalRubricPrompt";
 export * from "./buildSoftSkillClassificationPrompt";
+export * from "./buildSoftSkillRubricPrompt";
 export * from "./calculteKeywordScore";
+
 

@@ -168,6 +168,7 @@ export const deleteQuestion = async (id: number) => {
 export const addIdealAnswer = async (
   questionId: number,
   idealAnswer: string,
+  answerCategoryId?: number | null,
 ) => {
   // Verify question exists
   const question = await prisma.question.findUnique({
@@ -178,10 +179,11 @@ export const addIdealAnswer = async (
     throw new NotFoundException(`Question with id ${questionId} not found`);
   }
 
-  // Check if this exact ideal answer content already exists for this question
+  // Check if this exact content already exists for this question (+category)
   const existing = await prisma.idealAnswer.findFirst({
     where: {
       questionId,
+      answerCategoryId: answerCategoryId ?? null,
       content: {
         equals: idealAnswer,
         mode: "insensitive",
@@ -194,21 +196,33 @@ export const addIdealAnswer = async (
   }
 
   const embedding = await createEmbedding(idealAnswer);
-  const idealAnswerResult = await prisma.$queryRaw`
-  INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt") 
-  VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
-  RETURNING id, "questionId", content, "createdAt", "updatedAt"
-  ` as any[];
+
+  // Use raw query because the `embedding` column is an unsupported vector type
+  let idealAnswerResult: any[];
+  if (answerCategoryId != null) {
+    idealAnswerResult = await prisma.$queryRaw`
+      INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "createdAt", "updatedAt")
+      VALUES (${questionId}, ${answerCategoryId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+      RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
+    ` as any[];
+  } else {
+    idealAnswerResult = await prisma.$queryRaw`
+      INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt")
+      VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+      RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
+    ` as any[];
+  }
 
   const createdRecord = idealAnswerResult[0];
   const id = createdRecord.id;
 
-  // Upsert vectors to Pinecone and Qdrant
+  // Sync vectors to Pinecone and Qdrant
   await Promise.all([
     pineconeService.upsertVector(
       embedding,
       {
         questionId,
+        ...(answerCategoryId != null ? { answerCategoryId } : {}),
         answer: idealAnswer,
         type: "ideal_answer",
       },
@@ -218,6 +232,7 @@ export const addIdealAnswer = async (
       embedding,
       {
         questionId,
+        ...(answerCategoryId != null ? { answerCategoryId } : {}),
         answer: idealAnswer,
         type: "ideal_answer",
       },
@@ -279,6 +294,72 @@ export const searchVector = async (
   return 0;
 };
 
+/**
+ * Returns the average cosine similarity of the top-3 most similar
+ * IdealAnswer embeddings for a given question.
+ *
+ * Used by technical scoring.
+ * Falls back to 0 when no ideal answers exist.
+ */
+export const getTop3SimilarityAverage = async (
+  userEmbedding: number[],
+  questionId: number,
+): Promise<number> => {
+  const count = await prisma.idealAnswer.count({ where: { questionId } });
+  if (count === 0) return 0;
+
+  const rows: { cosine_similarity: number }[] = await prisma.$queryRaw`
+    SELECT 1 - (embedding <=> ${`[${userEmbedding.join(",")}]`}::vector) AS cosine_similarity
+    FROM "IdealAnswer"
+    WHERE "questionId" = ${questionId}
+    ORDER BY embedding <=> ${`[${userEmbedding.join(",")}]`}::vector ASC
+    LIMIT 3`;
+
+  if (!rows || rows.length === 0) return 0;
+
+  const total = rows.reduce((sum, r) => sum + (r.cosine_similarity ?? 0), 0);
+  return Math.max(0, Math.min(total / rows.length, 1));
+};
+
+/**
+ * Returns the average cosine similarity of the top-3 most similar
+ * IdealAnswer embeddings filtered by AnswerCategory.
+ *
+ * Used exclusively by softskill scoring to compare against reference
+ * answers that share the same category as the classified answer.
+ *
+ * Falls back to question-wide top-3 when no category-specific
+ * reference answers exist yet (cold-start safety).
+ */
+export const getTop3SimilarityAverageByCategory = async (
+  userEmbedding: number[],
+  questionId: number,
+  answerCategoryId: number,
+): Promise<number> => {
+  // Try category-scoped similarity first
+  const categoryCount = await prisma.idealAnswer.count({
+    where: { questionId, answerCategoryId },
+  });
+
+  if (categoryCount > 0) {
+    const rows: { cosine_similarity: number }[] = await prisma.$queryRaw`
+      SELECT 1 - (embedding <=> ${`[${userEmbedding.join(",")}]`}::vector) AS cosine_similarity
+      FROM "IdealAnswer"
+      WHERE "questionId" = ${questionId}
+        AND "answerCategoryId" = ${answerCategoryId}
+      ORDER BY embedding <=> ${`[${userEmbedding.join(",")}]`}::vector ASC
+      LIMIT 3`;
+
+    if (rows && rows.length > 0) {
+      const total = rows.reduce((sum, r) => sum + (r.cosine_similarity ?? 0), 0);
+      return Math.max(0, Math.min(total / rows.length, 1));
+    }
+  }
+
+  // Cold-start fallback: question-wide top-3
+  return getTop3SimilarityAverage(userEmbedding, questionId);
+};
+
 export const getSimilarityScore = searchVector;
 
 export default {
@@ -291,4 +372,6 @@ export default {
   removeIdealAnswer,
   searchVector,
   getSimilarityScore,
+  getTop3SimilarityAverage,
+  getTop3SimilarityAverageByCategory,
 };

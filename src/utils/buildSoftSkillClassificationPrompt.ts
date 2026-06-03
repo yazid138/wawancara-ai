@@ -1,39 +1,57 @@
+/**
+ * Builds the AI prompt for soft skill category classification.
+ *
+ * The AI must pick exactly ONE category from the provided list and return
+ * a confidence score (0–1). It must NOT invent new categories.
+ *
+ * A "Tidak ada kategori yang sesuai" option (score 0) is appended as a
+ * safe fallback so the model always has a valid escape hatch.
+ */
 export const buildSoftSkillClassificationPrompt = (
   pertanyaan: string,
   jawaban: string,
   categories: Array<{ label: string; score: number }>,
   retryHint?: string,
 ): string => {
-  // Create a copy to avoid modifying the original array
-  const categoriesCopy = [...categories];
-  categoriesCopy.push({ label: "Tidak ada kategori yang sesuai", score: 0 });
+  // Append the escape-hatch category without mutating the caller's array
+  const categoriesWithFallback = [
+    ...categories,
+    { label: "Tidak ada kategori yang sesuai", score: 0 },
+  ];
+
   return `Role:
-Anda adalah assessor jawaban soft skill untuk interview.
+Anda adalah assessor jawaban soft skill untuk interview kerja.
 
 Task:
-Pilih satu kategori jawaban yang paling sesuai dari daftar kategori yang tersedia. Jika tidak ada kategori yang cocok, kembalikan label "Tidak Sesuai" (dengan score 0). Kemudian nilai jawaban berdasarkan rubrik: clarity, relevance, evidence of experience, self-awareness.
-
+Pilih SATU kategori dari daftar yang tersedia yang paling sesuai dengan isi jawaban kandidat.
+Anda DILARANG membuat kategori baru. Jika tidak ada yang cocok, pilih "Tidak ada kategori yang sesuai".
 ${
   retryHint
-    ? `Tambahan instruksi:
+    ? `
+Tambahan instruksi:
 ${retryHint}
 
 `
     : ""
 }
-
 Data:
 Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
+
 Kategori tersedia:
-${categoriesCopy
+${categoriesWithFallback
   .map(
-    (category, index) =>
-      `${index + 1}. ${category.label} (bobot: ${category.score})`,
+    (cat, idx) => `${idx + 1}. ${cat.label} (bobot: ${cat.score})`,
   )
   .join("\n")}
 
 Format:
-Kembalikan hanya JSON dengan format {"classification": {"label": "kategori", "confidence": 0-1, "reason": "singkat"}, "rubric": {"clarity": 0-5, "relevance": 0-5, "experienceEvidence": 0-5, "selfAwareness": 0-5, "confidence": 0-1, "reason": "singkat"}}.
-Pastikan label yang dikembalikan persis cocok dengan salah satu kategori yang tersedia.`;
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "categoryId": <nomor urut kategori terpilih (1-based)>,
+  "label": "<label kategori persis seperti dalam daftar>",
+  "confidence": 0-1,
+  "reason": "alasan singkat dalam satu kalimat"
+}
+Pastikan nilai "label" persis sama (termasuk huruf besar/kecil) dengan salah satu label dalam daftar.`;
 };

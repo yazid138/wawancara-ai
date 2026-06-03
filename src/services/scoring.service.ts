@@ -4,21 +4,73 @@ import { QuestionType } from "@/prisma/enums";
 import {
   classifySoftSkillAnswer,
   createEmbedding,
+  generateSoftSkillRubricScore,
   generateTechnicalRubricScore,
 } from "@/services/ai.service";
-import { getSimilarityScore, addIdealAnswer } from "@/services/question.service";
 import {
-  clampConfidence,
-  stringSimilarity,
-  parseRubricNumber,
+  addIdealAnswer,
+  getTop3SimilarityAverage,
+  getTop3SimilarityAverageByCategory,
+} from "@/services/question.service";
+import {
   buildCategoryOptions,
-  retryIfLowConfidenceWithPrompt,
-  buildTechnicalRubricPrompt,
   buildSoftSkillClassificationPrompt,
+  buildSoftSkillRubricPrompt,
+  buildTechnicalRubricPrompt,
   calculateKeywordScore,
+  clampConfidence,
+  parseRubricNumber,
+  retryIfLowConfidenceWithPrompt,
+  stringSimilarity,
 } from "@/utils";
 
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface SoftSkillRubric {
+  communication: number;
+  selfAwareness: number;
+  evidence: number;
+  relevance: number;
+}
+
+interface SoftSkillBreakdown {
+  rubric: SoftSkillRubric & { rubricScore: number };
+  categoryScore: number;
+  similarityScore: number;
+  keywordScore: number;
+  aiReason: string;
+}
+
+interface TechnicalRubric {
+  understanding: number;
+  technicalAccuracy: number;
+  problemSolving: number;
+  technicalCommunication: number;
+}
+
+interface TechnicalBreakdown {
+  rubric: TechnicalRubric & { rubricScore: number };
+  similarityScore: number;
+  keywordScore: number;
+  aiReason: string;
+}
+
+// ---------------------------------------------------------------------------
+// Technical scoring
+//
+// Formula:
+//   finalScore (0–100) =
+//     rubricScore    × 0.50   (understanding + technicalAccuracy + problemSolving + technicalCommunication / 20)
+//     similarityScore× 0.30   (top-3 pgvector cosine similarity average)
+//     keywordScore   × 0.20   (matchedWeight / totalWeight)
+//
+//   confidenceScore = (aiConfidence + similarityScore + keywordScore) / 3
+// ---------------------------------------------------------------------------
+
 const scoreTechnicalAnswer = async (answerId: number) => {
+  // ── 1. Load answer with question context ────────────────────────────────
   const answer = await prisma.answer.findUnique({
     where: { id: answerId },
     include: {
@@ -32,80 +84,111 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   if (!answer) throw new NotFoundException("Answer tidak ditemukan");
 
+  // ── 2. Guard: skip non-technical question types ──────────────────────────
+  const qType = answer.question.type;
+  if (qType === QuestionType.INTRO || qType === QuestionType.GENERAL) {
+    return null;
+  }
+
   const userAnswer = answer.content;
   const keywords = answer.question.keywords;
   const questionId = answer.question.id;
   const questionText = answer.question.content;
+
+  // ── 3. Keyword score ─────────────────────────────────────────────────────
+  // Range: 0–1  (matchedWeight / totalWeight)
   const keywordScore = calculateKeywordScore(userAnswer, keywords);
 
+  // ── 4. Similarity score (top-3 average via pgvector) ────────────────────
+  // Range: 0–1  average(top3 cosine similarity against ReferenceAnswers)
   let similarityScore = 0;
-
   if (userAnswer) {
     const userEmbedding = await createEmbedding(userAnswer);
-    similarityScore = await getSimilarityScore(userEmbedding, questionId);
+    similarityScore = await getTop3SimilarityAverage(userEmbedding, questionId);
   }
 
-  const retryHint = "Jawaban sebelumnya kurang meyakinkan. Berikan penilaian yang lebih konservatif dan fokus pada bukti eksplisit dari jawaban. Jika ragu, turunkan confidence dan jangan memaksakan skor tinggi.";
+  // ── 5. Rubric scoring (with retry if confidence < 0.70) ─────────────────
+  const retryHint =
+    "Penilaian sebelumnya kurang yakin. Fokus pada bukti teknis eksplisit dalam jawaban. Jangan memberikan skor tinggi tanpa justifikasi yang jelas.";
+
   const aiRubric = await retryIfLowConfidenceWithPrompt(
     () => generateTechnicalRubricScore(questionText, userAnswer),
     () => generateTechnicalRubricScore(questionText, userAnswer, retryHint),
-    (isRetry) => buildTechnicalRubricPrompt(questionText, userAnswer, isRetry ? retryHint : undefined),
+    (isRetry) =>
+      buildTechnicalRubricPrompt(
+        questionText,
+        userAnswer,
+        isRetry ? retryHint : undefined,
+      ),
   );
 
   const aiRubricResult = aiRubric.result;
   const technicalPrompt = aiRubric.prompt;
 
-  const pemahamanNum = parseRubricNumber(aiRubricResult.pemahaman);
-  const teknisNum = parseRubricNumber(aiRubricResult.teknis);
-  const logikaNum = parseRubricNumber(
-    aiRubricResult.logika ??
-      aiRubricResult.problema_solving ??
-      aiRubricResult.problem_solving,
-  );
-  const komunikasiNum = parseRubricNumber(aiRubricResult.komunikasi);
+  // ── 6. Parse rubric sub-scores (1–5 each) ───────────────────────────────
+  const understandingNum       = parseRubricNumber(aiRubricResult.understanding);
+  const technicalAccuracyNum   = parseRubricNumber(aiRubricResult.technicalAccuracy);
+  const problemSolvingNum      = parseRubricNumber(aiRubricResult.problemSolving);
+  const technicalCommNum       = parseRubricNumber(aiRubricResult.technicalCommunication);
 
+  // rubricScore = (sum of 4 criteria) / 20  → range 0–1
   const rubricScore = Math.max(
     0,
-    Math.min((pemahamanNum + teknisNum + logikaNum + komunikasiNum) / 20, 1),
-  );
-
-  const rubricConfidence = clampConfidence((aiRubricResult as any).confidence);
-  const keywordCoverage = keywordScore;
-  const similarityConfidence = similarityScore;
-
-  const finalScoreRaw =
-    rubricScore * 0.55 + similarityScore * 0.25 + keywordScore * 0.20;
-
-  const finalScore = finalScoreRaw * 100;
-
-  const evidenceAlignment =
-    rubricScore * 0.55 + similarityConfidence * 0.25 + keywordCoverage * 0.20;
-
-  const confidenceScore = Math.max(
-    0,
     Math.min(
-      rubricConfidence * 0.45 +
-        evidenceAlignment * 0.45 +
-        (finalScoreRaw >= 0.5 ? 0.1 : 0),
+      (understandingNum + technicalAccuracyNum + problemSolvingNum + technicalCommNum) / 20,
       1,
     ),
   );
 
-  const reasonParts = [
-    `Rubrik AI: pemahaman ${aiRubricResult.pemahaman ?? 0}/5, teknis ${aiRubricResult.teknis ?? 0}/5, logika ${aiRubricResult.logika ?? 0}/5, komunikasi ${aiRubricResult.komunikasi ?? 0}/5`,
-    `Confidence rubrik AI: ${Math.round(rubricConfidence * 100)}%`,
-    `Similarity vector: ${Math.round(similarityScore * 100)}%`,
-    `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
-    aiRubricResult.alasan ? `Alasan AI: ${aiRubricResult.alasan}` : null,
-  ].filter(Boolean);
+  // ── 7. Final score (0–100) ───────────────────────────────────────────────
+  // rubricScore*0.50 + similarityScore*0.30 + keywordScore*0.20
+  const finalScoreRaw =
+    rubricScore * 0.5 + similarityScore * 0.3 + keywordScore * 0.2;
 
+  const finalScore = Math.max(0, Math.min(finalScoreRaw * 100, 100));
+
+  // ── 8. Confidence score (0–1) ────────────────────────────────────────────
+  // (aiConfidence + similarityScore + keywordScore) / 3
+  const aiConfidence = clampConfidence(aiRubricResult.confidence);
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      (aiConfidence + similarityScore + keywordScore) / 3,
+      1,
+    ),
+  );
+
+  // ── 9. Feedback text ─────────────────────────────────────────────────────
   const feedback =
-    finalScoreRaw > 0.7
+    finalScore >= 75
       ? "Jawaban sangat baik"
-      : finalScoreRaw > 0.4
+      : finalScore >= 50
         ? "Jawaban cukup baik"
         : "Jawaban perlu diperbaiki";
 
+  // ── 10. Build breakdown ──────────────────────────────────────────────────
+  const breakdown: TechnicalBreakdown = {
+    rubric: {
+      understanding:          understandingNum,
+      technicalAccuracy:      technicalAccuracyNum,
+      problemSolving:         problemSolvingNum,
+      technicalCommunication: technicalCommNum,
+      rubricScore:            Math.round(rubricScore * 100) / 100,
+    },
+    similarityScore: Math.round(similarityScore * 100) / 100,
+    keywordScore:    Math.round(keywordScore    * 100) / 100,
+    aiReason:        aiRubricResult.reason ?? "",
+  };
+
+  const reasonParts = [
+    `Rubrik AI: understanding ${understandingNum}/5, technicalAccuracy ${technicalAccuracyNum}/5, problemSolving ${problemSolvingNum}/5, technicalCommunication ${technicalCommNum}/5`,
+    `AI confidence: ${Math.round(aiConfidence * 100)}%`,
+    `Similarity (top-3 avg): ${Math.round(similarityScore * 100)}%`,
+    `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
+    aiRubricResult.reason ? `Alasan AI: ${aiRubricResult.reason}` : null,
+  ].filter(Boolean);
+
+  // ── 11. Persist score (upsert) ───────────────────────────────────────────
   const scoreResult = await prisma.score.upsert({
     where: { answerId },
     update: {
@@ -117,6 +200,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       confidenceScore,
       feedback,
       reason: reasonParts.join(" | "),
+      breakdown: breakdown as any,
       prompt: technicalPrompt,
     },
     create: {
@@ -129,24 +213,47 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       confidenceScore,
       feedback,
       reason: reasonParts.join(" | "),
+      breakdown: breakdown as any,
       prompt: technicalPrompt,
     },
   });
 
-  // Promote to ideal answer if finalScore >= 80
-  if (finalScore >= 80) {
+  // ── 12. Auto-promotion ───────────────────────────────────────────────────
+  // Promote to ReferenceAnswer knowledge base when ALL three quality gates pass
+  if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8) {
     try {
       await addIdealAnswer(answer.questionId, answer.content);
-      console.log(`[Auto-Promotion] High-scoring technical answer (ID: ${answerId}, Score: ${finalScore.toFixed(2)}) promoted to Ideal Answer.`);
+      console.log(
+        `[Auto-Promotion] Technical answer promoted to ReferenceAnswer ` +
+          `(ID: ${answerId}, finalScore: ${finalScore.toFixed(2)}, ` +
+          `confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`,
+      );
     } catch (err: any) {
-      console.error(`[Auto-Promotion Error] Failed to promote technical answer to Ideal Answer:`, err.message);
+      console.error(
+        `[Auto-Promotion Error] Failed to promote technical answer:`,
+        err.message,
+      );
     }
   }
 
   return scoreResult;
 };
 
+
+// ---------------------------------------------------------------------------
+// Soft skill scoring — Hybrid Scoring Formula
+//
+//   finalScore =
+//     rubricScore    * 0.40   (AI rubric: communication + selfAwareness + evidence + relevance / 20)
+//     categoryScore  * 0.30   (selectedCategory.score / maxCategoryScore)
+//     similarityScore* 0.20   (top-3 pgvector cosine similarity average)
+//     keywordScore   * 0.10   (matchedWeight / totalWeight)
+//
+//   confidenceScore = (aiCategoryConfidence + similarityScore + keywordScore) / 3
+// ---------------------------------------------------------------------------
+
 const scoreSoftSkillAnswer = async (answerId: number) => {
+  // ── 1. Load answer with question context ────────────────────────────────
   const answer = await prisma.answer.findUnique({
     where: { id: answerId },
     include: {
@@ -161,164 +268,270 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   if (!answer) throw new NotFoundException("Answer tidak ditemukan");
 
+  // ── 2. Guard: skip non-softskill question types ─────────────────────────
+  const qType = answer.question.type;
   if (
-    answer.question.type === QuestionType.GENERAL ||
-    answer.question.type === QuestionType.INTRO ||
-    answer.question.type === QuestionType.TECHNICAL
+    qType === QuestionType.INTRO ||
+    qType === QuestionType.GENERAL ||
+    qType === QuestionType.TECHNICAL
   ) {
     return null;
   }
 
+  // ── 3. Guard: skip if no answer categories defined ──────────────────────
   const categories = answer.question.categories;
+  if (!categories.length) return null;
 
-  if (!categories.length) {
-    return null;
+  const questionText = answer.question.content;
+  const userAnswer = answer.content;
+
+  // ── 4. Keyword score ─────────────────────────────────────────────────────
+  // Range: 0–1  (matchedWeight / totalWeight via existing util)
+  const keywords = answer.question.keywords ?? [];
+  const keywordScore = calculateKeywordScore(userAnswer, keywords);
+
+  // ── 5. Generate embedding (similarity computed after category is resolved) ───
+  // We need the embedding regardless of category, so create it early.
+  let userEmbedding: number[] | null = null;
+  if (userAnswer) {
+    userEmbedding = await createEmbedding(userAnswer);
   }
 
-  let similarityScore = 0;
-  let keywordScore = 0;
-  if (answer.content) {
-    const userEmbedding = await createEmbedding(answer.content);
-    similarityScore = await getSimilarityScore(userEmbedding, answer.question.id);
+  // ── 6. Category classification (with retry if confidence < 0.7) ─────────
+  const classificationRetryHint =
+    "Klasifikasi sebelumnya kurang yakin. Pilih kategori berdasarkan bukti eksplisit dalam jawaban. Jangan membuat asumsi.";
 
-    const keywords = answer.question.keywords || [];
-    keywordScore = calculateKeywordScore(answer.content, keywords);
-  }
-
-  const retryHint = "Klasifikasi sebelumnya kurang yakin. Pilih kategori yang paling aman dan paling dekat dengan isi jawaban. Jangan membuat label baru, dan jika ragu pilih kategori yang paling umum namun masih relevan.";
   const categoryOptions = buildCategoryOptions(categories);
+
   const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
-    () => classifySoftSkillAnswer(answer.question.content, answer.content, categoryOptions),
-    () => classifySoftSkillAnswer(answer.question.content, answer.content, categoryOptions, retryHint),
-    (isRetry) => buildSoftSkillClassificationPrompt(answer.question.content, answer.content, categoryOptions, isRetry ? retryHint : undefined),
+    () =>
+      classifySoftSkillAnswer(questionText, userAnswer, categoryOptions),
+    () =>
+      classifySoftSkillAnswer(
+        questionText,
+        userAnswer,
+        categoryOptions,
+        classificationRetryHint,
+      ),
+    (isRetry) =>
+      buildSoftSkillClassificationPrompt(
+        questionText,
+        userAnswer,
+        categoryOptions,
+        isRetry ? classificationRetryHint : undefined,
+      ),
   );
 
-  const { classification, rubric } = classificationWithPrompt.result;
+  const classification = classificationWithPrompt.result;
   const softSkillPrompt = classificationWithPrompt.prompt;
 
-  // Find best matching category
-  let bestCategory = categories.find(
-    (category) =>
-      category.label.toLowerCase() ===
-      String(classification?.label || "").toLowerCase(),
+  // ── 8. Rubric scoring (with retry if confidence < 0.7) ──────────────────
+  const rubricRetryHint =
+    "Penilaian sebelumnya kurang meyakinkan. Fokus pada bukti eksplisit komunikasi, kesadaran diri, dan relevansi jawaban.";
+
+  const rubricWithPrompt = await retryIfLowConfidenceWithPrompt(
+    () => generateSoftSkillRubricScore(questionText, userAnswer),
+    () =>
+      generateSoftSkillRubricScore(questionText, userAnswer, rubricRetryHint),
+    (isRetry) =>
+      buildSoftSkillRubricPrompt(
+        questionText,
+        userAnswer,
+        isRetry ? rubricRetryHint : undefined,
+      ),
   );
 
-  // if no exact match, find most similar category
-  if (!bestCategory && classification?.label) {
-    const categoriesCopy = [...categories];
-    categoriesCopy.push({ label: "Tidak ada kategori yang sesuai", score: 0 } as any);
+  const rubricResult = rubricWithPrompt.result;
+
+  // ── 9. Resolve best matching category ───────────────────────────────────
+  // Priority: exact label match → fuzzy string similarity → score-0 fallback
+  const classifiedLabel = String(classification?.label ?? "");
+
+  let matchedCategory = categories.find(
+    (cat) => cat.label.toLowerCase() === classifiedLabel.toLowerCase(),
+  );
+
+  if (!matchedCategory && classifiedLabel) {
     let maxSimilarity = 0;
-    for (const cat of categoriesCopy) {
-      const similarity = stringSimilarity(cat.label, classification.label);
-      if (similarity > maxSimilarity) {
-        maxSimilarity = similarity;
-        bestCategory = cat;
+    for (const cat of categories) {
+      const sim = stringSimilarity(cat.label, classifiedLabel);
+      if (sim > maxSimilarity) {
+        maxSimilarity = sim;
+        matchedCategory = cat;
       }
     }
   }
 
-  // fallback if still not found
-  if (!bestCategory) {
-    bestCategory = {
-      label: "Uncategorized",
-      score: 0,
-    } as any;
+  if (!matchedCategory) {
+    matchedCategory = { id: undefined as any, label: "Uncategorized", score: 0, questionId: answer.question.id };
   }
 
-  // TypeScript type guard
-  const matchedCategory = bestCategory!;
-
-  const maxCategoryScore = Math.max(
-    ...categories.map((category) => category.score),
-    1,
-  );
-  const categoryStrength = Math.max(
+  // ── 9. Compute component scores (all 0–1) ───────────────────────────────
+  const maxCategoryScore = Math.max(...categories.map((c) => c.score), 1);
+  const categoryScore = Math.max(
     0,
     Math.min(matchedCategory.score / maxCategoryScore, 1),
   );
-  const aiConfidence = clampConfidence(classification?.confidence);
+
+  // ── 5a. Similarity score (top-3 average, category-scoped) ───────────────
+  // Range: 0–1
+  // Uses ReferenceAnswers that share the same AnswerCategory as the classified
+  // answer, giving a semantically fairer comparison than question-wide lookup.
+  // Falls back to question-wide top-3 when matchedCategory has no real id.
+  let similarityScore = 0;
+  if (userEmbedding) {
+    if (matchedCategory.id != null) {
+      similarityScore = await getTop3SimilarityAverageByCategory(
+        userEmbedding,
+        answer.question.id,
+        matchedCategory.id,
+      );
+    } else {
+      similarityScore = await getTop3SimilarityAverage(
+        userEmbedding,
+        answer.question.id,
+      );
+    }
+  }
+
+  const communicationNum = parseRubricNumber(rubricResult.communication);
+  const selfAwarenessNum = parseRubricNumber(rubricResult.selfAwareness);
+  const evidenceNum = parseRubricNumber(rubricResult.evidence);
+  const relevanceNum = parseRubricNumber(rubricResult.relevance);
+
+  const rubricScore = Math.max(
+    0,
+    Math.min(
+      (communicationNum + selfAwarenessNum + evidenceNum + relevanceNum) / 20,
+      1,
+    ),
+  );
+
+  // ── 10. Final score (0–100) ──────────────────────────────────────────────
+  // rubricScore*0.40 + categoryScore*0.30 + similarityScore*0.20 + keywordScore*0.10
+  const finalScoreRaw =
+    rubricScore * 0.4 +
+    categoryScore * 0.3 +
+    similarityScore * 0.2 +
+    keywordScore * 0.1;
+
+  const finalScore = Math.max(0, Math.min(finalScoreRaw * 100, 100));
+
+  // ── 11. Confidence score (0–1) ───────────────────────────────────────────
+  // (aiCategoryConfidence + aiRubricConfidence + similarityScore + keywordScore) / 4
+  const aiCategoryConfidence = clampConfidence(classification?.confidence);
+  const aiRubricConfidence = clampConfidence(rubricResult.confidence);
+  const confidenceScore = Math.max(
+    0,
+    Math.min(
+      (aiCategoryConfidence + aiRubricConfidence + similarityScore + keywordScore) / 4,
+      1,
+    ),
+  );
+
+  // ── 12. Feedback text ────────────────────────────────────────────────────
+  const feedback =
+    finalScore >= 75
+      ? "Jawaban sangat baik"
+      : finalScore >= 50
+        ? "Jawaban cukup baik"
+        : "Jawaban perlu diperbaiki";
+
+  // ── 13. Build breakdown ──────────────────────────────────────────────────
   const exactLabelMatch =
-    matchedCategory.label.toLowerCase() ===
-    String(classification?.label || "").toLowerCase();
+    matchedCategory.label.toLowerCase() === classifiedLabel.toLowerCase();
+
+  const breakdown: SoftSkillBreakdown = {
+    rubric: {
+      communication: communicationNum,
+      selfAwareness: selfAwarenessNum,
+      evidence: evidenceNum,
+      relevance: relevanceNum,
+      rubricScore: Math.round(rubricScore * 100) / 100,
+    },
+    categoryScore: Math.round(categoryScore * 100) / 100,
+    similarityScore: Math.round(similarityScore * 100) / 100,
+    keywordScore: Math.round(keywordScore * 100) / 100,
+    aiReason: classification?.reason ?? rubricResult?.reason ?? "",
+  };
 
   const reasonParts = [
     `Kategori terpilih: ${matchedCategory.label}`,
-    `Bobot kategori: ${matchedCategory.score}`,
-    `Keyakinan AI: ${Math.round(aiConfidence * 100)}%`,
-    `Similarity vector: ${Math.round(similarityScore * 100)}%`,
+    `Bobot kategori: ${matchedCategory.score}/${maxCategoryScore}`,
+    `Rubrik AI: communication ${communicationNum}/5, selfAwareness ${selfAwarenessNum}/5, evidence ${evidenceNum}/5, relevance ${relevanceNum}/5`,
+    `Keyakinan AI: final ${Math.round(confidenceScore * 100)}%, rubrik ${Math.round(aiRubricConfidence * 100)}%, klasifikasi ${Math.round(aiCategoryConfidence * 100)}%`,
+    `Similarity (top-3 avg): ${Math.round(similarityScore * 100)}%`,
     `Keyword coverage: ${Math.round(keywordScore * 100)}%`,
-    classification?.alasan ? `Alasan AI: ${classification.alasan}` : null,
+    (classification?.reason || rubricResult?.reason) ? `Alasan AI: ${classification?.reason ?? ""} ${rubricResult?.reason ?? ""}` : null,
     exactLabelMatch
       ? "Label cocok persis dengan hasil klasifikasi"
       : "Label diambil dari kategori terdekat yang tersedia",
   ].filter(Boolean);
 
-  const categoryScoreRaw = matchedCategory.score / maxCategoryScore;
-  
-  const finalScoreRaw = categoryScoreRaw * 0.70 + similarityScore * 0.15 + keywordScore * 0.15;
-  
-  const finalScore = finalScoreRaw * 100;
-
-  const evidenceAlignment = categoryStrength * 0.70 + similarityScore * 0.15 + keywordScore * 0.15;
-
-  const confidenceScore = Math.max(
-    0,
-    Math.min(
-      aiConfidence * 0.45 +
-        evidenceAlignment * 0.45 +
-        (finalScoreRaw >= 0.5 ? 0.1 : 0),
-      1,
-    ),
-  );
-
-  const feedback =
-    finalScoreRaw > 0.7
-      ? "Jawaban sangat baik"
-      : finalScoreRaw > 0.4
-        ? "Jawaban cukup baik"
-        : "Jawaban perlu diperbaiki";
-
+  // ── 14. Persist score (upsert) ───────────────────────────────────────────
   const scoreResult = await prisma.score.upsert({
     where: { answerId },
     update: {
       type: QuestionType.SOFTSKILL,
-      categoryId: matchedCategory.id,
+      categoryId: matchedCategory.id ?? null,
       categoryLabel: matchedCategory.label,
+      rubricScore,
       finalScore,
       similarityScore,
       keywordScore,
       confidenceScore,
       feedback,
       reason: reasonParts.join(" | "),
+      breakdown: breakdown as any,
       prompt: softSkillPrompt,
     },
     create: {
       answerId,
       type: QuestionType.SOFTSKILL,
-      categoryId: matchedCategory.id,
+      categoryId: matchedCategory.id ?? null,
       categoryLabel: matchedCategory.label,
+      rubricScore,
       finalScore,
       similarityScore,
       keywordScore,
       confidenceScore,
       feedback,
       reason: reasonParts.join(" | "),
+      breakdown: breakdown as any,
       prompt: softSkillPrompt,
     },
   });
 
-  // Promote to ideal answer if finalScore >= 80
-  if (finalScore >= 80) {
+  // ── 15. Auto-promotion ─────────────────────────────────────────────────────
+  // Promote answer to ReferenceAnswer knowledge base when ALL three
+  // quality gates are satisfied (spec: finalScore >= 85 AND
+  // confidenceScore >= 0.85 AND similarityScore >= 0.80)
+  // The answerCategoryId is stored so future category-aware similarity
+  // queries return only same-category reference answers.
+  if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8) {
     try {
-      await addIdealAnswer(answer.questionId, answer.content);
-      console.log(`[Auto-Promotion] High-scoring softskill answer (ID: ${answerId}, Score: ${finalScore.toFixed(2)}) promoted to Ideal Answer.`);
+      const promotedCategoryId = matchedCategory.id ?? null;
+      await addIdealAnswer(answer.questionId, answer.content, promotedCategoryId);
+      console.log(
+        `[Auto-Promotion] Softskill answer promoted to ReferenceAnswer ` +
+          `(ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], ` +
+          `finalScore: ${finalScore.toFixed(2)}, ` +
+          `confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`,
+      );
     } catch (err: any) {
-      console.error(`[Auto-Promotion Error] Failed to promote softskill answer to Ideal Answer:`, err.message);
+      console.error(
+        `[Auto-Promotion Error] Failed to promote softskill answer:`,
+        err.message,
+      );
     }
   }
 
   return scoreResult;
 };
+
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
 
 export default {
   scoreTechnicalAnswer,
