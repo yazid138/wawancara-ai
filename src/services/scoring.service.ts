@@ -86,7 +86,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   // ── 2. Guard: skip non-technical question types ──────────────────────────
   const qType = answer.question.type;
-  if (qType === QuestionType.INTRO || qType === QuestionType.GENERAL) {
+  if (qType === QuestionType.INTRO || qType === QuestionType.GENERAL || qType === QuestionType.SOFTSKILL) {
     return null;
   }
 
@@ -101,11 +101,8 @@ const scoreTechnicalAnswer = async (answerId: number) => {
 
   // ── 4. Similarity score (top-3 average via pgvector) ────────────────────
   // Range: 0–1  average(top3 cosine similarity against ReferenceAnswers)
-  let similarityScore = 0;
-  if (userAnswer) {
-    const userEmbedding = await createEmbedding(userAnswer);
-    similarityScore = await getTop3SimilarityAverage(userEmbedding, questionId);
-  }
+  const userEmbedding = await createEmbedding(userAnswer);
+  const similarityScore = userAnswer ? await getTop3SimilarityAverage(userEmbedding, questionId) : 0;
 
   // ── 5. Rubric scoring (with retry if confidence < 0.70) ─────────────────
   const retryHint =
@@ -218,6 +215,11 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     },
   });
 
+  // const existingSimilarity = userEmbedding ? await getTop3SimilarityAverage(
+  //   userEmbedding,
+  //   answer.question.id,
+  // ) : 0;
+
   // ── 12. Auto-promotion ───────────────────────────────────────────────────
   // Promote to ReferenceAnswer knowledge base when ALL three quality gates pass
   if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8 && rubricScore >= 0.8) {
@@ -292,10 +294,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   // ── 5. Generate embedding (similarity computed after category is resolved) ───
   // We need the embedding regardless of category, so create it early.
-  let userEmbedding: number[] | null = null;
-  if (userAnswer) {
-    userEmbedding = await createEmbedding(userAnswer);
-  }
+  const userEmbedding: number[] | null = userAnswer ? await createEmbedding(userAnswer) : null;
 
   // ── 6. Category classification (with retry if confidence < 0.7) ─────────
   const classificationRetryHint =
