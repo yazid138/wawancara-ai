@@ -1,17 +1,19 @@
 import config from "@/config";
 import Message from "@/types/aiMessage";
 import OpenAI from "openai";
+import { cleanWhitespace } from "@/utils";
 
 const client = new OpenAI({
   apiKey: config.openAIKey,
 });
 
 export const createEmbedding = async (text: string) => {
+  const cleanedText = cleanWhitespace(text);
   const { data } = await client.embeddings.create({
     model: config.openAIEmbeddingModel,
     dimensions: 3072,
     encoding_format: "float",
-    input: text,
+    input: cleanedText,
   });
   return data[0].embedding;
 };
