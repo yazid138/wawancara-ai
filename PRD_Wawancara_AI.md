@@ -370,68 +370,140 @@ sequenceDiagram
 
 ### 7.4 Sistem Penilaian (Scoring Engine)
 
-#### 7.4.1 Scoring Teknikal
+> 📄 Dokumen teknis lengkap: [SCORING_PIPELINE.md](SCORING_PIPELINE.md)
 
-Penilaian jawaban teknis menggunakan **3 komponen** yang di-bobot (Hybrid Technical Scoring):
+Scoring berjalan **background (async)** setelah jawaban tersimpan. Hanya tipe `TECHNICAL` dan `SOFTSKILL` yang dinilai; `INTRO` dan `GENERAL` dilewati.
 
-| Komponen | Bobot | Metode |
-|---|---|---|
-| **Rubric AI Score** | 50% | OpenAI menilai 4 aspek: Pemahaman (1-5), Teknis (1-5), Logika (1-5), Komunikasi (1-5). Rubric Score = (total aspek) / 20 |
-| **Similarity Score** | 30% | Cosine similarity rata-rata top-3 terbaik antara embedding jawaban user dengan Ideal Answer menggunakan pgvector |
-| **Keyword Score** | 20% | Persentase kemunculan kata kunci berbobot (`matchedWeight / totalWeight`) |
+#### 7.4.1 Komponen Penilaian
 
-**Formula:**
+##### Keyword Score
+
+Menilai kemunculan kata kunci berbobot dalam jawaban. Top-5 keyword berdasarkan weight diambil dan dicek menggunakan `hasWholeWord` (regex whole-word → substring → multi-word parts).
+
 ```
-finalScore = (rubricScore * 0.50 + similarityScore * 0.30 + keywordScore * 0.20) * 100
+weightCoverage = matchedWeight / totalCoreWeight
+countCoverage  = matchedCount  / jumlah_keyword_core
+keywordScore   = min(1, weightCoverage × 0.70 + countCoverage × 0.30)
 ```
 
-**Confidence Score:**
+##### Similarity Score
+
+Mengukur kemiripan semantik jawaban user terhadap IdealAnswer menggunakan cosine similarity via **pgvector**.
+
+```sql
+-- Operator pgvector: <=> (L2 distance, dikonversi ke cosine)
+cosine_similarity = 1 - (embedding <=> userVector)
+
+-- Ambil rata-rata top-3 terdekat
+SELECT avg(1 - (embedding <=> userVector))
+FROM "IdealAnswer"
+WHERE "questionId" = ?
+ORDER BY embedding <=> userVector ASC LIMIT 3
 ```
+
+**Mode Technical:** question-wide (semua IdealAnswer untuk pertanyaan itu).
+
+**Mode SoftSkill:** category-scoped (IdealAnswer difilter per `answerCategoryId`; fallback ke question-wide jika belum ada referensi untuk kategori tersebut — *cold-start safety*).
+
+##### Rubric Score — Technical
+
+OpenAI menilai 4 aspek teknis, masing-masing skala 1–5:
+
+| Kriteria | Deskripsi |
+|---|---|
+| `understanding` | Kedalaman pemahaman konsep |
+| `technicalAccuracy` | Ketepatan detail teknis & terminologi |
+| `problemSolving` | Kualitas penalaran logis & pendekatan solusi |
+| `technicalCommunication` | Kejelasan penjelasan konsep teknis |
+
+```
+rubricScore = (understanding + technicalAccuracy + problemSolving + technicalCommunication) / 20
+→ Rentang 0–1
+```
+
+##### Rubric Score — SoftSkill
+
+OpenAI menilai 4 aspek soft skill, masing-masing skala 1–5:
+
+| Kriteria | Deskripsi |
+|---|---|
+| `communication` | Kejelasan dan struktur penyampaian |
+| `selfAwareness` | Pemahaman diri (kelebihan & keterbatasan) |
+| `behaviorEvidence` | Ada tidaknya contoh perilaku konkret di masa lalu |
+| `growthMindset` | Kesadaran terhadap area pengembangan & keinginan belajar |
+
+```
+rubricScore = (communication + selfAwareness + behaviorEvidence + growthMindset) / 20
+→ Rentang 0–1
+```
+
+##### Category Score (SoftSkill only)
+
+AI mengklasifikasikan jawaban ke satu `AnswerCategory` yang tersedia untuk pertanyaan tersebut.
+
+```
+categoryScore = matchedCategory.score / maxCategoryScore
+→ Rentang 0–1
+```
+
+Resolusi label kategori menggunakan tiga lapisan fallback:
+1. **Exact match** (case-insensitive)
+2. **Fuzzy match** — `stringSimilarity ≥ 0.4` (Jaccard word-overlap)
+3. **Fallback** — `Uncategorized` dengan score: 0
+
+#### 7.4.2 Formula Final Score
+
+##### Technical
+
+| Komponen | Bobot |
+|---|---|
+| `rubricScore` (AI 4 aspek teknis) | **50%** |
+| `similarityScore` (pgvector top-3 avg) | **30%** |
+| `keywordScore` (keyword coverage) | **20%** |
+
+```
+finalScore      = (rubricScore × 0.50 + similarityScore × 0.30 + keywordScore × 0.20) × 100
 confidenceScore = (aiConfidence + similarityScore + keywordScore) / 3
 ```
 
-#### 7.4.2 Scoring Soft Skill
+##### SoftSkill
 
-Penilaian soft skill menggunakan **4 komponen** yang di-bobot (Hybrid Softskill Scoring):
+| Komponen | Bobot |
+|---|---|
+| `rubricScore` (AI 4 aspek soft skill) | **40%** |
+| `categoryScore` (klasifikasi kategori) | **30%** |
+| `similarityScore` (category-scoped top-3 avg) | **20%** |
+| `keywordScore` (keyword coverage) | **10%** |
 
-| Komponen | Bobot | Deskripsi |
-|---|---|---|
-| **Rubric AI Score** | 40% | OpenAI menilai 4 aspek: Komunikasi (1-5), Kesadaran Diri (1-5), Bukti (1-5), Relevansi (1-5). Rubric Score = (total aspek) / 20 |
-| **Category Score** | 30% | Skor kategori terklasifikasi dibagi skor kategori tertinggi yang tersedia (`matchedCategory.score / maxCategoryScore`) |
-| **Similarity Score** | 20% | Cosine similarity rata-rata top-3 terbaik menggunakan ReferenceAnswers yang disaring sesuai kategori yang cocok (Category-Scoped Similarity) untuk perbandingan semantik yang adil |
-| **Keyword Score** | 10% | Persentase kemunculan kata kunci berbobot (`matchedWeight / totalWeight`) |
-
-**Formula:**
 ```
-finalScore = (rubricScore * 0.40 + categoryScore * 0.30 + similarityScore * 0.20 + keywordScore * 0.10) * 100
+finalScore      = (rubricScore × 0.40 + categoryScore × 0.30 + similarityScore × 0.20 + keywordScore × 0.10) × 100
+confidenceScore = aiCategoryConfidence × 0.40 + aiRubricConfidence × 0.30 + similarityScore × 0.20 + keywordScore × 0.10
 ```
-
-**Confidence Score:**
-```
-confidenceScore = (aiCategoryConfidence + aiRubricConfidence + similarityScore + keywordScore) / 4
-```
-
-**Proses Klasifikasi Kategori & Similarity:**
-1. AI mengklasifikasikan jawaban ke salah satu kategori (`AnswerCategory`) yang tersedia.
-2. String similarity matching (fuzzy) digunakan sebagai fallback jika label hasil AI tidak cocok secara exact dengan nama kategori di database.
-3. Kategori yang terklasifikasi digunakan sebagai filter (`answerCategoryId`) untuk mengambil ReferenceAnswers yang memiliki kategori yang sama saat menghitung `Similarity Score`.
-4. Jika kategori yang dicocokkan tidak memiliki ID database yang valid, scoring akan fallback menggunakan `getTop3SimilarityAverage` secara global di tingkat pertanyaan.
 
 #### 7.4.3 Retry Mechanism
 
-- Jika confidence AI berada di bawah ambang batas (`< 0.70`) pada scoring pertama, sistem otomatis melakukan **retry** ke OpenAI dengan prompt berisi hint tambahan (konservatif).
-- Hint memaksa AI untuk fokus hanya pada bukti eksplisit dan objektif yang terdapat di dalam jawaban kandidat untuk klasifikasi kategori atau penilaian rubrik.
+**Threshold:** `LOW_CONFIDENCE_THRESHOLD = 0.65`
+
+- Berlaku pada **Rubric Score** (Technical & SoftSkill) dan **Klasifikasi Kategori** (SoftSkill).
+- Jika `confidence < 0.65` pada percobaan pertama → sistem otomatis **retry** ke OpenAI dengan prompt berisi `retryHint` yang menginstruksikan AI untuk fokus hanya pada bukti eksplisit.
+- Hasil terbaik (`pickBetterResult`) dipilih berdasarkan confidence tertinggi antara percobaan pertama dan retry.
 
 #### 7.4.4 Auto-Promotion to Ideal Answer
 
-- Jawaban kandidat otomatis dipromosikan sebagai **Ideal Answer** baru jika memenuhi ketiga batas kualitas berikut:
-  - `finalScore >= 85`
-  - `confidenceScore >= 0.85`
-  - `similarityScore >= 0.80`
-- Saat dipromosikan, embedding jawaban dihitung lalu disinkronisasikan ke:
-  - **pgvector** (tabel `IdealAnswer` di PostgreSQL)
-  - **Pinecone** dan **Qdrant** (sebagai database vektor eksternal)
-- Khusus untuk Soft Skill, promosi ini juga menyimpan `answerCategoryId` yang terasosiasi agar similarity search di masa mendatang dapat menyaring referensi jawaban berdasarkan kategori yang sesuai secara otomatis.
+Jawaban kandidat otomatis dipromosikan sebagai **Ideal Answer** baru jika memenuhi **semua 4 syarat**:
+
+| Gate | Technical | SoftSkill |
+|---|---|---|
+| `finalScore` | ≥ 85 | ≥ 85 |
+| `confidenceScore` | ≥ 0.85 | ≥ 0.85 |
+| `similarityScore` | ≥ 0.80 | ≥ 0.80 |
+| `rubricScore` | ≥ 0.80 | ≥ 0.80 |
+| `existingSimilarity` | — | **< 0.95** (cegah duplikat) |
+
+Saat dipromosikan:
+- Embedding dihitung ulang dan disimpan ke tabel `IdealAnswer` (pgvector)
+- Untuk SoftSkill: `answerCategoryId` ikut disimpan agar category-scoped similarity bekerja di masa mendatang
+- `sourceAnswerId` disimpan untuk traceability
 
 ### 7.5 Resume Wawancara (AI-Generated)
 
@@ -728,11 +800,18 @@ Setiap pertanyaan di-seed dengan:
 
 | Istilah | Definisi |
 |---|---|
-| **Cosine Similarity** | Metode pengukuran kemiripan antara dua vektor berdasarkan sudut cosinus |
-| **Embedding** | Representasi teks dalam bentuk vektor numerik berdimensi tinggi |
-| **pgvector** | Ekstensi PostgreSQL untuk menyimpan dan query vektor |
-| **Rubric Score** | Penilaian berdasarkan rubrik (kriteria terstruktur) oleh AI |
-| **Ideal Answer** | Jawaban referensi yang dianggap ideal untuk suatu pertanyaan |
-| **Rephrase** | Penulisan ulang pertanyaan agar lebih natural dan bervariasi |
-| **Confidence Score** | Tingkat keyakinan AI terhadap hasil penilaian |
-| **Auto-Promotion** | Mekanisme otomatis menjadikan jawaban bagus (finalScore ≥ 85, confidenceScore ≥ 0.85, similarityScore ≥ 0.80) sebagai Ideal Answer baru |
+| **Cosine Similarity** | Metode pengukuran kemiripan antara dua vektor berdasarkan sudut cosinus. Nilai 1.0 = identik, 0.0 = tidak ada kemiripan |
+| **Embedding** | Representasi teks dalam bentuk vektor numerik 3072 dimensi menggunakan OpenAI `text-embedding-3-large` |
+| **pgvector** | Ekstensi PostgreSQL untuk menyimpan dan query vektor. Operator `<=>` menghitung jarak L2 antar vektor |
+| **Rubric Score** | Penilaian berdasarkan rubrik (4 kriteria terstruktur) oleh AI, dinormalisasi 0–1 dengan membagi 20 |
+| **Keyword Score** | Skor cakupan kata kunci. Formula hybrid: 70% weight-coverage + 30% count-coverage dari top-5 keyword berbobot |
+| **Similarity Score** | Skor kemiripan semantik. Rata-rata cosine similarity dari 3 IdealAnswer terdekat via pgvector |
+| **Category Score** | (SoftSkill) Skor berdasarkan kategori yang diklasifikasikan AI: `matchedCategory.score / maxCategoryScore` |
+| **Confidence Score** | Tingkat keyakinan gabungan sistem. Dihitung dari rata-rata tertimbang confidence AI dan komponen skor lainnya |
+| **Ideal Answer** | Jawaban referensi yang disimpan sebagai vektor embedding. Digunakan sebagai pembanding similarity |
+| **Auto-Promotion** | Mekanisme otomatis menjadikan jawaban berkualitas tinggi sebagai Ideal Answer baru (finalScore ≥ 85, confidenceScore ≥ 0.85, similarityScore ≥ 0.80, rubricScore ≥ 0.80) |
+| **Category-Scoped Similarity** | Pencarian IdealAnswer dibatasi pada kategori yang sama dengan jawaban terklasifikasi, agar perbandingan semantik lebih adil |
+| **Cold-Start Fallback** | Jika belum ada IdealAnswer untuk kategori tertentu, similarity search dilakukan secara question-wide tanpa filter kategori |
+| **Retry Mechanism** | Jika confidence AI < 0.65 (LOW_CONFIDENCE_THRESHOLD), sistem mengirim ulang prompt dengan hint tambahan. Hasil confidence tertinggi yang digunakan |
+| **Rephrase** | Penulisan ulang pertanyaan bank soal agar lebih natural dan bervariasi saat disampaikan ke kandidat |
+| **RBAC** | Role-Based Access Control — pembatasan akses endpoint berdasarkan role pengguna (ADMIN, COMPANY, STUDENT, PSYCHOLOGIST) |
