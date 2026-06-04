@@ -8,10 +8,12 @@ type StartInterviewInput = {
   positionId: number;
 };
 
+const SOFTSKILL_PER_CATEGORY = 3;
+
 const DISTRIBUTION: Record<QuestionType, number> = {
   INTRO: 1,
   GENERAL: 1,
-  SOFTSKILL: 7,
+  SOFTSKILL: Infinity, // dikontrol per-kategori, bukan total
   TECHNICAL: 3,
 };
 
@@ -158,8 +160,15 @@ const _getNextQuestion = async (interviewId: number) => {
     TECHNICAL: 0,
   };
 
+  // Hitung jumlah jawaban per kategori softskill
+  const softskillCountByCategory = new Map<number, number>();
+
   for (const ans of answers) {
     countByType[ans.question.type]++;
+    if (ans.question.type === QuestionType.SOFTSKILL && ans.question.categoryId) {
+      const prev = softskillCountByCategory.get(ans.question.categoryId) ?? 0;
+      softskillCountByCategory.set(ans.question.categoryId, prev + 1);
+    }
   }
 
   // Gunakan Set untuk tracking yang lebih efisien dan pasti tidak ada duplikat
@@ -168,7 +177,7 @@ const _getNextQuestion = async (interviewId: number) => {
   for (const type of FLOW) {
     const remaining = DISTRIBUTION[type] - countByType[type];
 
-    if (remaining > 0) {
+    if (remaining > 0 || type === QuestionType.SOFTSKILL) {
       if (type === QuestionType.INTRO) {
         const aiMessage = await generateIntroMessage(
           interview.user.name,
@@ -201,18 +210,25 @@ const _getNextQuestion = async (interviewId: number) => {
       // Filter tambahan untuk memastikan benar-benar tidak ada duplikat (Meski query where sudah menyaring, dipastikan ulang)
       let validCandidates = candidates;
 
-      // Prioritaskan kategori softskill yang belum ditanyakan
+      // Untuk softskill: batasi maksimal SOFTSKILL_PER_CATEGORY pertanyaan per kategori
       if (type === QuestionType.SOFTSKILL && validCandidates.length > 0) {
-        const usedCategoryIds = new Set(
-          answers
-            .filter((a) => a.question.type === QuestionType.SOFTSKILL)
-            .map((a) => a.question.categoryId),
+        // Filter kandidat yang kategorinya belum mencapai batas
+        validCandidates = validCandidates.filter((q) => {
+          const count = softskillCountByCategory.get(q.categoryId ?? -1) ?? 0;
+          return count < SOFTSKILL_PER_CATEGORY;
+        });
+
+        if (validCandidates.length === 0) {
+          // Semua kategori sudah mencapai batas, lanjut ke tipe berikutnya
+          continue;
+        }
+
+        // Prioritaskan kategori yang belum pernah ditanyakan sama sekali
+        const unusedCategoryCandidates = validCandidates.filter(
+          (q) => !softskillCountByCategory.has(q.categoryId ?? -1),
         );
-        const candidatesWithNewCategory = validCandidates.filter(
-          (q) => !usedCategoryIds.has(q.categoryId),
-        );
-        if (candidatesWithNewCategory.length > 0) {
-          validCandidates = candidatesWithNewCategory;
+        if (unusedCategoryCandidates.length > 0) {
+          validCandidates = unusedCategoryCandidates;
         }
       }
 
