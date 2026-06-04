@@ -4,6 +4,7 @@ import pineconeService from "@/services/pinecone.service";
 import qdrantService from "@/services/qdrant.service";
 import { createEmbedding } from "@/services/ai.service";
 import NotFoundException from "@/exception/NotFoundException";
+import { cleanWhitespace } from "@/utils";
 
 export const getAllQuestions = async () => {
   const questions = await prisma.question.findMany({
@@ -171,6 +172,8 @@ export const addIdealAnswer = async (
   answerCategoryId?: number | null,
   sourceAnswerId?: number,
 ) => {
+  const cleanedIdealAnswer = cleanWhitespace(idealAnswer);
+
   // Verify question exists
   const question = await prisma.question.findUnique({
     where: { id: questionId },
@@ -186,7 +189,7 @@ export const addIdealAnswer = async (
       questionId,
       answerCategoryId: answerCategoryId ?? null,
       content: {
-        equals: idealAnswer,
+        equals: cleanedIdealAnswer,
         mode: "insensitive",
       },
     },
@@ -196,20 +199,20 @@ export const addIdealAnswer = async (
     return existing;
   }
 
-  const embedding = await createEmbedding(idealAnswer);
+  const embedding = await createEmbedding(cleanedIdealAnswer);
 
   // Use raw query because the `embedding` column is an unsupported vector type
   let idealAnswerResult: any[];
   if (answerCategoryId != null && sourceAnswerId != null) {
     idealAnswerResult = await prisma.$queryRaw`
       INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "sourceAnswerId", "createdAt", "updatedAt")
-      VALUES (${questionId}, ${answerCategoryId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, ${sourceAnswerId}, NOW(), NOW())
+      VALUES (${questionId}, ${answerCategoryId}, ${cleanedIdealAnswer}, ${`[${embedding.join(",")}]`}::vector, ${sourceAnswerId}, NOW(), NOW())
       RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
     ` as any[];
   } else {
     idealAnswerResult = await prisma.$queryRaw`
       INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "createdAt", "updatedAt")
-      VALUES (${questionId}, ${idealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
+      VALUES (${questionId}, ${cleanedIdealAnswer}, ${`[${embedding.join(",")}]`}::vector, NOW(), NOW())
       RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
     ` as any[];
   }
@@ -224,7 +227,7 @@ export const addIdealAnswer = async (
   //     {
   //       questionId,
   //       ...(answerCategoryId != null ? { answerCategoryId } : {}),
-  //       answer: idealAnswer,
+  //       answer: cleanedIdealAnswer,
   //       type: "ideal_answer",
   //     },
   //     `ideal_${id}`,
@@ -234,7 +237,7 @@ export const addIdealAnswer = async (
   //     {
   //       questionId,
   //       ...(answerCategoryId != null ? { answerCategoryId } : {}),
-  //       answer: idealAnswer,
+  //       answer: cleanedIdealAnswer,
   //       type: "ideal_answer",
   //     },
   //     id,

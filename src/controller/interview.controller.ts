@@ -7,7 +7,6 @@ import scoringService from "@/services/scoring.service";
 import fs from "fs";
 import ForbiddenException from "@/exception/ForbiddenException";
 import { Status, QuestionType } from "@/prisma/enums";
-import { cleanWhitespace } from "@/utils";
 
 type StartInterviewRequest = {
   companyId: number;
@@ -104,8 +103,6 @@ export const submitAnswer = async (req: Request, res: Response) => {
     req.body,
   );
 
-  const cleanedAnswer = cleanWhitespace(answer);
-
   const userId = req.user!.id;
 
   const interview = await interviewService.getInterviewById(interviewId);
@@ -150,7 +147,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
   }
 
   if (currentQuestion.id === -1) {
-    await interviewService.createUserChat(interviewId, cleanedAnswer);
+    await interviewService.createUserChat(interviewId, answer);
     return sendResponse(res, {
       status: 201,
       message: "Jawaban berhasil disimpan",
@@ -159,13 +156,13 @@ export const submitAnswer = async (req: Request, res: Response) => {
   }
 
   const savedAnswer = await interviewService.createAnswer({
-    content: cleanedAnswer,
+    content: answer,
     questionId: currentQuestion.id,
     interviewId,
     userId,
   });
 
-  await interviewService.createUserChat(interviewId, cleanedAnswer, currentQuestion.id);
+  await interviewService.createUserChat(interviewId, answer, currentQuestion.id);
 
   try {
     if (currentQuestion.type === QuestionType.TECHNICAL) {
