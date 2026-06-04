@@ -9,3 +9,4 @@ export * from "./parseRubricScore";
 export * from "./buildCategoryOptions";
 export * from "./retryIfLowConfidenceWithPrompt";
 export * from "./calculteKeywordScore";
+export * from "./cleanWhitespace";

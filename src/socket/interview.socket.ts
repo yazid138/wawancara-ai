@@ -3,6 +3,7 @@ import interviewService from "@/services/interview.service";
 import scoringService from "@/services/scoring.service";
 import { Status, QuestionType } from "@/prisma/enums";
 import fs from "fs";
+import { cleanWhitespace } from "@/utils";
 
 export default function setupInterviewSocket(io: Server, socket: Socket) {
   // JOIN INTERVIEW
@@ -36,6 +37,8 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
     try {
       const { interviewId, answer, questionId } = data;
       const userId = socket.data.user.id;
+
+      const cleanedAnswer = cleanWhitespace(answer);
 
       const interview = await interviewService.getInterviewById(interviewId);
       if (!interview) {
@@ -75,17 +78,17 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
 
       let savedAnswer: { id: number; createdAt: Date; updatedAt: Date; userId: number; interviewId: number; questionId: number; content: string; };
       if (currentQuestion.id === -1) {
-        await interviewService.createUserChat(interviewId, answer);
-        io.to(roomName).emit("answer-saved", { questionId: -1, answer });
+        await interviewService.createUserChat(interviewId, cleanedAnswer);
+        io.to(roomName).emit("answer-saved", { questionId: -1, answer: cleanedAnswer });
       } else {
         savedAnswer = await interviewService.createAnswer({
-          content: answer,
+          content: cleanedAnswer,
           questionId: currentQuestion.id,
           interviewId,
           userId,
         });
 
-        await interviewService.createUserChat(interviewId, answer, currentQuestion.id);
+        await interviewService.createUserChat(interviewId, cleanedAnswer, currentQuestion.id);
 
         // Async Scoring
         try {
