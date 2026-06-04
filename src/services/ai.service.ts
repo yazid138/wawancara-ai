@@ -352,9 +352,7 @@ Kembalikan hanya teks pertanyaan dalam bahasa Indonesia yang natural dan ramah, 
 };
 
 export const rephraseQuestion = async (originalQuestion: string) => {
-  const { output_text } = await client.responses.create({
-    model: config.openAIModel,
-    input: `Role:
+  const inputPrompt = `Role:
 Anda adalah HR atau User Interviewer yang sedang mewawancarai kandidat mahasiswa secara lisan/chat.
 
 Task:
@@ -364,10 +362,13 @@ Data:
 Pertanyaan Asli: ${originalQuestion}
 
 Format:
-PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`,
+PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan memberikan daftar, variasi, atau teks tambahan apapun.`;
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: inputPrompt,
   });
 
-  return output_text;
+  return { rephrase: output_text, prompt: inputPrompt };
 };
 
 export const buildSoftSkillClassificationPrompt = (

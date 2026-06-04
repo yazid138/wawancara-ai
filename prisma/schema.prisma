@@ -218,6 +218,7 @@ model ChatHistory {
   interviewId Int
   role        ChatRole
   content     String
+  prompt      String?
   questionId  Int?
 
   createdAt   DateTime @default(now())

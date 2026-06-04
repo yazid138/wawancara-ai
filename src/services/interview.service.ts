@@ -89,6 +89,44 @@ const hasAnsweredQuestion = async (interviewId: number, questionId: number) => {
   return Boolean(existing);
 };
 
+export const SKIPPED_CONTENT = "[SKIPPED]";
+
+const skipQuestion = async (data: {
+  interviewId: number;
+  questionId: number;
+  userId: number;
+}) => {
+  const { interviewId, questionId, userId } = data;
+
+  // Cek apakah sudah pernah dijawab / dilewati
+  const existing = await prisma.answer.findFirst({
+    where: { interviewId, questionId },
+  });
+  if (existing) return existing;
+
+  // Simpan Answer dummy agar soal tidak muncul lagi di getNextQuestion
+  const skippedAnswer = await prisma.answer.create({
+    data: {
+      content: SKIPPED_CONTENT,
+      questionId,
+      interviewId,
+      userId,
+    },
+  });
+
+  // Simpan ChatHistory USER dengan marker SKIPPED (tidak akan ditampilkan di FE)
+  await prisma.chatHistory.create({
+    data: {
+      interviewId,
+      role: "USER",
+      content: SKIPPED_CONTENT,
+      questionId,
+    },
+  });
+
+  return skippedAnswer;
+};
+
 const generationLocks = new Map<number, Promise<any>>();
 
 const getNextQuestion = async (interviewId: number) => {
@@ -251,13 +289,14 @@ const _getNextQuestion = async (interviewId: number) => {
           );
 
           if (!chatHistory) {
-            const rephrasedContent = await rephraseQuestion(selected.content);
+            const { rephrase, prompt } = await rephraseQuestion(selected.content);
 
             chatHistory = await prisma.chatHistory.create({
               data: {
                 interviewId,
                 role: "AI",
-                content: rephrasedContent,
+                prompt,
+                content: rephrase,
                 questionId: selected.id,
               },
             });
@@ -432,6 +471,7 @@ export default {
   createAnswer,
   getQuestionById,
   hasAnsweredQuestion,
+  skipQuestion,
   getNextQuestion,
   getResult,
   getInterviewHistory,
@@ -439,3 +479,4 @@ export default {
   processResume,
   createUserChat,
 };
+

@@ -148,4 +148,45 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
       socket.emit("error", { message: error.message || "Failed to submit answer" });
     }
   });
+  // SKIP QUESTION (timeout dari FE)
+  socket.on("skip-question", async (data: { interviewId: number; questionId: number }) => {
+    try {
+      const { interviewId, questionId } = data;
+      const userId = socket.data.user.id;
+
+      const interview = await interviewService.getInterviewById(interviewId);
+      if (!interview) {
+        return socket.emit("error", { message: "Interview tidak ditemukan" });
+      }
+
+      if (interview.status === Status.FINISH) {
+        return socket.emit("error", { message: "Interview sudah selesai" });
+      }
+
+      const roomName = `interview_${interviewId}`;
+      if (!socket.rooms.has(roomName)) {
+        return socket.emit("error", { message: "You have not joined this interview room" });
+      }
+
+      // Hanya skip jika questionId valid (bukan intro)
+      if (questionId && questionId !== -1) {
+        const already = await interviewService.hasAnsweredQuestion(interviewId, questionId);
+        if (!already) {
+          await interviewService.skipQuestion({ interviewId, questionId, userId });
+        }
+      }
+
+      const nextQuestion = await interviewService.getNextQuestion(interviewId);
+      if (!nextQuestion) {
+        await interviewService.finishInterview(interviewId);
+        interviewService.processResume(interviewId).catch(console.error);
+        return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
+      }
+
+      io.to(roomName).emit("question-skipped", { skippedQuestionId: questionId });
+      io.to(roomName).emit("new-question", nextQuestion);
+    } catch (error: any) {
+      socket.emit("error", { message: error.message || "Failed to skip question" });
+    }
+  });
 }
