@@ -10,20 +10,24 @@ const prisma = new PrismaClient({
 const main = async () => {
   console.log("Seeding...");
 
-  const compoany = await prisma.company.findFirst({
+  const company = await prisma.company.findFirst({
     where: {
       name: "Tokopedia",
     },
   });
 
-  if (!compoany) {
+  if (!company) {
     throw new Error("Company not found");
   }
 
   await prisma.position.create({
     data: {
-      name: "Software Engineer Intern",
-      companyId: compoany.id,
+      name:"Management System Intern",
+      company: {
+        connect:{
+          id: company.id
+        }
+      }
     }
   })
 
