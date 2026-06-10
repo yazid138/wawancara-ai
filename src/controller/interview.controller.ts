@@ -11,14 +11,20 @@ import { Status, QuestionType } from "@/prisma/enums";
 type StartInterviewRequest = {
   companyId: number;
   positionId: number;
+  categoryIds?: number[];
 };
 
 // START
 export const startInterview = async (req: Request, res: Response) => {
-  const { companyId, positionId } = validate<StartInterviewRequest>(
+  const { companyId, positionId, categoryIds } = validate<StartInterviewRequest>(
     {
       companyId: "number",
       positionId: "number",
+      categoryIds: {
+        type: "array",
+        items: "number",
+        optional: true,
+      },
     },
     req.body,
   );
@@ -41,6 +47,7 @@ export const startInterview = async (req: Request, res: Response) => {
     userId,
     companyId,
     positionId,
+    categoryIds,
   });
 
   sendResponse(res, {
@@ -304,6 +311,30 @@ export const getUserInterviews = async (req: Request, res: Response) => {
   });
 };
 
+// UPDATE FINAL RESUME
+export const updateFinalResume = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  const { finalResume } = validate<{ finalResume: string }>(
+    {
+      finalResume: "string",
+    },
+    req.body,
+  );
+
+  const interview = await interviewService.getInterviewById(id);
+  if (!interview) {
+    throw new NotFoundException("Interview tidak ditemukan");
+  }
+
+  const updatedInterview = await interviewService.updateFinalResume(id, finalResume);
+
+  sendResponse(res, {
+    status: 200,
+    message: "Final resume berhasil disimpan",
+    data: updatedInterview,
+  });
+};
+
 export default {
   startInterview,
   getCurrent,
@@ -313,4 +344,5 @@ export default {
   getResult,
   getInterviewHistory,
   getUserInterviews,
+  updateFinalResume,
 };

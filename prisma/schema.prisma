@@ -75,6 +75,7 @@ model Interview {
   position Position @relation(fields: [positionId], references: [id])
   answers  Answer[]
   chatHistories ChatHistory[]
+  focusQuestions FocusQuestion[]
 }
 
 enum QuestionType {
@@ -113,6 +114,7 @@ model QuestionCategory {
   updatedAt DateTime @updatedAt
 
   questions Question[]
+  focusQuestions FocusQuestion[]
 }
 
 model AnswerCategory {
@@ -227,4 +229,15 @@ model ChatHistory {
 
   interview   Interview @relation(fields: [interviewId], references: [id])
   question    Question? @relation(fields: [questionId], references: [id])
+}
+
+model FocusQuestion {
+  interviewId Int
+  categoryId  Int
+
+  interview   Interview        @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  category    QuestionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([interviewId, categoryId])
+  @@map("focusQuestion")
 }

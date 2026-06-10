@@ -10,5 +10,6 @@ router.post("/:id/answers", InterviewController.submitAnswer);
 router.post("/:id/finish", InterviewController.finishInterview);
 router.get("/:id/result", InterviewController.getResult);
 router.get("/:id/history", InterviewController.getInterviewHistory);
+router.patch("/:id/final-resume", InterviewController.updateFinalResume);
 
 export default router;

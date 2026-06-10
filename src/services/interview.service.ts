@@ -6,6 +6,7 @@ type StartInterviewInput = {
   userId: number;
   companyId: number;
   positionId: number;
+  categoryIds?: number[];
 };
 
 const SOFTSKILL_PER_CATEGORY = 3;
@@ -25,10 +26,20 @@ const FLOW: QuestionType[] = [
 ];
 
 const startInterview = (data: StartInterviewInput) => {
+  const { categoryIds, ...rest } = data;
   return prisma.interview.create({
     data: {
-      ...data,
+      ...rest,
       status: Status.ONGOING,
+      ...(categoryIds && categoryIds.length > 0
+        ? {
+            focusQuestions: {
+              create: categoryIds.map((id) => ({
+                categoryId: id,
+              })),
+            },
+          }
+        : {}),
     },
   });
 };
@@ -150,6 +161,7 @@ const _getNextQuestion = async (interviewId: number) => {
       user: true,
       company: true,
       position: true,
+      focusQuestions: true,
       chatHistories: {
         orderBy: {
           createdAt: "asc",
@@ -238,10 +250,15 @@ const _getNextQuestion = async (interviewId: number) => {
         };
       }
 
+      const selectedCategoryIds = (interview.focusQuestions as any[])?.map((fq: any) => fq.categoryId) || [];
       const candidates = await prisma.question.findMany({
         where: {
           type,
           id: { notIn: Array.from(usedQuestionIds) },
+          ...(selectedCategoryIds.length > 0 &&
+          (type === QuestionType.SOFTSKILL || type === QuestionType.TECHNICAL)
+            ? { categoryId: { in: selectedCategoryIds } }
+            : {}),
         },
       });
 
@@ -354,6 +371,7 @@ const getInterviewHistory = async (id: number) => {
       },
       company: true,
       position: true,
+      focusQuestions: true,
       chatHistories: {
         orderBy: {
           createdAt: "asc",
@@ -463,6 +481,13 @@ const createUserChat = (interviewId: number, content: string, questionId?: numbe
   });
 };
 
+const updateFinalResume = (id: number, finalResume: string) => {
+  return prisma.interview.update({
+    where: { id },
+    data: { finalResume },
+  });
+};
+
 export default {
   startInterview,
   getInterviewById,
@@ -478,5 +503,6 @@ export default {
   getUserInterviews,
   processResume,
   createUserChat,
+  updateFinalResume,
 };
 

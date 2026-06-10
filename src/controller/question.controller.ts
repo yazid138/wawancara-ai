@@ -167,6 +167,15 @@ export const removeIdealAnswer = async (req: Request, res: Response) => {
   });
 };
 
+export const getAllCategories = async (req: Request, res: Response) => {
+  const categories = await questionService.getAllCategories();
+  sendResponse(res, {
+    status: 200,
+    message: "Berhasil mendapatkan semua kategori",
+    data: categories,
+  });
+};
+
 export default {
   getAllQuestions,
   getQuestionById,
@@ -175,4 +184,5 @@ export default {
   deleteQuestion,
   addIdealAnswer,
   removeIdealAnswer,
+  getAllCategories,
 };

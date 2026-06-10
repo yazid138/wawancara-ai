@@ -366,6 +366,23 @@ export const getTop3SimilarityAverageByCategory = async (
 
 export const getSimilarityScore = searchVector;
 
+export const getAllCategories = async () => {
+  return prisma.questionCategory.findMany({
+    where: {
+      questions: {
+        some: {
+          type: {
+            in: [QuestionType.SOFTSKILL, QuestionType.TECHNICAL],
+          },
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+};
+
 export default {
   getAllQuestions,
   getQuestionById,
@@ -378,4 +395,5 @@ export default {
   getSimilarityScore,
   getTop3SimilarityAverage,
   getTop3SimilarityAverageByCategory,
+  getAllCategories,
 };
