@@ -102,3 +102,7 @@ Content-Type: {{Content-Type}}
 ### Get Result
 GET {{host}}/interviews/{{interviewId}}/result
 Authorization: Bearer {{authToken}}
+
+### Final Resume
+GET {{host}}/interviews/{{interviewId}}/final-resume
+Authorization: Bearer {{authToken}}

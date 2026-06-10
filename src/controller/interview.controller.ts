@@ -3,6 +3,7 @@ import sendResponse from "@/utils/responseHandler";
 import validate from "@/utils/validation";
 import interviewService from "@/services/interview.service";
 import NotFoundException from "@/exception/NotFoundException";
+import BadRequestException from "@/exception/BadRequestException";
 import scoringService from "@/services/scoring.service";
 import fs from "fs";
 import ForbiddenException from "@/exception/ForbiddenException";
@@ -11,17 +12,30 @@ import { Status, QuestionType } from "@/prisma/enums";
 type StartInterviewRequest = {
   companyId: number;
   positionId: number;
+  questionCategories: string[];
 };
 
 // START
 export const startInterview = async (req: Request, res: Response) => {
-  const { companyId, positionId } = validate<StartInterviewRequest>(
+  const { companyId, positionId } = validate<Pick<StartInterviewRequest, "companyId" | "positionId">>(
     {
       companyId: "number",
       positionId: "number",
     },
     req.body,
   );
+
+  const questionCategories = Array.isArray(req.body.questionCategories)
+    ? (req.body.questionCategories as unknown[]).filter(
+        (category): category is string => typeof category === "string" && category.trim().length > 0,
+      )
+    : [];
+
+  if (questionCategories.length < 3) {
+    throw new BadRequestException(
+      "Pilih minimal 3 kategori pertanyaan sebelum memulai interview.",
+    );
+  }
 
   const userId = req.user!.id;
 
@@ -41,6 +55,7 @@ export const startInterview = async (req: Request, res: Response) => {
     userId,
     companyId,
     positionId,
+    questionCategories,
   });
 
   sendResponse(res, {
@@ -86,6 +101,10 @@ export const getCurrent = async (req: Request, res: Response) => {
 type SubmitAnswerRequest = {
   answer: string;
   questionId?: number;
+};
+
+type FinalResumeRequest = {
+  finalResume: string;
 };
 
 // SUBMIT ANSWER
@@ -216,6 +235,31 @@ export const submitAnswer = async (req: Request, res: Response) => {
   });
 };
 
+// UPDATE FINAL RESUME
+export const updateFinalResume = async (req: Request, res: Response) => {
+  const interviewId = +req.params.id;
+
+  const { finalResume } = validate<FinalResumeRequest>(
+    {
+      finalResume: "string",
+    },
+    req.body,
+  );
+
+  const interview = await interviewService.getInterviewById(interviewId);
+  if (!interview) {
+    throw new NotFoundException("Interview tidak ditemukan");
+  }
+
+  const updatedInterview = await interviewService.updateFinalResume(interviewId, finalResume.trim());
+
+  sendResponse(res, {
+    status: 200,
+    message: "Final resume berhasil disimpan",
+    data: updatedInterview,
+  });
+};
+
 // NEXT QUESTION
 export const getNext = async (req: Request, res: Response) => {
   const id = +req.params.id;
@@ -244,9 +288,20 @@ export const getNext = async (req: Request, res: Response) => {
 export const finishInterview = async (req: Request, res: Response) => {
   const id = +req.params.id;
 
+  const { finalResume } = validate<Partial<FinalResumeRequest>>(
+    {
+      finalResume: { type: "string", optional: true },
+    },
+    req.body,
+  );
+
   const interview = await interviewService.getInterviewById(id);
   if (!interview) {
     throw new NotFoundException("Interview tidak ditemukan")
+  }
+
+  if (typeof finalResume === "string" && finalResume.trim()) {
+    await interviewService.updateFinalResume(id, finalResume.trim());
   }
 
   await interviewService.finishInterview(id);
@@ -308,6 +363,7 @@ export default {
   startInterview,
   getCurrent,
   submitAnswer,
+  updateFinalResume,
   getNext,
   finishInterview,
   getResult,
