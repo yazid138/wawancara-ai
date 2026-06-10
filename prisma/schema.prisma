@@ -239,5 +239,4 @@ model FocusQuestion {
   category    QuestionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([interviewId, categoryId])
-  @@map("focusQuestion")
 }
