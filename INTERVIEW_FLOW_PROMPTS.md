@@ -293,6 +293,7 @@ finalScore = (rubricScore×0.40 + categoryScore×0.30 + similarityScore×0.20 + 
 
 **Kapan dipakai:** Setelah interview selesai (`Status.FINISH`) — dipanggil oleh `processResume()`.
 **Fungsi:** `generateInterviewResume(qnaList[])`
+**qnaList type:** `Array<{ question: string; answer: string; category?: string }>`
 
 ```
 Role:
@@ -302,15 +303,21 @@ kandidat mahasiswa.
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut.
 Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
+Setiap pertanyaan memiliki kategori yang menunjukkan topik atau kompetensi yang
+diuji. Gunakan informasi ini untuk memberikan evaluasi yang lebih kontekstual dan
+tepat sasaran.
 
 Data:
 <start_of_data>
 Hasil Wawancara:
-Question 1: {{pertanyaan_1}}
-Answer 1: {{jawaban_1}}
+Pertanyaan 1 [Kategori: {{kategori_1}}]: {{pertanyaan_1}}
+Jawaban 1: {{jawaban_1}}
 
-Question 2: {{pertanyaan_2}}
-Answer 2: {{jawaban_2}}
+Pertanyaan 2 [Kategori: {{kategori_2}}]: {{pertanyaan_2}}
+Jawaban 2: {{jawaban_2}}
+
+Pertanyaan 3: {{pertanyaan_3}}    ← (tanpa [Kategori] jika tidak ada, mis. INTRO/GENERAL)
+Jawaban 3: {{jawaban_3}}
 
 ...
 <end_of_data>
