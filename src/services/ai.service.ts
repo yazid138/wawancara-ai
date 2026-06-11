@@ -299,11 +299,12 @@ PENTING: Kembalikan HANYA 1 (satu) kalimat jawaban dalam teks biasa. Jangan memb
 };
 
 export const generateInterviewResume = async (
-  qnaList: Array<{ question: string; answer: string }>,
+  qnaList: Array<{ question: string; answer: string; category?: string }>,
 ) => {
   const qnaText = qnaList
     .map(
-      (qna, idx) => `Question ${idx + 1}: ${qna.question}\nAnswer ${idx + 1}: ${qna.answer}`,
+      (qna, idx) =>
+        `Pertanyaan ${idx + 1}${qna.category ? ` [Kategori: ${qna.category}]` : ""}: ${qna.question}\nJawaban ${idx + 1}: ${qna.answer}`,
     )
     .join("\n\n");
 
@@ -312,6 +313,7 @@ Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview k
 
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut. Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
+Setiap pertanyaan memiliki kategori yang menunjukkan topik atau kompetensi yang diuji. Gunakan informasi ini untuk memberikan evaluasi yang lebih kontekstual dan tepat sasaran.
 
 Data:
 <start_of_data>

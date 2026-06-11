@@ -444,18 +444,28 @@ const processResume = async (interviewId: number) => {
   const history = await getInterviewHistory(interviewId);
   if (!history || !history.answers) return;
 
-  const qnaList: Array<{ question: string; answer: string }> = [];
+  const qnaList: Array<{ question: string; answer: string; category?: string }> = [];
+
+  // Buat map questionId → category name untuk lookup cepat
+  const categoryByQuestionId = new Map<number, string | undefined>();
+  for (const ans of history.answers) {
+    categoryByQuestionId.set(ans.questionId, (ans.question as any).category?.name);
+  }
 
   let currentQuestion = "";
+  let currentQuestionId: number | null = null;
   for (const chat of history.chatHistories) {
     if (chat.role === "AI") {
       currentQuestion = chat.content;
+      currentQuestionId = chat.questionId ?? null;
     } else if (chat.role === "USER") {
       qnaList.push({
         question: currentQuestion || "Pertanyaan tidak diketahui",
         answer: chat.content,
+        category: currentQuestionId ? categoryByQuestionId.get(currentQuestionId) : undefined,
       });
-      currentQuestion = ""; // Reset for the next pair
+      currentQuestion = "";
+      currentQuestionId = null;
     }
   }
 
