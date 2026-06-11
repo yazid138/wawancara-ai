@@ -481,25 +481,32 @@ Jangan memberikan daftar, variasi, atau teks tambahan apapun.
 ## 12. Generate Resume Interview
 
 **Fungsi:** `generateInterviewResume(qnaList[])`
-**File:** [`src/services/ai.service.ts` — L299](./src/services/ai.service.ts)
-**Tujuan:** Membuat ringkasan evaluatif dari keseluruhan hasil sesi interview.
+**File:** [`src/services/ai.service.ts` — L301](./src/services/ai.service.ts)
+**Tujuan:** Membuat ringkasan evaluatif dari keseluruhan hasil sesi interview. Setiap item Q&A disertai kategori pertanyaan untuk evaluasi yang lebih kontekstual.
 
 ```
 Role:
-Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview kandidat mahasiswa.
+Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview
+kandidiat mahasiswa.
 
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut.
 Evaluasi secara umum kelebihan, kekurangan, dan poin penting dari jawaban kandidat.
+Setiap pertanyaan memiliki kategori yang menunjukkan topik atau kompetensi yang
+diuji. Gunakan informasi ini untuk memberikan evaluasi yang lebih kontekstual dan
+tepat sasaran.
 
 Data:
 <start_of_data>
 Hasil Wawancara:
-Question 1: {{pertanyaan_1}}
-Answer 1: {{jawaban_1}}
+Pertanyaan 1 [Kategori: {{kategori_1}}]: {{pertanyaan_1}}
+Jawaban 1: {{jawaban_1}}
 
-Question 2: {{pertanyaan_2}}
-Answer 2: {{jawaban_2}}
+Pertanyaan 2 [Kategori: {{kategori_2}}]: {{pertanyaan_2}}
+Jawaban 2: {{jawaban_2}}
+
+Pertanyaan 3: {{pertanyaan_3}}          ← (tanpa [Kategori] jika pertanyaan tidak punya kategori, mis. INTRO)
+Jawaban 3: {{jawaban_3}}
 
 ...
 <end_of_data>
@@ -509,7 +516,7 @@ Kembalikan resume dalam bentuk teks paragraf biasa,
 gunakan bahasa yang profesional, jelas, dan memotivasi.
 ```
 
-**Output:** `string` (teks paragraf resume)
+**Output:** `{ resume: string, prompt: string }`
 > Prompt yang digunakan disimpan di kolom `resumePrompt` pada tabel `Interview`.
 
 ---
