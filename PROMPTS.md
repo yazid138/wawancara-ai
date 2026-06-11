@@ -487,7 +487,7 @@ Jangan memberikan daftar, variasi, atau teks tambahan apapun.
 ```
 Role:
 Anda adalah HR yang profesional dan ahli dalam mengevaluasi performa interview
-kandidiat mahasiswa.
+kandidat mahasiswa.
 
 Task:
 Buatlah resume (ringkasan) singkat dari hasil interview berikut.
