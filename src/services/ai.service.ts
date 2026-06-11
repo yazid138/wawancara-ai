@@ -154,6 +154,7 @@ Kembalikan hanya JSON dengan format {"pemahaman": 0-5, "logika": 0-5, "problem_s
 export const generateTechnicalRubricScore = async (
   pertanyaan: string,
   jawaban: string,
+  questionCategory?: string,
   retryHint?: string,
 ): Promise<{
   understanding: number;
@@ -165,7 +166,7 @@ export const generateTechnicalRubricScore = async (
 }> => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: buildTechnicalRubricPrompt(pertanyaan, jawaban, retryHint),
+    input: buildTechnicalRubricPrompt(pertanyaan, jawaban, questionCategory, retryHint),
   });
 
   return JSON.parse(output_text);
@@ -193,6 +194,7 @@ export const classifySoftSkillAnswer = async (
 export const generateSoftSkillRubricScore = async (
   pertanyaan: string,
   jawaban: string,
+  questionCategory?: string,
   retryHint?: string,
 ): Promise<{
   communication: number;
@@ -204,7 +206,7 @@ export const generateSoftSkillRubricScore = async (
 }> => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: buildSoftSkillRubricPrompt(pertanyaan, jawaban, retryHint),
+    input: buildSoftSkillRubricPrompt(pertanyaan, jawaban, questionCategory, retryHint),
   });
 
   return JSON.parse(output_text);
@@ -425,19 +427,32 @@ Pastikan nilai "label" persis sama (termasuk huruf besar/kecil) dengan salah sat
 export const buildSoftSkillRubricPrompt = (
   pertanyaan: string,
   jawaban: string,
+  questionCategory?: string,
   retryHint?: string,
 ): string => {
   return `Role:
 Anda adalah penilai jawaban soft skill untuk interview kerja.
 
 Task:
+Lakukan penilaian dalam 2 langkah berikut:
+
+Langkah 1 — Cek relevansi terhadap kategori pertanyaan:
+${questionCategory
+  ? `Periksa apakah jawaban kandidat benar-benar menjawab pertanyaan yang berkaitan dengan topik "${questionCategory}".
+- Jika jawaban TIDAK berkaitan dengan topik "${questionCategory}" (misalnya: menjawab topik lain, asal-asalan, atau tidak relevan sama sekali), beri semua rubrik nilai 0 dan confidence rendah (0.1–0.3).
+- Jika jawaban BERKAITAN, lanjutkan ke Langkah 2.`
+  : `Periksa apakah jawaban kandidat relevan dengan pertanyaan yang diajukan.
+- Jika tidak relevan sama sekali, beri semua rubrik nilai 0 dan confidence rendah.
+- Jika relevan, lanjutkan ke Langkah 2.`}
+
+Langkah 2 — Nilai rubrik secara objektif:
 Nilai jawaban kandidat berdasarkan 4 rubrik berikut. Setiap rubrik dinilai 1-5.
 
 Rubrik:
-- communication    (1-5): Seberapa jelas dan terstruktur kandidat menyampaikan jawaban.
-- selfAwareness    (1-5): Seberapa baik kandidat mengenali kelebihan dan keterbatasan diri.
-- behaviorEvidence (1-5): Apakah kandidat memberikan contoh konkret perilaku di masa lalu untuk mendukung klaimnya?
-- growthMindset    (1-5): Apakah kandidat menunjukkan kesadaran akan area pengembangan dan keinginan untuk belajar?
+- communication    (0-5): Seberapa jelas dan terstruktur kandidat menyampaikan jawaban.
+- selfAwareness    (0-5): Seberapa baik kandidat mengenali kelebihan dan keterbatasan diri.
+- behaviorEvidence (0-5): Apakah kandidat memberikan contoh konkret perilaku di masa lalu untuk mendukung klaimnya?
+- growthMindset    (0-5): Apakah kandidat menunjukkan kesadaran akan area pengembangan dan keinginan untuk belajar?
 ${
   retryHint
     ? `
@@ -448,7 +463,7 @@ ${retryHint}
     : ""
 }
 Data:
-Pertanyaan: ${pertanyaan}
+${questionCategory ? `Kategori Pertanyaan: ${questionCategory}\n` : ""}Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
 
 Format:
@@ -459,48 +474,61 @@ Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
   "behaviorEvidence": 0-5,
   "growthMindset": 0-5,
   "confidence": 0-1,
-  "reason": "alasan singkat dalam satu kalimat"
+  "reason": "alasan singkat dalam satu kalimat — sebutkan apakah jawaban relevan dengan topik${questionCategory ? ` \"${questionCategory}\"` : ""} dan justifikasi skor rubrik"
 }`;
 };
 
 export const buildTechnicalRubricPrompt = (
   pertanyaan: string,
   jawaban: string,
+  questionCategory?: string,
   retryHint?: string,
 ): string => {
   return `Role:
-You are a technical interview evaluator assessing the quality of a candidate's answer.
+Anda adalah penilai jawaban teknikal untuk interview kerja di bidang teknologi informasi.
 
 Task:
-Score the answer using the 4 rubric criteria below. Each criterion is rated 1–5.
+Lakukan penilaian dalam 2 langkah berikut:
 
-Rubric:
-- understanding          (1-5): Depth of conceptual understanding demonstrated in the answer.
-- technicalAccuracy      (1-5): Correctness of technical details, terminology, and facts.
-- problemSolving         (1-5): Quality of logical reasoning and approach to solving the problem.
-- technicalCommunication (1-5): Clarity and precision when explaining technical concepts.
+Langkah 1 — Cek relevansi terhadap kategori pertanyaan:
+${questionCategory
+  ? `Periksa apakah jawaban kandidat benar-benar menjawab pertanyaan yang berkaitan dengan topik "${questionCategory}".
+- Jika jawaban TIDAK berkaitan dengan topik "${questionCategory}" (misalnya: menjawab topik lain, asal-asalan, atau tidak relevan sama sekali), beri semua rubrik nilai 0 dan confidence rendah (0.1–0.3).
+- Jika jawaban BERKAITAN, lanjutkan ke Langkah 2.`
+  : `Periksa apakah jawaban kandidat relevan dengan pertanyaan yang diajukan.
+- Jika tidak relevan sama sekali, beri semua rubrik nilai 0 dan confidence rendah.
+- Jika relevan, lanjutkan ke Langkah 2.`}
+
+Langkah 2 — Nilai rubrik secara objektif:
+Nilai jawaban kandidat berdasarkan 4 rubrik berikut. Setiap rubrik dinilai 0-5.
+
+Rubrik:
+- understanding          (0-5): Kedalaman pemahaman konsep yang ditunjukkan dalam jawaban.
+- technicalAccuracy      (0-5): Kebenaran detail teknis, terminologi, dan fakta yang digunakan.
+- problemSolving         (0-5): Kualitas penalaran logis dan pendekatan dalam menyelesaikan masalah.
+- technicalCommunication (0-5): Kejelasan dan ketepatan dalam menjelaskan konsep teknis.
 ${
   retryHint
     ? `
-Additional instruction:
+Tambahan instruksi:
 ${retryHint}
 
 `
     : ""
 }
 Data:
-Question: ${pertanyaan}
-Answer: ${jawaban}
+${questionCategory ? `Kategori Pertanyaan: ${questionCategory}\n` : ""}Pertanyaan: ${pertanyaan}
+Jawaban: ${jawaban}
 
 Format:
-Return ONLY a JSON object with no other text:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
 {
   "understanding": 0-5,
   "technicalAccuracy": 0-5,
   "problemSolving": 0-5,
   "technicalCommunication": 0-5,
   "confidence": 0-1,
-  "reason": "brief justification in one sentence"
+  "reason": "alasan singkat dalam satu kalimat — sebutkan apakah jawaban relevan dengan topik${questionCategory ? ` \"${questionCategory}\"` : ""} dan justifikasi skor rubrik"
 }`;
 };
 

@@ -76,6 +76,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     include: {
       question: {
         include: {
+          category: true,
           keywords: true,
         },
       },
@@ -94,6 +95,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   const keywords = answer.question.keywords;
   const questionId = answer.question.id;
   const questionText = answer.question.content;
+  const questionCategoryName = answer.question.category?.name;
 
   // ── 3. Keyword score ─────────────────────────────────────────────────────
   // Range: 0–1  (matchedWeight / totalWeight)
@@ -109,12 +111,13 @@ const scoreTechnicalAnswer = async (answerId: number) => {
     "Penilaian sebelumnya kurang yakin. Fokus pada bukti teknis eksplisit dalam jawaban. Jangan memberikan skor tinggi tanpa justifikasi yang jelas.";
 
   const aiRubric = await retryIfLowConfidenceWithPrompt(
-    () => generateTechnicalRubricScore(questionText, userAnswer),
-    () => generateTechnicalRubricScore(questionText, userAnswer, retryHint),
+    () => generateTechnicalRubricScore(questionText, userAnswer, questionCategoryName),
+    () => generateTechnicalRubricScore(questionText, userAnswer, questionCategoryName, retryHint),
     (isRetry) =>
       buildTechnicalRubricPrompt(
         questionText,
         userAnswer,
+        questionCategoryName,
         isRetry ? retryHint : undefined,
       ),
   );
@@ -261,6 +264,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     include: {
       question: {
         include: {
+          category: true,
           categories: true,
           keywords: true,
         },
@@ -286,6 +290,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const questionText = answer.question.content;
   const userAnswer = answer.content;
+  const questionCategoryName = answer.question.category?.name;
 
   // ── 4. Keyword score ─────────────────────────────────────────────────────
   // Range: 0–1  (matchedWeight / totalWeight via existing util)
@@ -304,7 +309,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
     () =>
-      classifySoftSkillAnswer(questionText, userAnswer, categoryOptions),
+      classifySoftSkillAnswer(questionText, userAnswer, categoryOptions, questionCategoryName),
     () =>
       classifySoftSkillAnswer(
         questionText,
@@ -329,13 +334,14 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     "Penilaian sebelumnya kurang meyakinkan. Fokus pada bukti eksplisit komunikasi, kesadaran diri, dan relevansi jawaban.";
 
   const rubricWithPrompt = await retryIfLowConfidenceWithPrompt(
-    () => generateSoftSkillRubricScore(questionText, userAnswer),
+    () => generateSoftSkillRubricScore(questionText, userAnswer, questionCategoryName),
     () =>
-      generateSoftSkillRubricScore(questionText, userAnswer, rubricRetryHint),
+      generateSoftSkillRubricScore(questionText, userAnswer, questionCategoryName, rubricRetryHint),
     (isRetry) =>
       buildSoftSkillRubricPrompt(
         questionText,
         userAnswer,
+        questionCategoryName,
         isRetry ? rubricRetryHint : undefined,
       ),
   );

@@ -409,23 +409,28 @@ pgvector operator (<=>): L2 distance
 ### Alur Kerja
 
 ```
-(questionText, userAnswer)
+(questionText, userAnswer, questionCategoryName?)
         ↓
-[OpenAI GPT] dengan prompt rubrik teknis
+[Langkah 1 — Cek relevansi]
+  → Apakah jawaban berkaitan dengan topik questionCategoryName?
+  → TIDAK berkaitan → semua rubrik = 0, confidence rendah (0.1–0.3)
+  → BERKAITAN → lanjut ke Langkah 2
+        ↓
+[Langkah 2 — OpenAI GPT] dengan prompt rubrik teknis (Bahasa Indonesia)
         ↓
 JSON Response:
 {
-  "understanding": 1-5,
-  "technicalAccuracy": 1-5,
-  "problemSolving": 1-5,
-  "technicalCommunication": 1-5,
+  "understanding": 0-5,
+  "technicalAccuracy": 0-5,
+  "problemSolving": 0-5,
+  "technicalCommunication": 0-5,
   "confidence": 0-1,
-  "reason": "alasan singkat"
+  "reason": "alasan singkat — relevansi + justifikasi skor"
 }
         ↓
 [Retry jika confidence < 0.65]
   → Kirim ulang dengan retryHint:
-    "Fokus pada bukti teknis eksplisit. Jangan skor tinggi tanpa justifikasi."
+    "Penilaian sebelumnya kurang yakin. Fokus pada bukti teknis eksplisit dalam jawaban."
   → Pilih hasil terbaik (confidence lebih tinggi)
         ↓
 rubricScore = (understanding + technicalAccuracy + problemSolving + technicalCommunication) / 20
@@ -435,10 +440,12 @@ rubricScore = (understanding + technicalAccuracy + problemSolving + technicalCom
 
 | Kriteria | Rentang | Deskripsi |
 |---|---|---|
-| `understanding` | 1–5 | Kedalaman pemahaman konsep yang ditunjukkan |
-| `technicalAccuracy` | 1–5 | Ketepatan detail teknis, terminologi, dan fakta |
-| `problemSolving` | 1–5 | Kualitas penalaran logis dan pendekatan pemecahan masalah |
-| `technicalCommunication` | 1–5 | Kejelasan dan presisi dalam menjelaskan konsep teknis |
+| `understanding` | 0–5 | Kedalaman pemahaman konsep yang ditunjukkan dalam jawaban |
+| `technicalAccuracy` | 0–5 | Kebenaran detail teknis, terminologi, dan fakta yang digunakan |
+| `problemSolving` | 0–5 | Kualitas penalaran logis dan pendekatan dalam menyelesaikan masalah |
+| `technicalCommunication` | 0–5 | Kejelasan dan ketepatan dalam menjelaskan konsep teknis |
+
+> **Catatan:** Nilai 0 diberikan jika jawaban **tidak relevan** dengan topik kategori pertanyaan (`questionCategoryName`).
 
 **Formula:**
 ```
@@ -455,22 +462,27 @@ rubricScore = (understanding + technicalAccuracy + problemSolving + technicalCom
 ### Alur Kerja
 
 ```
-(questionText, userAnswer)
+(questionText, userAnswer, questionCategoryName?)
         ↓
-[OpenAI GPT] dengan prompt rubrik soft skill
+[Langkah 1 — Cek relevansi]
+  → Apakah jawaban berkaitan dengan topik questionCategoryName?
+  → TIDAK berkaitan → semua rubrik = 0, confidence rendah (0.1–0.3)
+  → BERKAITAN → lanjut ke Langkah 2
+        ↓
+[Langkah 2 — OpenAI GPT] dengan prompt rubrik soft skill
         ↓
 JSON Response:
 {
-  "communication": 1-5,
-  "selfAwareness": 1-5,
-  "behaviorEvidence": 1-5,
-  "growthMindset": 1-5,
+  "communication": 0-5,
+  "selfAwareness": 0-5,
+  "behaviorEvidence": 0-5,
+  "growthMindset": 0-5,
   "confidence": 0-1,
-  "reason": "alasan singkat"
+  "reason": "alasan singkat — relevansi + justifikasi skor"
 }
         ↓
 [Retry jika confidence < 0.65]
-  → retryHint: "Fokus pada bukti eksplisit komunikasi, kesadaran diri, dan relevansi."
+  → retryHint: "Penilaian sebelumnya kurang meyakinkan. Fokus pada bukti eksplisit komunikasi, kesadaran diri, dan relevansi."
         ↓
 rubricScore = (communication + selfAwareness + behaviorEvidence + growthMindset) / 20
 ```
@@ -479,10 +491,12 @@ rubricScore = (communication + selfAwareness + behaviorEvidence + growthMindset)
 
 | Kriteria | Rentang | Deskripsi |
 |---|---|---|
-| `communication` | 1–5 | Kejelasan dan struktur penyampaian jawaban |
-| `selfAwareness` | 1–5 | Pemahaman kandidat terhadap kelebihan dan keterbatasan diri |
-| `behaviorEvidence` | 1–5 | Ada tidaknya contoh perilaku konkret di masa lalu |
-| `growthMindset` | 1–5 | Kesadaran terhadap area pengembangan dan keinginan belajar |
+| `communication` | 0–5 | Kejelasan dan struktur penyampaian jawaban |
+| `selfAwareness` | 0–5 | Pemahaman kandidat terhadap kelebihan dan keterbatasan diri |
+| `behaviorEvidence` | 0–5 | Ada tidaknya contoh perilaku konkret di masa lalu |
+| `growthMindset` | 0–5 | Kesadaran terhadap area pengembangan dan keinginan belajar |
+
+> **Catatan:** Nilai 0 diberikan jika jawaban **tidak relevan** dengan topik kategori pertanyaan (`questionCategoryName`).
 
 **Formula:**
 ```
@@ -591,7 +605,7 @@ confidenceScore (0–1) =
 
 | Komponen | Bobot | Sumber |
 |---|---|---|
-| `rubricScore` | **50%** | AI evaluasi 4 rubrik teknis (masing-masing 1–5, dibagi 20) |
+| `rubricScore` | **50%** | AI evaluasi 4 rubrik teknis (masing-masing 0–5, dibagi 20) |
 | `similarityScore` | **30%** | Rata-rata cosine similarity top-3 vs IdealAnswer (pgvector) |
 | `keywordScore` | **20%** | Coverage kata kunci berbobot (matchedWeight / totalWeight) |
 
@@ -623,7 +637,7 @@ confidenceScore (0–1) =
 
 | Komponen | Bobot | Sumber |
 |---|---|---|
-| `rubricScore` | **40%** | AI evaluasi 4 rubrik soft skill (masing-masing 1–5, dibagi 20) |
+| `rubricScore` | **40%** | AI evaluasi 4 rubrik soft skill (masing-masing 0–5, dibagi 20) |
 | `categoryScore` | **30%** | Skor kategori terklasifikasi / maxCategoryScore |
 | `similarityScore` | **20%** | Rata-rata cosine similarity top-3 vs IdealAnswer (category-scoped) |
 | `keywordScore` | **10%** | Coverage kata kunci berbobot |
@@ -676,7 +690,7 @@ Jawaban lulus semua gate
 ## Alur Lengkap Technical Scoring (Step-by-Step)
 
 ```
-Step 1: Load answer dengan include keywords dari DB
+Step 1: Load answer dengan include category + keywords dari DB
 Step 2: Guard — skip jika bukan TECHNICAL
 Step 3: Keyword Score
   → calculateKeywordScore(userAnswer, keywords)
@@ -689,8 +703,11 @@ Step 5: Similarity Score
   → Query pgvector top-3, ambil rata-rata
   → Output: similarityScore (0–1)
 Step 6: Rubric Score (dengan retry jika confidence < 0.65)
-  → generateTechnicalRubricScore(questionText, userAnswer)
-  → AI menilai: understanding, technicalAccuracy, problemSolving, technicalCommunication
+  → generateTechnicalRubricScore(questionText, userAnswer, questionCategoryName)
+  → Langkah 1: AI cek relevansi jawaban dengan topik questionCategoryName
+    - Tidak relevan → semua rubrik = 0, confidence rendah
+    - Relevan → lanjut penilaian
+  → AI menilai: understanding, technicalAccuracy, problemSolving, technicalCommunication (0–5)
   → rubricScore = (sum of 4 criteria) / 20
   → Output: rubricScore (0–1), aiConfidence (0–1)
 Step 7: Final Score
@@ -711,7 +728,7 @@ Step 12: Auto-Promotion check
 ## Alur Lengkap SoftSkill Scoring (Step-by-Step)
 
 ```
-Step 1: Load answer dengan include categories + keywords dari DB
+Step 1: Load answer dengan include category + categories + keywords dari DB
 Step 2: Guard — skip jika bukan SOFTSKILL
 Step 3: Guard — skip jika tidak ada AnswerCategory terdefinisi
 Step 4: Keyword Score
@@ -721,12 +738,15 @@ Step 5: Buat Embedding (early, untuk efisiensi)
   → createEmbedding(userAnswer)
   → Output: userEmbedding (number[], 3072 dim)
 Step 6: Klasifikasi Kategori (dengan retry jika confidence < 0.65)
-  → classifySoftSkillAnswer(questionText, userAnswer, categoryOptions)
+  → classifySoftSkillAnswer(questionText, userAnswer, categoryOptions, questionCategoryName)
   → AI memilih SATU kategori dari daftar tersedia
   → Output: classification { label, confidence, reason }
 Step 7: Rubric Score (dengan retry jika confidence < 0.65)
-  → generateSoftSkillRubricScore(questionText, userAnswer)
-  → AI menilai: communication, selfAwareness, behaviorEvidence, growthMindset
+  → generateSoftSkillRubricScore(questionText, userAnswer, questionCategoryName)
+  → Langkah 1: AI cek relevansi jawaban dengan topik questionCategoryName
+    - Tidak relevan → semua rubrik = 0, confidence rendah
+    - Relevan → lanjut penilaian
+  → AI menilai: communication, selfAwareness, behaviorEvidence, growthMindset (0–5)
   → rubricScore = (sum of 4 criteria) / 20
   → Output: rubricScore (0–1), aiRubricConfidence (0–1)
 Step 8: Resolve Kategori Cocok
@@ -783,7 +803,7 @@ Step 16: Auto-Promotion check
 |---|---|
 | **Keyword Score** | Skor cakupan kata kunci. Dihitung berdasarkan kemunculan kata kunci berbobot dalam jawaban. Formula hybrid: 70% weight-coverage + 30% count-coverage |
 | **Similarity Score** | Skor kemiripan semantik. Rata-rata cosine similarity dari 3 IdealAnswer terdekat menggunakan pgvector. Untuk SoftSkill, dibatasi pada kategori yang sama (category-scoped) |
-| **Rubric Score** | Skor rubrik AI. Rata-rata dari 4 sub-kriteria (masing-masing 1–5), dinormalisasi menjadi 0–1 dengan membagi 20 |
+| **Rubric Score** | Skor rubrik AI. Rata-rata dari 4 sub-kriteria (masing-masing **0–5**), dinormalisasi menjadi 0–1 dengan membagi 20. Jika jawaban tidak relevan dengan topik question category, semua rubrik bernilai 0 |
 | **Category Score** | (SoftSkill saja) Skor berdasarkan kategori yang diklasifikasikan AI. Dihitung sebagai skor_kategori / max_skor_kategori |
 | **Confidence Score** | Tingkat keyakinan gabungan sistem terhadap hasil penilaian. Dihitung dari rata-rata tertimbang confidence AI dan komponen skor lainnya |
 | **Auto-Promotion** | Mekanisme otomatis menjadikan jawaban berkualitas tinggi sebagai referensi baru (IdealAnswer). Dipicu saat finalScore ≥ 85, confidenceScore ≥ 0.85, similarityScore ≥ 0.80, dan rubricScore ≥ 0.80 |
@@ -846,12 +866,14 @@ Sistem mencari kata kunci dalam jawaban kandidat menggunakan regex (case-insensi
 ---
 
 #### 🔢 Langkah 3: Menghitung Rubric Score (AI)
-LLM menganalisis jawaban dan memberikan nilai rubrik (skala 1–5):
+LLM menganalisis jawaban dan memberikan nilai rubrik (skala **0–5**):
 *   `understanding`: 4
 *   `technicalAccuracy`: 4
 *   `problemSolving`: 3
 *   `technicalCommunication`: 5
 *   `aiConfidence`: `0.90` (di atas threshold 0.65, tidak perlu retry)
+
+> Sebelum menilai rubrik, AI terlebih dahulu mengecek apakah jawaban relevan dengan topik `questionCategoryName` (question category). Karena jawaban relevan, penilaian dilanjutkan.
 
 **Kalkulasi:**
 *   `totalRubricPoints` = $4 + 4 + 3 + 5 = 16$ (dari max 20)
@@ -942,12 +964,14 @@ LLM menganalisis jawaban dan mencocokkannya ke salah satu kategori terdaftar:
 ---
 
 #### 🔢 Langkah 4: Menghitung Rubric Score (AI)
-LLM memberikan skor kriteria soft skill (skala 1–5):
+LLM memberikan skor kriteria soft skill (skala **0–5**):
 *   `communication`: 4
 *   `selfAwareness`: 4
 *   `behaviorEvidence`: 5
 *   `growthMindset`: 4
 *   `aiRubricConfidence`: `0.88` (tidak perlu retry)
+
+> Sebelum menilai rubrik, AI terlebih dahulu mengecek apakah jawaban relevan dengan topik `questionCategoryName`. Karena jawaban relevan, penilaian dilanjutkan.
 
 **Kalkulasi:**
 *   `totalRubricPoints` = $4 + 4 + 5 + 4 = 17$
