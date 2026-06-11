@@ -175,12 +175,19 @@ export const generateTechnicalRubricScore = async (
 export const classifySoftSkillAnswer = async (
   pertanyaan: string,
   jawaban: string,
-  categories: Array<{ label: string; score: number }>,
+  categories: Array<{ label: string; score: number, id: number }>,
+  questionCategory?: string,
   retryHint?: string,
 ) => {
   const { output_text } = await client.responses.create({
     model: config.openAIModel,
-    input: buildSoftSkillClassificationPrompt(pertanyaan, jawaban, categories, retryHint),
+    input: buildSoftSkillClassificationPrompt(
+      pertanyaan,
+      jawaban,
+      categories,
+      questionCategory,
+      retryHint,
+    ),
   });
 
   return JSON.parse(output_text);
@@ -380,13 +387,14 @@ PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan mem
 export const buildSoftSkillClassificationPrompt = (
   pertanyaan: string,
   jawaban: string,
-  categories: Array<{ label: string; score: number }>,
+  categories: Array<{ label: string; score: number, id: number }>,
+  questionCategory?: string,
   retryHint?: string,
 ): string => {
   // Append the escape-hatch category without mutating the caller's array
   const categoriesWithFallback = [
     ...categories,
-    { label: "Tidak ada kategori yang sesuai", score: 0 },
+    { label: "Tidak ada kategori yang sesuai", score: 0, id: 0 },
   ];
 
   return `Role:
@@ -405,13 +413,13 @@ ${retryHint}
     : ""
 }
 Data:
-Pertanyaan: ${pertanyaan}
+${questionCategory ? `Kategori Pertanyaan: ${questionCategory}\n` : ""}Pertanyaan: ${pertanyaan}
 Jawaban: ${jawaban}
 
 Kategori tersedia:
 ${categoriesWithFallback
   .map(
-    (cat, idx) => `${idx + 1}. ${cat.label} (bobot: ${cat.score})`,
+    (cat, idx) => `${idx + 1}. ${cat.label} [categoryId:${cat.id}](bobot: ${cat.score})`,
   )
   .join("\n")}
 

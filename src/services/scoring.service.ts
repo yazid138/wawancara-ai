@@ -309,12 +309,18 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
 
   const classificationWithPrompt = await retryIfLowConfidenceWithPrompt(
     () =>
-      classifySoftSkillAnswer(questionText, userAnswer, categoryOptions, questionCategoryName),
+      classifySoftSkillAnswer(
+        questionText,
+        userAnswer,
+        categoryOptions,
+        questionCategoryName,
+      ),
     () =>
       classifySoftSkillAnswer(
         questionText,
         userAnswer,
         categoryOptions,
+        questionCategoryName,
         classificationRetryHint,
       ),
     (isRetry) =>
@@ -322,6 +328,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
         questionText,
         userAnswer,
         categoryOptions,
+        questionCategoryName,
         isRetry ? classificationRetryHint : undefined,
       ),
   );
@@ -352,9 +359,10 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   // ── 9. Resolve best matching category ───────────────────────────────────
   // Priority: exact label match → fuzzy string similarity → score-0 fallback
   const classifiedLabel = String(classification?.label ?? "");
+  const classifiedCategoryId = Number(classification?.categoryId ?? 0);
 
   let matchedCategory = categories.find(
-    (cat) => cat.label.toLowerCase() === classifiedLabel.toLowerCase(),
+    (cat) => cat.label.toLowerCase() === classifiedLabel.toLowerCase() || cat.id === classifiedCategoryId,
   );
 
   if (!matchedCategory && classifiedLabel) {
@@ -373,7 +381,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   }
 
   if (!matchedCategory) {
-    matchedCategory = { id: undefined as any, label: "Uncategorized", score: 0, questionId: answer.question.id };
+    matchedCategory = { id: undefined as any, label: "Tidak ada kategori yang sesuai", score: 0, questionId: answer.question.id };
   }
 
   // ── 9. Compute component scores (all 0–1) ───────────────────────────────

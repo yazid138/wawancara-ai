@@ -325,9 +325,9 @@ Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
 
 ## 9. Klasifikasi Jawaban Soft Skill
 
-**Fungsi:** `classifySoftSkillAnswer(pertanyaan, jawaban, categories[], retryHint?)`
-**Builder:** `buildSoftSkillClassificationPrompt(pertanyaan, jawaban, categories[], retryHint?)`
-**File:** [`src/services/ai.service.ts` — L376](./src/services/ai.service.ts)
+**Fungsi:** `classifySoftSkillAnswer(pertanyaan, jawaban, categories[], questionCategory?, retryHint?)`
+**Builder:** `buildSoftSkillClassificationPrompt(pertanyaan, jawaban, categories[], questionCategory?, retryHint?)`
+**File:** [`src/services/ai.service.ts` — L380](./src/services/ai.service.ts)
 **Tujuan:** Memilih satu kategori dari daftar yang paling sesuai dengan isi jawaban kandidat.
 
 ```
@@ -343,14 +343,16 @@ Tambahan instruksi:
 {{retryHint}}
 
 Data:
+[Jika questionCategory tersedia]
+Kategori Pertanyaan: {{questionCategory}}
 Pertanyaan: {{pertanyaan}}
 Jawaban: {{jawaban}}
 
 Kategori tersedia:
-1. {{label_kategori_1}} (bobot: {{score_1}})
-2. {{label_kategori_2}} (bobot: {{score_2}})
+1. {{label_kategori_1}} [categoryId:1](bobot: {{score_1}})
+2. {{label_kategori_2}} [categoryId:2](bobot: {{score_2}})
 ...
-N. Tidak ada kategori yang sesuai (bobot: 0)
+N. Tidak ada kategori yang sesuai [categoryId:0](bobot: 0)
 
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:

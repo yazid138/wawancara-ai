@@ -353,7 +353,7 @@ finalScore = (rubricScore×0.50 + similarityScore×0.30 + keywordScore×0.20) ×
 
 ### Klasifikasi Kategori
 
-**Fungsi:** `classifySoftSkillAnswer(pertanyaan, jawaban, categories[], retryHint?)`
+**Fungsi:** `classifySoftSkillAnswer(pertanyaan, jawaban, categories[], questionCategory?, retryHint?)`
 
 ```
 Role:
@@ -370,14 +370,16 @@ Tambahan instruksi:
 {{retryHint}}
 
 Data:
+[Jika questionCategory tersedia]
+Kategori Pertanyaan: {{questionCategory}}
 Pertanyaan: {{pertanyaan}}
 Jawaban: {{jawaban}}
 
 Kategori tersedia:
-1. {{label_kategori_1}} (bobot: {{score_1}})
-2. {{label_kategori_2}} (bobot: {{score_2}})
+1. {{label_kategori_1}} [id:1](bobot: {{score_1}})
+2. {{label_kategori_2}} [id:2](bobot: {{score_2}})
 ...
-N. Tidak ada kategori yang sesuai (bobot: 0)
+N. Tidak ada kategori yang sesuai [id:N](bobot: 0)
 
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
@@ -406,14 +408,15 @@ Anda DILARANG membuat kategori baru. Jika tidak ada yang cocok, pilih
 "Tidak ada kategori yang sesuai".
 
 Data:
+Kategori Pertanyaan: Teamwork
 Pertanyaan: Ceritakan pengalaman Anda saat harus memimpin kelompok di perkuliahan.
 Jawaban: Saat itu ada tugas besar, tapi satu anggota pasif. Saya mengobrol dengannya secara personal untuk membagi tugas kembali yang sesuai dengan kemampuannya, sehingga tugas selesai tepat waktu.
 
 Kategori tersedia:
-1. Leadership (bobot: 5)
-2. Conflict Resolution (bobot: 5)
-3. Communication (bobot: 4)
-4. Tidak ada kategori yang sesuai (bobot: 0)
+1. Leadership [id:1](bobot: 5)
+2. Conflict Resolution [id:2](bobot: 5)
+3. Communication [id:3](bobot: 4)
+4. Tidak ada kategori yang sesuai [id:0](bobot: 0)
 
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
