@@ -195,7 +195,8 @@ model Score {
   feedback        String?
   reason          String?
   breakdown       Json?
-  prompt          String?
+  promptRubric    String?
+  promptCategory  String?
 
   // Specific to Technical
   rubricScore     Float?

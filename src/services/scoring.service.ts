@@ -198,7 +198,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       breakdown: breakdown as any,
-      prompt: technicalPrompt,
+      promptRubric: technicalPrompt,
     },
     create: {
       answerId,
@@ -211,7 +211,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       breakdown: breakdown as any,
-      prompt: technicalPrompt,
+      promptRubric: technicalPrompt,
     },
   });
 
@@ -322,7 +322,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   );
 
   const classification = classificationWithPrompt.result;
-  const softSkillPrompt = classificationWithPrompt.prompt;
+  const softSkillCategoryPrompt = classificationWithPrompt.prompt;
 
   // ── 8. Rubric scoring (with retry if confidence < 0.7) ──────────────────
   const rubricRetryHint =
@@ -341,6 +341,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   );
 
   const rubricResult = rubricWithPrompt.result;
+  const softSkillRubricPrompt = rubricWithPrompt.prompt;
 
   // ── 9. Resolve best matching category ───────────────────────────────────
   // Priority: exact label match → fuzzy string similarity → score-0 fallback
@@ -486,7 +487,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       breakdown: breakdown as any,
-      prompt: softSkillPrompt,
+      promptRubric: softSkillRubricPrompt,
+      promptCategory: softSkillCategoryPrompt,
     },
     create: {
       answerId,
@@ -501,7 +503,8 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       feedback,
       reason: reasonParts.join(" | "),
       breakdown: breakdown as any,
-      prompt: softSkillPrompt,
+      promptRubric: softSkillRubricPrompt,
+      promptCategory: softSkillCategoryPrompt,
     },
   });
 
