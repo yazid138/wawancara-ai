@@ -357,7 +357,7 @@ N. Tidak ada kategori yang sesuai [categoryId:0](bobot: 0)
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
 {
-  "categoryId": <nomor urut kategori terpilih (1-based)>,
+  "categoryId": <id kategori terpilih>,
   "label": "<label kategori persis seperti dalam daftar>",
   "confidence": 0-1,
   "reason": "alasan singkat dalam satu kalimat"

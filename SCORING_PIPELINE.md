@@ -740,7 +740,7 @@ Step 5: Buat Embedding (early, untuk efisiensi)
 Step 6: Klasifikasi Kategori (dengan retry jika confidence < 0.65)
   → classifySoftSkillAnswer(questionText, userAnswer, categoryOptions, questionCategoryName)
   → AI memilih SATU kategori dari daftar tersedia
-  → Output: classification { label, confidence, reason }
+  → Output: classification { categoryId, label, confidence, reason }
 Step 7: Rubric Score (dengan retry jika confidence < 0.65)
   → generateSoftSkillRubricScore(questionText, userAnswer, questionCategoryName)
   → Langkah 1: AI cek relevansi jawaban dengan topik questionCategoryName
@@ -750,9 +750,9 @@ Step 7: Rubric Score (dengan retry jika confidence < 0.65)
   → rubricScore = (sum of 4 criteria) / 20
   → Output: rubricScore (0–1), aiRubricConfidence (0–1)
 Step 8: Resolve Kategori Cocok
-  a. Exact match (case-insensitive)
+  a. Exact match (case-insensitive) atau ID match (categoryId)
   b. Fuzzy match (stringSimilarity ≥ 0.4)
-  c. Fallback: Uncategorized (score: 0)
+  c. Fallback: Tidak ada kategori yang sesuai (score: 0)
 Step 9: Category Score
   → maxCategoryScore = max(semua category.score)
   → categoryScore = matchedCategory.score / maxCategoryScore

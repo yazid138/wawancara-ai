@@ -376,15 +376,15 @@ Pertanyaan: {{pertanyaan}}
 Jawaban: {{jawaban}}
 
 Kategori tersedia:
-1. {{label_kategori_1}} [id:1](bobot: {{score_1}})
-2. {{label_kategori_2}} [id:2](bobot: {{score_2}})
+1. {{label_kategori_1}} [categoryId:1](bobot: {{score_1}})
+2. {{label_kategori_2}} [categoryId:2](bobot: {{score_2}})
 ...
-N. Tidak ada kategori yang sesuai [id:N](bobot: 0)
+N. Tidak ada kategori yang sesuai [categoryId:0](bobot: 0)
 
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
 {
-  "categoryId": <nomor urut kategori terpilih (1-based)>,
+  "categoryId": <id kategori terpilih>,
   "label": "<label kategori persis seperti dalam daftar>",
   "confidence": 0-1,
   "reason": "alasan singkat dalam satu kalimat"
@@ -413,10 +413,10 @@ Pertanyaan: Ceritakan pengalaman Anda saat harus memimpin kelompok di perkuliaha
 Jawaban: Saat itu ada tugas besar, tapi satu anggota pasif. Saya mengobrol dengannya secara personal untuk membagi tugas kembali yang sesuai dengan kemampuannya, sehingga tugas selesai tepat waktu.
 
 Kategori tersedia:
-1. Leadership [id:1](bobot: 5)
-2. Conflict Resolution [id:2](bobot: 5)
-3. Communication [id:3](bobot: 4)
-4. Tidak ada kategori yang sesuai [id:0](bobot: 0)
+1. Leadership [categoryId:1](bobot: 5)
+2. Conflict Resolution [categoryId:2](bobot: 5)
+3. Communication [categoryId:3](bobot: 4)
+4. Tidak ada kategori yang sesuai [categoryId:0](bobot: 0)
 
 Format:
 Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
