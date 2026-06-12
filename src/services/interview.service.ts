@@ -26,18 +26,18 @@ const FLOW: QuestionType[] = [
 ];
 
 const startInterview = (data: StartInterviewInput) => {
-  const { categoryIds, ...rest } = data;
+  const { categoryIds, userId, companyId, positionId } = data;
   return prisma.interview.create({
     data: {
       status: Status.ONGOING,
       user: {
-        connect: { id: data.userId }
+        connect: { id: userId }
       },
       company: {
-        connect: { id: data.companyId }
+        connect: { id: companyId }
       },
       position: {
-        connect: {id: data.positionId}
+        connect: { id: positionId }
       },
       ...(categoryIds && categoryIds.length > 0
         ? {
