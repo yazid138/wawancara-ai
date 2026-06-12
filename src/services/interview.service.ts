@@ -35,11 +35,7 @@ const startInterview = (data: StartInterviewInput) => {
         ? {
             focusQuestions: {
               create: categoryIds.map((id) => ({
-                category: {
-                  connect: {
-                    id,
-                  }
-                }
+                categoryId: id,
               })),
             },
           }
