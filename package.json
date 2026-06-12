@@ -8,7 +8,9 @@
     "dev": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec tsx index.ts",
     "postinstall": "prisma generate",
     "format": "prettier --write .",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "test": "bun test",
+    "test:e2e": "bun test src/tests/interview.e2e.test.ts --timeout 300000"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -21,12 +23,14 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/socket.io": "^3.0.1",
+    "@types/supertest": "^7.2.0",
     "dotenv": "^17.2.3",
     "install": "^0.13.0",
     "nodemon": "^3.1.10",
     "npm": "^11.6.2",
     "prettier": "^3.6.2",
     "prisma": "7.8.0",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsx": "^4.21.0",

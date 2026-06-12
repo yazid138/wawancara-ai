@@ -1,6 +1,11 @@
 import winston from "winston";
 import config from "@/config";
 import { PRODUCTION } from "@/utils/constants";
+import { join } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const LOG_FILE = join(__dirname, "../../..", "application.log");
 
 const { combine, timestamp, printf } = winston.format;
 
@@ -14,5 +19,5 @@ export default winston.createLogger({
   ),
   handleExceptions: config.env !== PRODUCTION,
   handleRejections: config.env !== PRODUCTION,
-  transports: [new winston.transports.File({ filename: "application.log" })],
+  transports: [new winston.transports.File({ filename: LOG_FILE })],
 });
