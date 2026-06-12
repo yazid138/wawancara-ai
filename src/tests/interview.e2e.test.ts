@@ -36,6 +36,7 @@ import {
 } from "./helpers/seed.helper";
 import { registerUser, loginUser, authRequest } from "./helpers/auth.helper";
 import { generateTestAnswer } from "./helpers/answer.helper";
+import prisma from "@/database/prisma";
 
 // ────────────────────────────────────────────────────────────
 // KONFIGURASI TEST
@@ -54,6 +55,7 @@ let companyId: number;
 let positionId: number;
 let interviewId: number;
 let firstQuestionId: number | null = null; // -1 untuk INTRO
+let categoryIds: number[] = [];
 
 // ────────────────────────────────────────────────────────────
 // SETUP & TEARDOWN
@@ -72,6 +74,14 @@ beforeAll(async () => {
 
   await ensureQuestions();
   console.log("  → Questions: OK\n");
+
+  const categories = await prisma.questionCategory.findMany();
+  // Ambil minimal 3 kategori secara acak (atau sebanyak total kategori jika kurang dari 3)
+  const shuffled = categories.sort(() => 0.5 - Math.random());
+  const minTake = Math.min(3, categories.length);
+  const randomTake = Math.floor(Math.random() * (categories.length - minTake + 1)) + minTake;
+  categoryIds = shuffled.slice(0, randomTake).map((c) => c.id);
+  console.log(`  → Focus Categories: ${categoryIds.join(", ")} (Total: ${categoryIds.length})\n`);
 }, 300_000); // Timeout 5 menit untuk seed (AI calls)
 
 afterAll(async () => {
@@ -165,7 +175,7 @@ describe("3. Mulai Interview", () => {
   it("POST /interviews → 201 interview berhasil dibuat", async () => {
     const res = await authRequest(token)
       .post("/interviews")
-      .send({ companyId, positionId });
+      .send({ companyId, positionId, categoryIds });
 
     console.log("  [start] status:", res.status, "| interviewId:", res.body?.data?.id);
     expect(res.status).toBe(201);
@@ -178,7 +188,7 @@ describe("3. Mulai Interview", () => {
   it("POST /interviews (duplicate) → 403 sudah melakukan interview", async () => {
     const res = await authRequest(token)
       .post("/interviews")
-      .send({ companyId, positionId });
+      .send({ companyId, positionId, categoryIds });
 
     console.log("  [duplicate] status:", res.status);
     expect(res.status).toBe(403);
@@ -450,7 +460,7 @@ describe("6. Kasus Error", () => {
   it("POST /interviews tanpa token → 401 Unauthorized", async () => {
     const res = await request(app)
       .post("/interviews")
-      .send({ companyId, positionId });
+      .send({ companyId, positionId, categoryIds });
 
     console.log("  [error/no-token] status:", res.status);
     expect(res.status).toBe(401);
