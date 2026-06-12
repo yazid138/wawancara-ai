@@ -35,6 +35,7 @@ import {
   cleanupTestUser,
 } from "./helpers/seed.helper";
 import { registerUser, loginUser, authRequest } from "./helpers/auth.helper";
+import { generateTestAnswer } from "./helpers/answer.helper";
 
 // ────────────────────────────────────────────────────────────
 // KONFIGURASI TEST
@@ -77,8 +78,9 @@ afterAll(async () => {
   console.log("\n╔══════════════════════════════════════════════╗");
   console.log("║   CLEANUP: Menghapus data test               ║");
   console.log("╚══════════════════════════════════════════════╝");
-  await cleanupTestUser(TEST_USER.username);
-  console.log("  → Cleanup selesai.\n");
+  // User meminta agar test user TIDAK DIHAPUS setelah pengujian
+  // await cleanupTestUser(TEST_USER.username);
+  console.log("  → Cleanup dinonaktifkan (data test dibiarkan di DB).\n");
 });
 
 // ────────────────────────────────────────────────────────────
@@ -232,20 +234,12 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
   /**
    * Loop utama: ambil pertanyaan satu per satu dan submit jawaban
    * hingga interview selesai (data = null) atau max 30 iterasi.
+   * Jawaban di-generate oleh AI menggunakan generateAnswerAI.
    * Jika loop habis namun interview belum FINISH, paksa finish via API.
    */
   it("Loop: submit semua pertanyaan hingga interview selesai", async () => {
-    const answers: Record<string, string> = {
-      GENERAL:
-        "Saya ingin bekerja di perusahaan ini karena memiliki reputasi yang baik dan memberikan kesempatan berkembang yang luas bagi karyawan. Saya percaya bahwa lingkungan kerja yang positif akan membantu saya tumbuh secara profesional.",
-      SOFTSKILL:
-        "Saya sangat mudah beradaptasi dalam berbagai situasi. Saya selalu berusaha untuk memahami aturan dan budaya yang berlaku, kemudian menyesuaikan diri dengan baik. Pengalaman saya dalam berbagai proyek tim telah melatih kemampuan adaptasi saya.",
-      TECHNICAL:
-        "REST API adalah arsitektur berbasis HTTP yang menggunakan metode standar seperti GET, POST, PUT, DELETE untuk komunikasi antara client dan server. API menggunakan format JSON untuk pertukaran data. JWT (JSON Web Token) digunakan untuk autentikasi stateless yang aman. Indexing pada database membantu mempercepat pencarian data dengan membuat struktur data tambahan. MVC adalah pola arsitektur yang memisahkan logika bisnis (Model), tampilan (View), dan kontroler (Controller).",
-    };
-
     let iteration = 0;
-    const maxIterations = 30; // Cukup untuk semua pertanyaan (1 GENERAL + 9 SOFTSKILL + 3 TECHNICAL)
+    const maxIterations = 30;
     let interviewDone = false;
 
     while (iteration < maxIterations) {
@@ -279,8 +273,12 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
         `  [loop-${iteration}] Content: "${question.content?.substring(0, 70)}..."`
       );
 
-      // Pilih jawaban berdasarkan tipe pertanyaan
-      const answer = answers[question.type] || answers.SOFTSKILL;
+      // Generate jawaban menggunakan AI
+      console.log(`  [loop-${iteration}] Generating AI answer...`);
+      const answer = await generateTestAnswer(question.id, question.content);
+      console.log(
+        `  [loop-${iteration}] AI Answer: "${answer.substring(0, 80)}..."`
+      );
 
       const submitRes = await authRequest(token)
         .post(`/interviews/${interviewId}/answers`)
@@ -322,7 +320,7 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
 
     console.log(`\n  [loop] Interview selesai: ${interviewDone}`);
     expect(interviewDone).toBe(true);
-  }, 600_000); // Timeout 10 menit untuk loop submit jawaban (ada AI calls)
+  }, 600_000); // Timeout 10 menit (AI generate answer + AI scoring per pertanyaan)
 
 });
 
