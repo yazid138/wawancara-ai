@@ -29,8 +29,16 @@ const startInterview = (data: StartInterviewInput) => {
   const { categoryIds, ...rest } = data;
   return prisma.interview.create({
     data: {
-      ...rest,
       status: Status.ONGOING,
+      user: {
+        connect: { id: data.userId }
+      },
+      company: {
+        connect: { id: data.companyId }
+      },
+      position: {
+        connect: {id: data.positionId}
+      },
       ...(categoryIds && categoryIds.length > 0
         ? {
             focusQuestions: {
