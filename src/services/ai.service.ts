@@ -125,7 +125,7 @@ Pertanyaan: ${pertanyaan}
 Kata Kunci: ${keyword.join(", ")}
 
 Format:
-Kembalikan hanya jawaban dalam teks biasa tanpa daftar kata kunci atau penjelasan tambahan.`,
+Kembalikan hanya jawaban dalam 1 kalimat. teks biasa tanpa daftar kata kunci atau penjelasan tambahan.`,
   });
   return output_text;
 };
