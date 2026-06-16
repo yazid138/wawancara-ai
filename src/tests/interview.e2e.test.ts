@@ -320,6 +320,7 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
       // console.log(
       //   `  [loop] Mencapai batas ${maxIterations} iterasi. Memaksa finish interview via API...`
       // );
+    // Lakukan finish untuk mendapatkan hasil interview/resume
     const finishRes = await authRequest(token).post(
       `/interviews/${interviewId}/finish`
     );
