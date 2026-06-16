@@ -315,11 +315,6 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
       }
     }
 
-    // Jika loop habis tapi interview belum selesai, paksa finish via API
-    // if (!interviewDone) {
-      // console.log(
-      //   `  [loop] Mencapai batas ${maxIterations} iterasi. Memaksa finish interview via API...`
-      // );
     // Lakukan finish untuk mendapatkan hasil interview/resume
     const finishRes = await authRequest(token).post(
       `/interviews/${interviewId}/finish`
@@ -327,7 +322,6 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
     console.log(`  [force-finish] status: ${finishRes.status} | msg: "${finishRes.body.message}"`);
     expect([200, 201]).toContain(finishRes.status);
     interviewDone = true;
-    // }
 
     console.log(`\n  [loop] Interview selesai: ${interviewDone}`);
     expect(interviewDone).toBe(true);
