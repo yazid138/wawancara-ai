@@ -344,9 +344,7 @@ export const generateIntroMessage = async (
   companyName: string,
   positionName: string,
 ) => {
-  const { output_text } = await client.responses.create({
-    model: config.openAIModel,
-    input: `Role:
+  const prompt = `Role:
 Anda adalah HR yang ramah dan sedang memulai sesi interview dengan seorang kandidat.
 
 Task:
@@ -358,10 +356,13 @@ Perusahaan: ${companyName}
 Posisi: ${positionName}
 
 Format:
-Kembalikan hanya teks pertanyaan dalam bahasa Indonesia yang natural dan ramah, tanpa teks tambahan.`,
+Kembalikan hanya teks pertanyaan dalam bahasa Indonesia yang natural dan ramah, tanpa teks tambahan.`;
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: prompt,
   });
 
-  return output_text;
+  return { output: output_text, prompt };
 };
 
 export const rephraseQuestion = async (originalQuestion: string) => {

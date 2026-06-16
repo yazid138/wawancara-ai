@@ -230,7 +230,7 @@ const _getNextQuestion = async (interviewId: number) => {
 
     if (remaining > 0 || type === QuestionType.SOFTSKILL) {
       if (type === QuestionType.INTRO) {
-        const aiMessage = await generateIntroMessage(
+        const { output: aiMessage, prompt } = await generateIntroMessage(
           interview.user.name,
           interview.company.name,
           interview.position.name,
@@ -241,6 +241,7 @@ const _getNextQuestion = async (interviewId: number) => {
             interviewId,
             role: "AI",
             content: aiMessage,
+            prompt,
           },
         });
 
