@@ -441,6 +441,12 @@ const getUserInterviews = (userId: number) => {
 };
 
 const processResume = async (interviewId: number) => {
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+  });
+  if (!interview) return;
+  if (interview.resume) return;
+  
   const history = await getInterviewHistory(interviewId);
   if (!history || !history.answers) return;
 
