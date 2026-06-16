@@ -319,7 +319,7 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
     const finishRes = await authRequest(token).post(
       `/interviews/${interviewId}/finish`
     );
-    console.log(`  [force-finish] status: ${finishRes.status} | msg: "${finishRes.body.message}"`);
+    console.log(`  [finish] status: ${finishRes.status} | msg: "${finishRes.body.message}"`);
     expect([200, 201]).toContain(finishRes.status);
     interviewDone = true;
 
