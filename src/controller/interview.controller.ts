@@ -256,8 +256,13 @@ export const finishInterview = async (req: Request, res: Response) => {
     throw new NotFoundException("Interview tidak ditemukan")
   }
 
+  // Jika interview sudah FINISH dan resume sudah ada, tidak perlu proses ulang
+  const alreadyFinished = interview.status === Status.FINISH;
   await interviewService.finishInterview(id);
-  interviewService.processResume(id).catch(console.error);
+
+  if (!alreadyFinished || !interview.resume) {
+    interviewService.processResume(id).catch(console.error);
+  }
 
   sendResponse(res, {
     status: 200,
