@@ -227,7 +227,7 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   // Promote to ReferenceAnswer knowledge base when ALL three quality gates pass
   if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8 && rubricScore >= 0.8) {
     try {
-      await addIdealAnswer(answer.questionId, answer.content);
+      await addIdealAnswer(answer.questionId, answer.content, answerId);
       console.log(
         `[Auto-Promotion] Technical answer promoted to ReferenceAnswer ` +
           `(ID: ${answerId}, finalScore: ${finalScore.toFixed(2)}, ` +
@@ -543,7 +543,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   ) {
     try {
       const promotedCategoryId = matchedCategory.id ?? null;
-      await addIdealAnswer(answer.questionId, answer.content, promotedCategoryId, answerId);
+      await addIdealAnswer(answer.questionId, answer.content, answerId, promotedCategoryId, );
       console.log(
         `[Auto-Promotion] Softskill answer promoted to ReferenceAnswer ` +
           `(ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], ` +

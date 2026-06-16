@@ -169,8 +169,8 @@ export const deleteQuestion = async (id: number) => {
 export const addIdealAnswer = async (
   questionId: number,
   idealAnswer: string,
-  answerCategoryId?: number | null,
   sourceAnswerId?: number,
+  answerCategoryId?: number | null,
 ) => {
   const cleanedIdealAnswer = cleanWhitespace(idealAnswer);
 
@@ -207,6 +207,12 @@ export const addIdealAnswer = async (
     idealAnswerResult = await prisma.$queryRaw`
       INSERT INTO "IdealAnswer" ("questionId", "answerCategoryId", "content", "embedding", "sourceAnswerId", "createdAt", "updatedAt")
       VALUES (${questionId}, ${answerCategoryId}, ${cleanedIdealAnswer}, ${`[${embedding.join(",")}]`}::vector, ${sourceAnswerId}, NOW(), NOW())
+      RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
+    ` as any[];
+  } else if (sourceAnswerId != null) {
+    idealAnswerResult = await prisma.$queryRaw`
+      INSERT INTO "IdealAnswer" ("questionId", "content", "embedding", "sourceAnswerId", "createdAt", "updatedAt")
+      VALUES (${questionId}, ${cleanedIdealAnswer}, ${`[${embedding.join(",")}]`}::vector, ${sourceAnswerId}, NOW(), NOW())
       RETURNING id, "questionId", "answerCategoryId", content, "createdAt", "updatedAt"
     ` as any[];
   } else {
