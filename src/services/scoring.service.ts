@@ -543,7 +543,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
   ) {
     try {
       const promotedCategoryId = matchedCategory.id ?? null;
-      await addIdealAnswer(answer.questionId, answer.content, answerId, promotedCategoryId, );
+      await addIdealAnswer(answer.questionId, answer.content, answerId, promotedCategoryId);
       console.log(
         `[Auto-Promotion] Softskill answer promoted to ReferenceAnswer ` +
           `(ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], ` +
