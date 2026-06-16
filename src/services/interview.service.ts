@@ -1,4 +1,6 @@
 import prisma from "@/database/prisma";
+import ForbiddenException from "@/exception/ForbiddenException";
+import NotFoundException from "@/exception/NotFoundException";
 import { QuestionType, Status } from "@/prisma/client";
 import { generateInterviewResume, generateIntroMessage, rephraseQuestion } from "@/services/ai.service";
 
@@ -444,8 +446,8 @@ const processResume = async (interviewId: number) => {
   const interview = await prisma.interview.findUnique({
     where: { id: interviewId },
   });
-  if (!interview) return;
-  if (interview.resume) return;
+  if (!interview) throw new NotFoundException("Interview not found");
+  if (interview.resume) throw new ForbiddenException("Resume already exists for this interview");
   
   const history = await getInterviewHistory(interviewId);
   if (!history || !history.answers) return;
