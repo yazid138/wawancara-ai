@@ -325,7 +325,7 @@ describe("4. Alur Pertanyaan & Jawaban", () => {
 
     console.log(`\n  [loop] Interview selesai: ${interviewDone}`);
     expect(interviewDone).toBe(true);
-  }, 600_000); // Timeout 10 menit (AI generate answer + AI scoring per pertanyaan)
+  }, 1200_000); // Timeout 20 menit (AI generate answer + AI scoring per pertanyaan)
 
 });
 
@@ -400,6 +400,7 @@ describe("5. Hasil & Riwayat Interview", () => {
   });
 
   it("GET /interviews/:id/history → resume tersedia (bisa pending jika AI lambat)", async () => {
+    await new Promise((r) => setTimeout(r, 40_000)); // Tunggu tambahan untuk resume
     const res = await authRequest(token).get(`/interviews/${interviewId}/history`);
     expect(res.status).toBe(200);
 
@@ -412,7 +413,7 @@ describe("5. Hasil & Riwayat Interview", () => {
         ? `"${interview.resume.substring(0, 100)}..."`
         : "(masih diproses...)"
     );
-  });
+  }, 60_000);
 });
 
 // ────────────────────────────────────────────────────────────
