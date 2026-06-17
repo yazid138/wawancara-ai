@@ -492,6 +492,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     update: {
       type: QuestionType.SOFTSKILL,
       categoryId: matchedCategory.id ?? null,
+      categoryScore: matchedCategory.score ?? 0,
       categoryLabel: matchedCategory.label,
       rubricScore,
       finalScore,
@@ -508,6 +509,7 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
       answerId,
       type: QuestionType.SOFTSKILL,
       categoryId: matchedCategory.id ?? null,
+      categoryScore: matchedCategory.score ?? 0,
       categoryLabel: matchedCategory.label,
       rubricScore,
       finalScore,

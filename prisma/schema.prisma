@@ -203,6 +203,7 @@ model Score {
 
   // Specific to Soft Skill
   categoryId      Int?
+  categoryScore   Int?
   categoryLabel   String?
 
   createdAt DateTime @default(now())
