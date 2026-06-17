@@ -400,7 +400,7 @@ describe("5. Hasil & Riwayat Interview", () => {
   });
 
   it("GET /interviews/:id/history → resume tersedia (bisa pending jika AI lambat)", async () => {
-    await new Promise((r) => setTimeout(r, 40_000)); // Tunggu tambahan untuk resume
+    await new Promise((r) => setTimeout(r, 30_000)); // Tunggu tambahan untuk resume
     const res = await authRequest(token).get(`/interviews/${interviewId}/history`);
     expect(res.status).toBe(200);
 
@@ -413,7 +413,7 @@ describe("5. Hasil & Riwayat Interview", () => {
         ? `"${interview.resume.substring(0, 100)}..."`
         : "(masih diproses...)"
     );
-  }, 60_000);
+  }, 40_000);
 });
 
 // ────────────────────────────────────────────────────────────
