@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Bagan Alir Sistem Scoring — Wawancara AI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #e8e8e8; padding: 24px; }
+    .container { max-width: 1160px; margin: 0 auto; }
+    .main-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 10px;
+      background: white;
+      border: 2px solid #333;
+      margin-bottom: 20px;
+      letter-spacing: 0.5px;
+    }
+    .diagram-wrap {
+      background: white;
+      border: 2px solid #333;
+      margin-bottom: 30px;
+      overflow: auto;
+    }
+    .diagram-title {
+      background: #37474f;
+      color: white;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+    .legend {
+      padding: 10px 16px;
+      border-top: 1px solid #ccc;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 10px;
+      color: #333;
+      background: #fafafa;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; }
+    .legend-box { width: 22px; height: 12px; border: 1px solid #666; }
+    .footer-note {
+      text-align: right;
+      padding: 5px 14px;
+      font-size: 10px;
+      color: #777;
+      background: #fafafa;
+      border-top: 1px solid #eee;
+    }
+    @media print {
+      body { background: white; padding: 0; }
+      .diagram-wrap { break-inside: avoid; margin-bottom: 15px; }
+      .container { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="main-title">Assessment System Flowchart (Scoring) — AI Interview</div>
+
+  <!-- ══════════════════════════════════════════════════
+       DIAGRAM 1: TECHNICAL SCORING
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-wrap">
+    <div class="diagram-title">Diagram 1 — Technical Scoring Pipeline (scoreTechnicalAnswer)</div>
+    <svg width="1120" height="1440" xmlns="http://www.w3.org/2000/svg" font-family="Arial">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+        </marker>
+        <marker id="arr-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+        </marker>
+        <marker id="arr-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#27ae60"/>
+        </marker>
+      </defs>
+
+      <!-- LANE BACKGROUNDS -->
+      <rect x="0"   y="0" width="120"  height="1440" fill="#E3F2FD"/>
+      <rect x="120" y="0" width="190"  height="1440" fill="#FFF8E1"/>
+      <rect x="310" y="0" width="270"  height="1440" fill="#E8F5E9"/>
+      <rect x="580" y="0" width="250"  height="1440" fill="#F3E5F5"/>
+      <rect x="830" y="0" width="290"  height="1440" fill="#FBE9E7"/>
+
+      <!-- LANE DIVIDERS -->
+      <line x1="120" y1="0" x2="120" y2="1440" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="310" y1="0" x2="310" y2="1440" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="580" y1="0" x2="580" y2="1440" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="830" y1="0" x2="830" y2="1440" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- Outer border -->
+      <rect x="0" y="0" width="1120" height="1440" fill="none" stroke="#333" stroke-width="2"/>
+
+      <!-- LANE HEADERS -->
+      <rect x="0"   y="0" width="120"  height="52" fill="#1565C0"/>
+      <text x="60"  y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Candidate</text>
+      <text x="60"  y="40" text-anchor="middle" fill="#BBDEFB" font-size="9">/ Frontend</text>
+
+      <rect x="120" y="0" width="190"  height="52" fill="#BF360C"/>
+      <text x="215" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Backend</text>
+      <text x="215" y="40" text-anchor="middle" fill="#FFCCBC" font-size="9">Interview Service</text>
+
+      <rect x="310" y="0" width="270"  height="52" fill="#1B5E20"/>
+      <text x="445" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Scoring Engine</text>
+      <text x="445" y="40" text-anchor="middle" fill="#C8E6C9" font-size="9">scoring.service.ts</text>
+
+      <rect x="580" y="0" width="250"  height="52" fill="#4A148C"/>
+      <text x="705" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">AI Service</text>
+      <text x="705" y="40" text-anchor="middle" fill="#E1BEE7" font-size="9">OpenAI GPT + Embedding</text>
+
+      <rect x="830" y="0" width="290"  height="52" fill="#B71C1C"/>
+      <text x="975" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Database</text>
+      <text x="975" y="40" text-anchor="middle" fill="#FFCDD2" font-size="9">PostgreSQL + pgvector</text>
+
+      <!-- ══ ROW 1: START y=88 ══ -->
+      <!-- L1: Terminal "Jawaban Terkirim" -->
+      <ellipse cx="60" cy="88" rx="52" ry="24" fill="#BBDEFB" stroke="#1565C0" stroke-width="2"/>
+      <text x="60" y="83" text-anchor="middle" font-size="10" font-weight="bold" fill="#0D47A1">Answer</text>
+      <text x="60" y="96" text-anchor="middle" font-size="10" font-weight="bold" fill="#0D47A1">Submitted</text>
+
+      <!-- Arrow 1→2: Kandidat → Backend -->
+      <path d="M60,112 V128 H122" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 2: Backend receives y=148 ══ -->
+      <rect x="124" y="130" width="182" height="52" fill="white" stroke="#BF360C" stroke-width="1.5" rx="3"/>
+      <text x="215" y="150" text-anchor="middle" font-size="10" font-weight="bold">Receive Request</text>
+      <text x="215" y="163" text-anchor="middle" font-size="9" fill="#555">Socket.IO: submit-answer</text>
+      <text x="215" y="176" text-anchor="middle" font-size="9" fill="#777">POST /interviews/:id/answers</text>
+
+      <!-- Arrow 2→3 -->
+      <path d="M215,182 V200" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 3: Save + Trigger y=222 ══ -->
+      <rect x="124" y="202" width="182" height="55" fill="white" stroke="#BF360C" stroke-width="1.5" rx="3"/>
+      <text x="215" y="221" text-anchor="middle" font-size="10" font-weight="bold">Save Answer to DB</text>
+      <text x="215" y="234" text-anchor="middle" font-size="9" fill="#555">prisma.answer.create()</text>
+      <text x="215" y="248" text-anchor="middle" font-size="9" fill="#BF360C">→ Trigger Scoring [async]</text>
+
+      <!-- Arrow 3→4: Backend → Scoring Engine -->
+      <path d="M215,257 V270 H312" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 4: Load Answer y=290 ══ -->
+      <rect x="314" y="272" width="262" height="48" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="290" text-anchor="middle" font-size="10" font-weight="bold">Load Answer + Keywords from DB</text>
+      <text x="445" y="305" text-anchor="middle" font-size="9" fill="#555">answer.question.include(&#123; keywords: true &#125;)</text>
+
+      <!-- Arrow 4→5 -->
+      <path d="M445,320 V340" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 5: Keyword Score y=375 ══ -->
+      <rect x="314" y="342" width="262" height="72" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="360" text-anchor="middle" font-size="10" font-weight="bold">① calculateKeywordScore()</text>
+      <text x="445" y="374" text-anchor="middle" font-size="9" fill="#555">Top-5 keywords by weight (sorted)</text>
+      <text x="445" y="386" text-anchor="middle" font-size="9" fill="#555">hasWholeWord → regex | substring | parts</text>
+      <text x="445" y="398" text-anchor="middle" font-size="9" fill="#555">weightCov = matchedWeight / totalWeight</text>
+      <text x="445" y="410" text-anchor="middle" font-size="9" fill="#1B5E20" font-weight="bold">→ keywordScore = wCov×0.7 + cCov×0.3</text>
+
+      <!-- Arrow 5→6: Scoring Engine → AI Service (embedding) -->
+      <path d="M445,414 V430 H582" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 6: createEmbedding y=455 ══ -->
+      <rect x="584" y="432" width="242" height="55" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="450" text-anchor="middle" font-size="10" font-weight="bold">② createEmbedding(userAnswer)</text>
+      <text x="705" y="464" text-anchor="middle" font-size="9" fill="#555">Model: text-embedding-3-large</text>
+      <text x="705" y="477" text-anchor="middle" font-size="9" fill="#4A148C">→ userEmbedding: number[3072]</text>
+
+      <!-- Arrow 6→7: AI → DB (similarity) -->
+      <path d="M705,487 V502 H832" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 7: Similarity Score y=540 ══ -->
+      <rect x="834" y="504" width="282" height="75" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="522" text-anchor="middle" font-size="10" font-weight="bold">③ getTop3SimilarityAverage()</text>
+      <text x="975" y="536" text-anchor="middle" font-size="9" fill="#555">SELECT 1-(emb &lt;=&gt; userVector)</text>
+      <text x="975" y="548" text-anchor="middle" font-size="9" fill="#555">FROM IdealAnswer WHERE questionId=?</text>
+      <text x="975" y="560" text-anchor="middle" font-size="9" fill="#555">ORDER BY emb &lt;=&gt; vector ASC LIMIT 3</text>
+      <text x="975" y="572" text-anchor="middle" font-size="9" fill="#B71C1C" font-weight="bold">→ similarityScore = avg(top-3) [0–1]</text>
+
+      <!-- Arrow 6→8: AI also feeds rubric (parallel path) -->
+      <path d="M705,487 V608" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 8: Technical Rubric Score y=650 ══ -->
+      <rect x="584" y="610" width="242" height="90" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="628" text-anchor="middle" font-size="10" font-weight="bold">④ generateTechnicalRubricScore()</text>
+      <text x="705" y="642" text-anchor="middle" font-size="9" fill="#555">• understanding (1–5)</text>
+      <text x="705" y="654" text-anchor="middle" font-size="9" fill="#555">• technicalAccuracy (1–5)</text>
+      <text x="705" y="666" text-anchor="middle" font-size="9" fill="#555">• problemSolving (1–5)</text>
+      <text x="705" y="678" text-anchor="middle" font-size="9" fill="#555">• technicalCommunication (1–5)</text>
+      <text x="705" y="692" text-anchor="middle" font-size="9" fill="#4A148C">+ confidence: 0–1, reason: string</text>
+
+      <!-- Arrow 8→9 (confidence check) -->
+      <path d="M705,700 V716 H580 V732 H578" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 9: Confidence Diamond y=760 ══ -->
+      <!-- Diamond centered at (445, 760), half=38 -->
+      <polygon points="445,722 483,755 445,788 407,755" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="445" y="749" text-anchor="middle" font-size="9" font-weight="bold">confidence</text>
+      <text x="445" y="762" text-anchor="middle" font-size="9" font-weight="bold">≥ 0.65 ?</text>
+
+      <!-- No label (right) -->
+      <text x="490" y="750" font-size="9" fill="#c0392b">No</text>
+      <!-- Arrow No: right → AI retry -->
+      <path d="M483,755 H582" stroke="#c0392b" stroke-width="1.5" fill="none" marker-end="url(#arr-r)"/>
+
+      <!-- ══ ROW 9b: Retry (AI Service) y=755 ══ -->
+      <rect x="584" y="736" width="242" height="50" fill="#FFF3E0" stroke="#E65100" stroke-width="1.5" rx="3"/>
+      <text x="705" y="754" text-anchor="middle" font-size="10" font-weight="bold">Retry + retryHint</text>
+      <text x="705" y="768" text-anchor="middle" font-size="9" fill="#555">"Focus on explicit technical evidence"</text>
+      <text x="705" y="780" text-anchor="middle" font-size="9" fill="#555">pickBetterResult(first, retry)</text>
+
+      <!-- Arrow retry → back to Scoring Engine -->
+      <path d="M584,755 V800 H580 V812 H578" stroke="#c0392b" stroke-width="1.5" fill="none" marker-end="url(#arr-r)"/>
+
+      <!-- Yes label (down) -->
+      <text x="425" y="800" font-size="9" fill="#27ae60">Yes</text>
+      <!-- Arrow Yes: straight down -->
+      <path d="M445,788 V812" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr-g)"/>
+
+      <!-- ══ ROW 10: rubricScore y=838 ══ -->
+      <rect x="314" y="814" width="262" height="52" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="832" text-anchor="middle" font-size="10" font-weight="bold">Calculate rubricScore</text>
+      <text x="445" y="846" text-anchor="middle" font-size="9" fill="#555">(understanding + technicalAccuracy +</text>
+      <text x="445" y="858" text-anchor="middle" font-size="9" fill="#1B5E20">problemSolving + technicalCommunication) / 20</text>
+
+      <!-- Arrow 10→11 -->
+      <path d="M445,866 V886" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 11: FINAL SCORE y=916 ══ -->
+      <rect x="314" y="888" width="262" height="58" fill="#C8E6C9" stroke="#1B5E20" stroke-width="2.5" rx="4"/>
+      <text x="445" y="906" text-anchor="middle" font-size="10" font-weight="bold" fill="#1B5E20">FINAL SCORE</text>
+      <text x="445" y="920" text-anchor="middle" font-size="9">(rubric×0.50 + sim×0.30 + kw×0.20)</text>
+      <text x="445" y="934" text-anchor="middle" font-size="10" font-weight="bold" fill="#1B5E20">× 100 → [0 – 100]</text>
+
+      <!-- Arrow 11→12 -->
+      <path d="M445,946 V966" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 12: Confidence Score y=992 ══ -->
+      <rect x="314" y="968" width="262" height="48" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="986" text-anchor="middle" font-size="10" font-weight="bold">Calculate confidenceScore</text>
+      <text x="445" y="1000" text-anchor="middle" font-size="9" fill="#555">(aiConf + similarity + keyword) / 3</text>
+      <text x="445" y="1012" text-anchor="middle" font-size="9" fill="#1B5E20">→ [0 – 1]</text>
+
+      <!-- Arrow 12→13 -->
+      <path d="M445,1016 V1034" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 13: Generate Feedback y=1060 ══ -->
+      <rect x="314" y="1036" width="262" height="48" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="1054" text-anchor="middle" font-size="10" font-weight="bold">Generate Feedback</text>
+      <text x="445" y="1067" text-anchor="middle" font-size="9" fill="#555">≥75→"Excellent" | ≥50→"Sufficient"</text>
+      <text x="445" y="1079" text-anchor="middle" font-size="9" fill="#555">&lt;50→"Needs Improvement"</text>
+
+      <!-- Arrow 13→DB upsert -->
+      <path d="M576,1060 H832" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 13b: Score.upsert (Database) y=1060 ══ -->
+      <rect x="834" y="1030" width="282" height="80" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="1048" text-anchor="middle" font-size="10" font-weight="bold">Score.upsert()</text>
+      <text x="975" y="1062" text-anchor="middle" font-size="9" fill="#555">answerId, type: TECHNICAL</text>
+      <text x="975" y="1074" text-anchor="middle" font-size="9" fill="#555">finalScore, rubricScore, similarityScore</text>
+      <text x="975" y="1086" text-anchor="middle" font-size="9" fill="#555">keywordScore, confidenceScore</text>
+      <text x="975" y="1098" text-anchor="middle" font-size="9" fill="#555">feedback, reason, prompt, breakdown</text>
+
+      <!-- Arrow 13→14 (down) -->
+      <path d="M445,1084 V1110" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+      <!-- ══ ROW 14: Auto-promotion Diamond y=1150 ══ -->
+      <polygon points="445,1112 492,1152 445,1192 398,1152" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="445" y="1144" text-anchor="middle" font-size="9" font-weight="bold">All Gates</text>
+      <text x="445" y="1157" text-anchor="middle" font-size="9" font-weight="bold">Fulfilled?</text>
+
+      <!-- Gates info box -->
+      <rect x="314" y="1197" width="262" height="60" fill="#FFF8E1" stroke="#F57F17" stroke-width="1" rx="2"/>
+      <text x="320" y="1213" font-size="9" fill="#555">① finalScore ≥ 85</text>
+      <text x="320" y="1225" font-size="9" fill="#555">② confidenceScore ≥ 0.85</text>
+      <text x="320" y="1237" font-size="9" fill="#555">③ similarityScore ≥ 0.80</text>
+      <text x="320" y="1249" font-size="9" fill="#555">④ rubricScore ≥ 0.80</text>
+
+      <!-- No → down to Selesai -->
+      <text x="420" y="1205" font-size="9" fill="#c0392b">No</text>
+      <path d="M445,1192 V1300" stroke="#c0392b" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-r)"/>
+
+      <!-- Yes → right to AI embedding for promotion -->
+      <text x="494" y="1148" font-size="9" fill="#27ae60">Yes</text>
+      <path d="M492,1152 H582" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr-g)"/>
+
+      <!-- ══ ROW 14b: Auto-promote embedding (AI) y=1152 ══ -->
+      <rect x="584" y="1132" width="242" height="42" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="1150" text-anchor="middle" font-size="10" font-weight="bold">createEmbedding(content)</text>
+      <text x="705" y="1164" text-anchor="middle" font-size="9" fill="#555">Generate vector for new IdealAnswer</text>
+
+      <!-- Arrow AI → DB addIdealAnswer -->
+      <path d="M826,1153 H832" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr-g)"/>
+
+      <!-- ══ addIdealAnswer (Database) y=1152 ══ -->
+      <rect x="834" y="1125" width="282" height="62" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="1143" text-anchor="middle" font-size="10" font-weight="bold">addIdealAnswer()</text>
+      <text x="975" y="1157" text-anchor="middle" font-size="9" fill="#555">INSERT INTO IdealAnswer</text>
+      <text x="975" y="1169" text-anchor="middle" font-size="9" fill="#555">questionId, content</text>
+      <text x="975" y="1181" text-anchor="middle" font-size="9" fill="#B71C1C">embedding::vector(3072)</text>
+
+      <!-- After auto-promote → Selesai -->
+      <path d="M705,1174 V1300 H580 V1310 H578" stroke="#27ae60" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr-g)"/>
+
+      <!-- ══ ROW 15: SELESAI y=1330 ══ -->
+      <ellipse cx="445" cy="1330" rx="65" ry="26" fill="#C8E6C9" stroke="#1B5E20" stroke-width="2.5"/>
+      <text x="445" y="1325" text-anchor="middle" font-size="11" font-weight="bold" fill="#1B5E20">DONE</text>
+      <text x="445" y="1340" text-anchor="middle" font-size="9" fill="#555">Score saved to DB</text>
+
+      <!-- Step numbers label -->
+      <text x="8" y="72" font-size="8" fill="#888">1</text>
+      <text x="128" y="144" font-size="8" fill="#888">2</text>
+      <text x="128" y="215" font-size="8" fill="#888">3</text>
+      <text x="316" y="286" font-size="8" fill="#888">4</text>
+      <text x="316" y="356" font-size="8" fill="#888">5</text>
+      <text x="586" y="446" font-size="8" fill="#888">6</text>
+      <text x="836" y="518" font-size="8" fill="#888">7</text>
+      <text x="586" y="624" font-size="8" fill="#888">8</text>
+      <text x="316" y="737" font-size="8" fill="#888">9</text>
+      <text x="316" y="828" font-size="8" fill="#888">10</text>
+      <text x="316" y="902" font-size="8" fill="#888">11</text>
+      <text x="316" y="982" font-size="8" fill="#888">12</text>
+      <text x="316" y="1050" font-size="8" fill="#888">13</text>
+      <text x="836" y="1044" font-size="8" fill="#888">14</text>
+      <text x="316" y="1126" font-size="8" fill="#888">15</text>
+    </svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:#E3F2FD;border-color:#1565C0"></div>Candidate / Frontend</div>
+      <div class="legend-item"><div class="legend-box" style="background:#FFF8E1;border-color:#BF360C"></div>Backend (Interview Service)</div>
+      <div class="legend-item"><div class="legend-box" style="background:#E8F5E9;border-color:#1B5E20"></div>Scoring Engine</div>
+      <div class="legend-item"><div class="legend-box" style="background:#F3E5F5;border-color:#4A148C"></div>AI Service (OpenAI)</div>
+      <div class="legend-item"><div class="legend-box" style="background:#FBE9E7;border-color:#B71C1C"></div>Database (PostgreSQL + pgvector)</div>
+      <div class="legend-item">⬦ = Decision</div>
+      <div class="legend-item">○ = Start/End</div>
+      <div class="legend-item">▭ = Process</div>
+    </div>
+    <div class="footer-note">AI Interview © 2026 | src/services/scoring.service.ts → scoreTechnicalAnswer()</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       DIAGRAM 2: SOFTSKILL SCORING
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-wrap">
+    <div class="diagram-title">Diagram 2 — Soft Skill Scoring Pipeline (scoreSoftSkillAnswer)</div>
+    <svg width="1120" height="1760" xmlns="http://www.w3.org/2000/svg" font-family="Arial">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+        </marker>
+        <marker id="arr2-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#c0392b"/>
+        </marker>
+        <marker id="arr2-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#27ae60"/>
+        </marker>
+        <marker id="arr2-o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#E65100"/>
+        </marker>
+      </defs>
+
+      <!-- LANE BACKGROUNDS -->
+      <rect x="0"   y="0" width="120"  height="1760" fill="#E3F2FD"/>
+      <rect x="120" y="0" width="190"  height="1760" fill="#FFF8E1"/>
+      <rect x="310" y="0" width="270"  height="1760" fill="#E8F5E9"/>
+      <rect x="580" y="0" width="250"  height="1760" fill="#F3E5F5"/>
+      <rect x="830" y="0" width="290"  height="1760" fill="#FBE9E7"/>
+
+      <!-- DIVIDERS -->
+      <line x1="120" y1="0" x2="120" y2="1760" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="310" y1="0" x2="310" y2="1760" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="580" y1="0" x2="580" y2="1760" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="830" y1="0" x2="830" y2="1760" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+      <rect x="0" y="0" width="1120" height="1760" fill="none" stroke="#333" stroke-width="2"/>
+
+      <!-- LANE HEADERS (same as diagram 1) -->
+      <rect x="0"   y="0" width="120"  height="52" fill="#1565C0"/>
+      <text x="60"  y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Candidate</text>
+      <text x="60"  y="40" text-anchor="middle" fill="#BBDEFB" font-size="9">/ Frontend</text>
+
+      <rect x="120" y="0" width="190"  height="52" fill="#BF360C"/>
+      <text x="215" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Backend</text>
+      <text x="215" y="40" text-anchor="middle" fill="#FFCCBC" font-size="9">Interview Service</text>
+
+      <rect x="310" y="0" width="270"  height="52" fill="#1B5E20"/>
+      <text x="445" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Scoring Engine</text>
+      <text x="445" y="40" text-anchor="middle" fill="#C8E6C9" font-size="9">scoring.service.ts</text>
+
+      <rect x="580" y="0" width="250"  height="52" fill="#4A148C"/>
+      <text x="705" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">AI Service</text>
+      <text x="705" y="40" text-anchor="middle" fill="#E1BEE7" font-size="9">OpenAI GPT + Embedding</text>
+
+      <rect x="830" y="0" width="290"  height="52" fill="#B71C1C"/>
+      <text x="975" y="23" text-anchor="middle" fill="white" font-size="11" font-weight="bold">Database</text>
+      <text x="975" y="40" text-anchor="middle" fill="#FFCDD2" font-size="9">PostgreSQL + pgvector</text>
+
+      <!-- ══ STEP 1: Start ══ -->
+      <ellipse cx="60" cy="88" rx="52" ry="24" fill="#BBDEFB" stroke="#1565C0" stroke-width="2"/>
+      <text x="60" y="83" text-anchor="middle" font-size="10" font-weight="bold" fill="#0D47A1">Answer</text>
+      <text x="60" y="96" text-anchor="middle" font-size="10" font-weight="bold" fill="#0D47A1">Submitted</text>
+      <path d="M60,112 V128 H122" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 2–3: Backend (same as technical) ══ -->
+      <rect x="124" y="130" width="182" height="50" fill="white" stroke="#BF360C" stroke-width="1.5" rx="3"/>
+      <text x="215" y="150" text-anchor="middle" font-size="10" font-weight="bold">Receive Request</text>
+      <text x="215" y="163" text-anchor="middle" font-size="9" fill="#555">Socket.IO: submit-answer</text>
+      <text x="215" y="176" text-anchor="middle" font-size="9" fill="#777">POST /interviews/:id/answers</text>
+      <path d="M215,180 V198" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <rect x="124" y="200" width="182" height="55" fill="white" stroke="#BF360C" stroke-width="1.5" rx="3"/>
+      <text x="215" y="219" text-anchor="middle" font-size="10" font-weight="bold">Save Answer to DB</text>
+      <text x="215" y="232" text-anchor="middle" font-size="9" fill="#555">prisma.answer.create()</text>
+      <text x="215" y="246" text-anchor="middle" font-size="9" fill="#BF360C">→ Trigger Scoring [async]</text>
+      <path d="M215,255 V268 H312" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 4: Load Answer + Categories + Keywords ══ -->
+      <rect x="314" y="270" width="262" height="50" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="289" text-anchor="middle" font-size="10" font-weight="bold">Load Answer + Categories + Keywords</text>
+      <text x="445" y="303" text-anchor="middle" font-size="9" fill="#555">include(&#123; categories: true, keywords: true &#125;)</text>
+      <text x="445" y="315" text-anchor="middle" font-size="9" fill="#c0392b">Guard: skip if no categories defined</text>
+      <path d="M445,320 V340" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 5: Keyword Score ══ -->
+      <rect x="314" y="342" width="262" height="68" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="360" text-anchor="middle" font-size="10" font-weight="bold">① calculateKeywordScore()</text>
+      <text x="445" y="374" text-anchor="middle" font-size="9" fill="#555">Top-5 keywords by weight</text>
+      <text x="445" y="386" text-anchor="middle" font-size="9" fill="#555">hasWholeWord → regex | substring | parts</text>
+      <text x="445" y="400" text-anchor="middle" font-size="9" fill="#1B5E20" font-weight="bold">→ keywordScore = wCov×0.7 + cCov×0.3</text>
+
+      <!-- Arrow to embedding -->
+      <path d="M445,410 V428 H582" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 6: createEmbedding (early, for both similarity & classification) ══ -->
+      <rect x="584" y="430" width="242" height="52" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="448" text-anchor="middle" font-size="10" font-weight="bold">② createEmbedding(userAnswer)</text>
+      <text x="705" y="462" text-anchor="middle" font-size="9" fill="#555">OpenAI text-embedding-3-large</text>
+      <text x="705" y="474" text-anchor="middle" font-size="9" fill="#4A148C">→ userEmbedding: number[3072]</text>
+
+      <!-- Arrow embedding → Category Classification -->
+      <path d="M705,482 V500" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 7: classifySoftSkillAnswer ══ -->
+      <rect x="584" y="502" width="242" height="72" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="520" text-anchor="middle" font-size="10" font-weight="bold">③ classifySoftSkillAnswer()</text>
+      <text x="705" y="534" text-anchor="middle" font-size="9" fill="#555">Choose 1 category from AnswerCategory</text>
+      <text x="705" y="546" text-anchor="middle" font-size="9" fill="#555">+ escape-hatch: "None of the above"</text>
+      <text x="705" y="558" text-anchor="middle" font-size="9" fill="#555">Output: label, confidence, reason</text>
+      <text x="705" y="570" text-anchor="middle" font-size="9" fill="#4A148C">categoryId (1-based), confidence: 0–1</text>
+
+      <!-- Arrow 7→ confidence diamond -->
+      <path d="M705,574 V592 H580 V604 H578" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 8: Confidence Diamond (classification) ══ -->
+      <polygon points="445,606 483,636 445,666 407,636" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="445" y="629" text-anchor="middle" font-size="9" font-weight="bold">conf</text>
+      <text x="445" y="642" text-anchor="middle" font-size="9" font-weight="bold">≥ 0.65?</text>
+
+      <!-- No → retry -->
+      <text x="490" y="632" font-size="9" fill="#c0392b">No</text>
+      <path d="M483,636 H582" stroke="#c0392b" stroke-width="1.5" fill="none" marker-end="url(#arr2-r)"/>
+
+      <!-- Retry box (AI) -->
+      <rect x="584" y="616" width="242" height="44" fill="#FFF3E0" stroke="#E65100" stroke-width="1.5" rx="3"/>
+      <text x="705" y="634" text-anchor="middle" font-size="10" font-weight="bold">Retry classifySoftSkillAnswer()</text>
+      <text x="705" y="648" text-anchor="middle" font-size="9" fill="#555">"Choose based on explicit evidence"</text>
+      <text x="705" y="660" text-anchor="middle" font-size="9" fill="#555">pickBetterResult(first, retry)</text>
+
+      <!-- Retry → back to scoring engine -->
+      <path d="M584,636 V680 H580 V690 H578" stroke="#c0392b" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr2-r)"/>
+
+      <!-- Yes → continue -->
+      <text x="425" y="680" font-size="9" fill="#27ae60">Yes</text>
+      <path d="M445,666 V690" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr2-g)"/>
+
+      <!-- ══ STEP 9: Resolve Category ══ -->
+      <rect x="314" y="692" width="262" height="72" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="710" text-anchor="middle" font-size="10" font-weight="bold">Resolve Category</text>
+      <text x="445" y="724" text-anchor="middle" font-size="9" fill="#555">① Exact match (case-insensitive)</text>
+      <text x="445" y="736" text-anchor="middle" font-size="9" fill="#555">② Fuzzy: stringSimilarity ≥ 0.4 (Jaccard)</text>
+      <text x="445" y="748" text-anchor="middle" font-size="9" fill="#555">③ Fallback: Uncategorized (score: 0)</text>
+      <text x="445" y="760" text-anchor="middle" font-size="9" fill="#1B5E20">→ matchedCategory: &#123; id, label, score &#125;</text>
+      <path d="M445,764 V782" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 10: Category Score ══ -->
+      <rect x="314" y="784" width="262" height="48" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="802" text-anchor="middle" font-size="10" font-weight="bold">Calculate categoryScore</text>
+      <text x="445" y="816" text-anchor="middle" font-size="9" fill="#555">maxScore = max(all categories)</text>
+      <text x="445" y="828" text-anchor="middle" font-size="9" fill="#1B5E20">categoryScore = cat.score / maxScore [0–1]</text>
+      <path d="M445,832 V850" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 11: Category-Scoped Similarity (DB) ══ -->
+      <!-- Arrow from Scoring Engine to DB -->
+      <path d="M576,808 H832" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+      <rect x="834" y="784" width="282" height="85" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="802" text-anchor="middle" font-size="10" font-weight="bold">④ getTop3SimilarityAvgByCategory()</text>
+      <text x="975" y="816" text-anchor="middle" font-size="9" fill="#555">WHERE questionId = ? AND</text>
+      <text x="975" y="828" text-anchor="middle" font-size="9" fill="#555">answerCategoryId = matchedCategory.id</text>
+      <text x="975" y="840" text-anchor="middle" font-size="9" fill="#555">ORDER BY emb &lt;=&gt; vec ASC LIMIT 3</text>
+      <text x="975" y="852" text-anchor="middle" font-size="9" fill="#777">Cold-start fallback: question-wide</text>
+      <text x="975" y="864" text-anchor="middle" font-size="9" fill="#B71C1C" font-weight="bold">→ similarityScore (category-scoped)</text>
+
+      <!-- ══ STEP 12: SoftSkill Rubric ══ -->
+      <!-- Arrow from embedding to SoftSkill Rubric (parallel) -->
+      <path d="M705,482 V870" stroke="#444" stroke-width="1.5" fill="none" stroke-dasharray="3,2" marker-end="url(#arr2)"/>
+      <rect x="584" y="872" width="242" height="90" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="890" text-anchor="middle" font-size="10" font-weight="bold">⑤ generateSoftSkillRubricScore()</text>
+      <text x="705" y="904" text-anchor="middle" font-size="9" fill="#555">• communication (1–5)</text>
+      <text x="705" y="916" text-anchor="middle" font-size="9" fill="#555">• selfAwareness (1–5)</text>
+      <text x="705" y="928" text-anchor="middle" font-size="9" fill="#555">• behaviorEvidence (1–5)</text>
+      <text x="705" y="940" text-anchor="middle" font-size="9" fill="#555">• growthMindset (1–5)</text>
+      <text x="705" y="952" text-anchor="middle" font-size="9" fill="#4A148C">+ confidence: 0–1</text>
+
+      <!-- Arrow 12 → confidence diamond -->
+      <path d="M705,962 V980 H580 V990 H578" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 13: Confidence Diamond (rubric) ══ -->
+      <polygon points="445,992 483,1022 445,1052 407,1022" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="445" y="1015" text-anchor="middle" font-size="9" font-weight="bold">rubric conf</text>
+      <text x="445" y="1028" text-anchor="middle" font-size="9" font-weight="bold">≥ 0.65?</text>
+
+      <!-- No → retry rubric -->
+      <text x="490" y="1018" font-size="9" fill="#c0392b">No</text>
+      <path d="M483,1022 H582" stroke="#c0392b" stroke-width="1.5" fill="none" marker-end="url(#arr2-r)"/>
+
+      <rect x="584" y="1004" width="242" height="42" fill="#FFF3E0" stroke="#E65100" stroke-width="1.5" rx="3"/>
+      <text x="705" y="1022" text-anchor="middle" font-size="10" font-weight="bold">Retry generateSoftSkillRubricScore()</text>
+      <text x="705" y="1036" text-anchor="middle" font-size="9" fill="#555">"Focus on explicit evidence" → pickBetter</text>
+
+      <path d="M584,1022 V1066 H580 V1074 H578" stroke="#c0392b" stroke-width="1.5" fill="none" stroke-dasharray="4,3" marker-end="url(#arr2-r)"/>
+
+      <!-- Yes → continue -->
+      <text x="425" y="1064" font-size="9" fill="#27ae60">Yes</text>
+      <path d="M445,1052 V1076" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr2-g)"/>
+
+      <!-- ══ STEP 14: rubricScore ══ -->
+      <rect x="314" y="1078" width="262" height="52" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="1096" text-anchor="middle" font-size="10" font-weight="bold">Calculate rubricScore</text>
+      <text x="445" y="1110" text-anchor="middle" font-size="9" fill="#555">(comm + selfAware + evidence + growth) / 20</text>
+      <text x="445" y="1122" text-anchor="middle" font-size="9" fill="#1B5E20">→ rubricScore [0–1]</text>
+      <path d="M445,1130 V1150" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 15: FINAL SCORE ══ -->
+      <rect x="314" y="1152" width="262" height="65" fill="#C8E6C9" stroke="#1B5E20" stroke-width="2.5" rx="4"/>
+      <text x="445" y="1170" text-anchor="middle" font-size="10" font-weight="bold" fill="#1B5E20">FINAL SCORE</text>
+      <text x="445" y="1184" text-anchor="middle" font-size="9">rubric×0.40 + category×0.30</text>
+      <text x="445" y="1196" text-anchor="middle" font-size="9">+ similarity×0.20 + keyword×0.10</text>
+      <text x="445" y="1210" text-anchor="middle" font-size="10" font-weight="bold" fill="#1B5E20">× 100 → [0 – 100]</text>
+      <path d="M445,1217 V1237" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 16: Confidence Score ══ -->
+      <rect x="314" y="1239" width="262" height="58" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="1257" text-anchor="middle" font-size="10" font-weight="bold">Calculate confidenceScore</text>
+      <text x="445" y="1271" text-anchor="middle" font-size="9" fill="#555">aiCatConf×0.40 + aiRubricConf×0.30</text>
+      <text x="445" y="1283" text-anchor="middle" font-size="9" fill="#555">+ similarity×0.20 + keyword×0.10</text>
+      <text x="445" y="1293" text-anchor="middle" font-size="9" fill="#1B5E20">→ [0–1]</text>
+      <path d="M445,1297 V1315" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 17: Generate Feedback + Upsert ══ -->
+      <rect x="314" y="1317" width="262" height="48" fill="white" stroke="#1B5E20" stroke-width="1.5" rx="3"/>
+      <text x="445" y="1335" text-anchor="middle" font-size="10" font-weight="bold">Generate Feedback</text>
+      <text x="445" y="1349" text-anchor="middle" font-size="9" fill="#555">≥75→"Very good" | ≥50→"Enough"</text>
+      <text x="445" y="1361" text-anchor="middle" font-size="9" fill="#555">&lt;50→"Needs improvement"</text>
+
+      <!-- Arrow to DB Score.upsert -->
+      <path d="M576,1341 H832" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+      <rect x="834" y="1310" width="282" height="90" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="1328" text-anchor="middle" font-size="10" font-weight="bold">Score.upsert()</text>
+      <text x="975" y="1342" text-anchor="middle" font-size="9" fill="#555">answerId, type: SOFTSKILL</text>
+      <text x="975" y="1354" text-anchor="middle" font-size="9" fill="#555">categoryId, categoryLabel</text>
+      <text x="975" y="1366" text-anchor="middle" font-size="9" fill="#555">finalScore, rubricScore, similarityScore</text>
+      <text x="975" y="1378" text-anchor="middle" font-size="9" fill="#555">keywordScore, confidenceScore</text>
+      <text x="975" y="1390" text-anchor="middle" font-size="9" fill="#555">feedback, reason, prompt, breakdown</text>
+
+      <!-- Arrow down to auto-promotion check -->
+      <path d="M445,1365 V1395" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 18: existingSimilarity check ══ -->
+      <rect x="314" y="1397" width="262" height="48" fill="white" stroke="#F57F17" stroke-width="1.5" rx="3"/>
+      <text x="445" y="1415" text-anchor="middle" font-size="10" font-weight="bold">Check existingSimilarity</text>
+      <text x="445" y="1429" text-anchor="middle" font-size="9" fill="#555">getTop3SimilarityAverageByCategory()</text>
+      <text x="445" y="1441" text-anchor="middle" font-size="9" fill="#555">Duplicate guard: existingSim &lt; 0.95?</text>
+      <path d="M445,1445 V1465" stroke="#444" stroke-width="1.5" fill="none" marker-end="url(#arr2)"/>
+
+      <!-- ══ STEP 19: Auto-promotion Diamond ══ -->
+      <polygon points="445,1467 498,1510 445,1553 392,1510" fill="white" stroke="#333" stroke-width="1.5"/>
+      <text x="445" y="1500" text-anchor="middle" font-size="9" font-weight="bold">All 5 Gates</text>
+      <text x="445" y="1515" text-anchor="middle" font-size="9" font-weight="bold">Fulfilled?</text>
+
+      <!-- Gates info -->
+      <rect x="314" y="1558" width="262" height="72" fill="#FFF8E1" stroke="#F57F17" stroke-width="1" rx="2"/>
+      <text x="320" y="1574" font-size="9" fill="#555">① finalScore ≥ 85</text>
+      <text x="320" y="1586" font-size="9" fill="#555">② confidenceScore ≥ 0.85</text>
+      <text x="320" y="1598" font-size="9" fill="#555">③ similarityScore ≥ 0.80</text>
+      <text x="320" y="1610" font-size="9" fill="#555">④ rubricScore ≥ 0.80</text>
+      <text x="320" y="1622" font-size="9" fill="#c0392b">⑤ existingSimilarity &lt; 0.95 (anti-duplicate)</text>
+
+      <!-- No → Done -->
+      <text x="420" y="1560" font-size="9" fill="#c0392b">No</text>
+      <path d="M445,1553 V1680" stroke="#c0392b" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr2-r)"/>
+
+      <!-- Yes → Auto-promote -->
+      <text x="500" y="1505" font-size="9" fill="#27ae60">Yes</text>
+      <path d="M498,1510 H582" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr2-g)"/>
+
+      <!-- Auto-promote: AI createEmbedding -->
+      <rect x="584" y="1490" width="242" height="42" fill="white" stroke="#4A148C" stroke-width="1.5" rx="3"/>
+      <text x="705" y="1508" text-anchor="middle" font-size="10" font-weight="bold">createEmbedding(content)</text>
+      <text x="705" y="1522" text-anchor="middle" font-size="9" fill="#555">Generate vector for new IdealAnswer</text>
+
+      <!-- Auto-promote: DB addIdealAnswer -->
+      <path d="M826,1511 H832" stroke="#27ae60" stroke-width="1.5" fill="none" marker-end="url(#arr2-g)"/>
+      <rect x="834" y="1484" width="282" height="72" fill="white" stroke="#B71C1C" stroke-width="1.5" rx="3"/>
+      <text x="975" y="1502" text-anchor="middle" font-size="10" font-weight="bold">addIdealAnswer()</text>
+      <text x="975" y="1516" text-anchor="middle" font-size="9" fill="#555">INSERT INTO IdealAnswer</text>
+      <text x="975" y="1528" text-anchor="middle" font-size="9" fill="#555">questionId, answerCategoryId ← matchedCategory</text>
+      <text x="975" y="1540" text-anchor="middle" font-size="9" fill="#555">sourceAnswerId ← answerId</text>
+      <text x="975" y="1552" text-anchor="middle" font-size="9" fill="#B71C1C">embedding::vector(3072)</text>
+
+      <!-- Auto-promote → Done -->
+      <path d="M705,1562 V1680 H580 V1688 H578" stroke="#27ae60" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arr2-g)"/>
+
+      <!-- ══ DONE ══ -->
+      <ellipse cx="445" cy="1710" rx="72" ry="30" fill="#C8E6C9" stroke="#1B5E20" stroke-width="2.5"/>
+      <text x="445" y="1705" text-anchor="middle" font-size="11" font-weight="bold" fill="#1B5E20">DONE</text>
+      <text x="445" y="1720" text-anchor="middle" font-size="9" fill="#555">Score + Category stored in DB</text>
+
+      <!-- Step numbers -->
+      <text x="8" y="72" font-size="8" fill="#888">1</text>
+      <text x="128" y="144" font-size="8" fill="#888">2</text>
+      <text x="128" y="213" font-size="8" fill="#888">3</text>
+      <text x="316" y="284" font-size="8" fill="#888">4</text>
+      <text x="316" y="356" font-size="8" fill="#888">5</text>
+      <text x="586" y="444" font-size="8" fill="#888">6</text>
+      <text x="586" y="516" font-size="8" fill="#888">7</text>
+      <text x="316" y="620" font-size="8" fill="#888">8</text>
+      <text x="316" y="706" font-size="8" fill="#888">9</text>
+      <text x="316" y="798" font-size="8" fill="#888">10</text>
+      <text x="836" y="798" font-size="8" fill="#888">11</text>
+      <text x="586" y="886" font-size="8" fill="#888">12</text>
+      <text x="316" y="1006" font-size="8" fill="#888">13</text>
+      <text x="316" y="1092" font-size="8" fill="#888">14</text>
+      <text x="316" y="1166" font-size="8" fill="#888">15</text>
+      <text x="316" y="1253" font-size="8" fill="#888">16</text>
+      <text x="316" y="1331" font-size="8" fill="#888">17</text>
+      <text x="836" y="1324" font-size="8" fill="#888">18</text>
+      <text x="316" y="1411" font-size="8" fill="#888">19</text>
+      <text x="316" y="1481" font-size="8" fill="#888">20</text>
+    </svg>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-box" style="background:#E3F2FD;border-color:#1565C0"></div>Candidate / Frontend</div>
+      <div class="legend-item"><div class="legend-box" style="background:#FFF8E1;border-color:#BF360C"></div>Backend (Interview Service)</div>
+      <div class="legend-item"><div class="legend-box" style="background:#E8F5E9;border-color:#1B5E20"></div>Scoring Engine</div>
+      <div class="legend-item"><div class="legend-box" style="background:#F3E5F5;border-color:#4A148C"></div>AI Service (OpenAI)</div>
+      <div class="legend-item"><div class="legend-box" style="background:#FBE9E7;border-color:#B71C1C"></div>Database (PostgreSQL + pgvector)</div>
+      <div class="legend-item" style="color:#27ae60">— — Yes (success path)</div>
+      <div class="legend-item" style="color:#c0392b">— — No / Retry</div>
+    </div>
+    <div class="footer-note">AI Interview © 2026 | src/services/scoring.service.ts → scoreSoftSkillAnswer()</div>
+  </div>
+
+</div>
+</body>
+</html>
