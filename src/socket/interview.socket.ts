@@ -3,7 +3,7 @@ import interviewService from "@/services/interview.service";
 import scoringService from "@/services/scoring.service";
 import followUpService from "@/services/followUp.service";
 import { Status, QuestionType } from "@/prisma/enums";
-import fs from "fs";
+import logger from "@/utils/logger";
 
 export default function setupInterviewSocket(io: Server, socket: Socket) {
   // JOIN INTERVIEW
@@ -69,7 +69,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
         currentQuestion = await interviewService.getNextQuestion(interviewId);
         if (!currentQuestion) {
           await interviewService.finishInterview(interviewId);
-          interviewService.processResume(interviewId).catch(console.error);
+          interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
           return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
         }
       }
@@ -82,7 +82,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
         const nextQuestion = await interviewService.getNextQuestion(interviewId);
         if (!nextQuestion) {
           await interviewService.finishInterview(interviewId);
-          interviewService.processResume(interviewId).catch(console.error);
+          interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
           return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
         }
         return io.to(roomName).emit("new-question", nextQuestion);
@@ -123,7 +123,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
         const nextMain = await interviewService.getNextQuestion(interviewId);
         if (!nextMain) {
           await interviewService.finishInterview(interviewId);
-          interviewService.processResume(interviewId).catch(console.error);
+          interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
           return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
         }
         return io.to(roomName).emit("new-question", nextMain);
@@ -153,11 +153,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
               }
             })
             .catch((err) => {
-              fs.appendFileSync(
-                "scoring.log",
-                `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
-              );
-              console.error("Background scoring error (TECHNICAL):", err);
+              logger.error("[Auto-Scoring Error] Failed to score technical answer:", err);
             });
         }
 
@@ -173,15 +169,11 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
               }
             })
             .catch((err) => {
-              fs.appendFileSync(
-                "scoring.log",
-                `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`
-              );
-              console.error("Background scoring error (SOFTSKILL):", err);
+              logger.error("[Auto-Scoring Error] Failed to score softskill answer:", err);
             });
         }
       } catch (err) {
-        console.error("Scoring error:", err);
+        logger.error("[Auto-Scoring Error] Failed to score answer:", err);
       }
 
       // Emit jawaban tersimpan ke FE segera
@@ -216,7 +208,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
       const nextQuestion = await interviewService.getNextQuestion(interviewId);
       if (!nextQuestion) {
         await interviewService.finishInterview(interviewId);
-        interviewService.processResume(interviewId).catch(console.error);
+        interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
         return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
       }
 
@@ -258,7 +250,7 @@ export default function setupInterviewSocket(io: Server, socket: Socket) {
       const nextQuestion = await interviewService.getNextQuestion(interviewId);
       if (!nextQuestion) {
         await interviewService.finishInterview(interviewId);
-        interviewService.processResume(interviewId).catch(console.error);
+        interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
         return io.to(roomName).emit("interview-finished", { message: "Interview selesai" });
       }
 

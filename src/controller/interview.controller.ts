@@ -5,9 +5,9 @@ import interviewService from "@/services/interview.service";
 import NotFoundException from "@/exception/NotFoundException";
 import scoringService from "@/services/scoring.service";
 import followUpService from "@/services/followUp.service";
-import fs from "fs";
 import ForbiddenException from "@/exception/ForbiddenException";
 import { Status, QuestionType } from "@/prisma/enums";
+import logger from "@/utils/logger";
 
 type StartInterviewRequest = {
   companyId: number;
@@ -75,7 +75,7 @@ export const getCurrent = async (req: Request, res: Response) => {
 
   if (!question) {
     await interviewService.finishInterview(id);
-    interviewService.processResume(id).catch(console.error);
+    interviewService.processResume(id).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
 
     return sendResponse(res, {
       status: 200,
@@ -144,7 +144,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
     currentQuestion = await interviewService.getNextQuestion(interviewId);
     if (!currentQuestion) {
       await interviewService.finishInterview(interviewId);
-      interviewService.processResume(interviewId).catch(console.error);
+      interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
 
       return sendResponse(res, {
         status: 200,
@@ -176,7 +176,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
     if (!nextQuestion) {
       await interviewService.finishInterview(interviewId);
-      interviewService.processResume(interviewId).catch(console.error);
+      interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
 
       return sendResponse(res, {
         status: 200,
@@ -213,11 +213,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
       scoringService
         .scoreTechnicalAnswer(savedAnswer.id)
         .catch((err) => {
-          fs.appendFileSync(
-            "scoring.log",
-            `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:TECHNICAL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`,
-          );
-          console.error("Background scoring error (TECHNICAL):", err);
+          logger.error("[Auto-Scoring Error] Failed to score technical answer:", err);
         });
     }
 
@@ -225,15 +221,11 @@ export const submitAnswer = async (req: Request, res: Response) => {
       scoringService
         .scoreSoftSkillAnswer(savedAnswer.id)
         .catch((err) => {
-          fs.appendFileSync(
-            "scoring.log",
-            `ERROR: inteviewId:${interviewId}, questionId:${currentQuestion.id}, type:SOFTSKILL, answerId:${savedAnswer.id}, message:${err.message}\n${err.stack}\n`,
-          );
-          console.error("Background scoring error (SOFTSKILL):", err);
+          logger.error("[Auto-Scoring Error] Failed to score softskill answer:", err);
         });
     }
   } catch (err) {
-    console.error("Scoring error:", err);
+    logger.error("[Auto-Scoring Error] Failed to score answer:", err);
   }
 
   // ── Auto-trigger follow-up (background, non-blocking) ───────────────────
@@ -247,7 +239,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
       await new Promise<void>((r) => setTimeout(r, 3000));
       await followUpService.generateFollowUp(interviewId, savedAnswer.id);
     })().catch((err) =>
-      console.error("[FollowUp Background Error]:", err.message),
+      logger.error("[Auto-FollowUp Error] Failed to generate follow-up:", err),
     );
   }
 
@@ -255,7 +247,7 @@ export const submitAnswer = async (req: Request, res: Response) => {
 
   if (!nextQuestion) {
     await interviewService.finishInterview(interviewId);
-    interviewService.processResume(interviewId).catch(console.error);
+    interviewService.processResume(interviewId).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
 
     return sendResponse(res, {
       status: 200,
@@ -283,7 +275,7 @@ export const getNext = async (req: Request, res: Response) => {
 
   if (!nextQuestion) {
     await interviewService.finishInterview(id);
-    interviewService.processResume(id).catch(console.error);
+    interviewService.processResume(id).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
 
     return sendResponse(res, {
       status: 200,
@@ -313,7 +305,7 @@ export const finishInterview = async (req: Request, res: Response) => {
   await interviewService.finishInterview(id);
 
   if (!alreadyFinished || !interview.resume) {
-    interviewService.processResume(id).catch(console.error);
+    interviewService.processResume(id).catch((error) => logger.error("[Auto-Resume Error] Failed to generate resume:", error));
   }
 
   sendResponse(res, {

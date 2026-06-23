@@ -2,6 +2,7 @@ import prisma from "@/database/prisma";
 import NotFoundException from "@/exception/NotFoundException";
 import { QuestionType, Status } from "@/prisma/client";
 import { generateInterviewResume, generateIntroMessage, rephraseQuestion } from "@/services/ai.service";
+import logger from "@/utils/logger";
 
 type StartInterviewInput = {
   userId: number;
@@ -486,7 +487,7 @@ const processResume = async (interviewId: number) => {
       data: { resume, resumePrompt: prompt },
     });
   } catch (error) {
-    console.error("Failed to generate resume:", error);
+    logger.error("[Auto-Resume Error] Failed to generate resume:", error);
   }
 };
 

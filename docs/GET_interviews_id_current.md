@@ -109,6 +109,13 @@ flowchart TD
     style S fill:#f87171,color:#fff
 ```
 
+### Penanganan Follow-up Question
+
+Jika jawaban kandidat pada pertanyaan tipe `TECHNICAL` atau `SOFTSKILL` memicu pembuatan pertanyaan follow-up:
+1. Pipeline penilaian (scoring) atau WebSocket controller akan memicu pembuatan pertanyaan follow-up baru di database (tabel `Question`) dengan properti `isFollowUp: true` dan menyimpannya ke `ChatHistory` dengan `role: "AI"`.
+2. Ketika API ini dipanggil kembali (`GET /interviews/:id/current`), `getNextQuestion` akan melihat entri terakhir di `chatHistories` adalah chat AI dengan `questionId` tertentu.
+3. API ini akan secara langsung mengembalikan pertanyaan follow-up tersebut beserta field-field follow-up terkait (seperti `isFollowUp`, `parentAnswerId`, dll.) sehingga kandidat diwajibkan menjawab follow-up ini sebelum alur berlanjut ke pertanyaan utama berikutnya.
+
 ---
 
 ## Distribusi Pertanyaan (`DISTRIBUTION`)
@@ -137,6 +144,29 @@ Urutan alur pertanyaan (FLOW): `INTRO → GENERAL → SOFTSKILL → TECHNICAL`
     "content": "Ceritakan pengalaman Anda menggunakan React hooks...",
     "type": "TECHNICAL",
     "categoryId": 3
+  }
+}
+```
+
+### Pertanyaan berupa Follow-up (Pertanyaan Pendalaman)
+
+Jika pertanyaan saat ini merupakan hasil dari follow-up/pendalaman atas jawaban sebelumnya:
+
+```json
+{
+  "status": 200,
+  "message": "Pertanyaan saat ini",
+  "data": {
+    "id": 105,
+    "content": "Mengapa Anda memilih untuk tidak menggunakan library pihak ketiga saat menangani dynamic forms tersebut?",
+    "type": "TECHNICAL",
+    "categoryId": 3,
+    "isFollowUp": true,
+    "parentAnswerId": 820,
+    "followUpReason": "Kandidat menjelaskan bahwa dia membangun component custom, perlu digali detail trade-off yang dipertimbangkan.",
+    "followUpStatus": "PENDING",
+    "expectedSignal": "Pemahaman kandidat tentang performa render dynamic forms di React.",
+    "promptFollowUp": null
   }
 }
 ```
@@ -190,5 +220,6 @@ Ketika `getNextQuestion` mengembalikan `null` (semua soal habis):
 | File | Deskripsi |
 |------|-----------|
 | [`src/routes/interview.route.ts`](../src/routes/interview.route.ts) | Definisi route |
-| [`src/controller/interview.controller.ts`](../src/controller/interview.controller.ts) | Handler `getCurrent` (baris 61–91) |
-| [`src/services/interview.service.ts`](../src/services/interview.service.ts) | `getNextQuestion` / `_getNextQuestion` (baris 144–334) |
+| [`src/controller/interview.controller.ts`](../src/controller/interview.controller.ts) | Handler `getCurrent` dan `submitAnswer` |
+| [`src/services/interview.service.ts`](../src/services/interview.service.ts) | `getNextQuestion` / `_getNextQuestion` |
+| [`src/services/followUp.service.ts`](../src/services/followUp.service.ts) | Layanan untuk mendeteksi, membuat, dan memproses follow-up |
