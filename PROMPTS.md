@@ -22,6 +22,7 @@
 13. [Generate Pesan Pembuka (Intro)](#13-generate-pesan-pembuka-intro)
 14. [Rephrase Pertanyaan](#14-rephrase-pertanyaan)
 15. [Template Prompt Umum](#15-template-prompt-umum)
+16. [Generate Follow-Up Question](#16-generate-follow-up-question)
 
 ---
 
@@ -593,6 +594,45 @@ Assess their suitability for the role based on the following criteria: {{criteri
 
 ---
 
+## 16. Generate Follow-Up Question
+
+**Fungsi:** `generateFollowUpQuestion(question, answer, breakdown, confidence)`
+**Builder:** `buildFollowUpPrompt(question, answer, breakdown, confidence)`
+**File:** [`src/services/ai.service.ts`](./src/services/ai.service.ts)
+**Tujuan:** Membuat pertanyaan follow-up yang tajam dan kontekstual berdasarkan jawaban kandidat yang dinilai kurang meyakinkan.
+
+```
+Role:
+Kamu adalah AI interviewer yang sedang mewawancarai kandidat.
+
+Task:
+Buat SATU follow-up question berdasarkan pertanyaan dan jawaban berikut.
+Rules:
+- Gali bagian yang kurang jelas atau kurang didukung bukti konkret
+- Jangan mengulang pertanyaan sebelumnya
+- Maksimal 1 kalimat
+- Fokus pada bukti konkret atau pengalaman nyata
+- Hindari leading question
+
+Data:
+Pertanyaan: {{question}}
+Jawaban kandidat: {{answer}}
+Score breakdown: {{breakdown}}
+Confidence: {{confidence}}
+
+Format:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "followUpQuestion": "...",
+  "reason": "alasan singkat mengapa follow-up ini perlu",
+  "expectedSignal": "sinyal/bukti konkret yang diharapkan dari jawaban"
+}
+```
+
+**Output:** `{ followUpQuestion: string, reason: string, expectedSignal: string }`
+
+---
+
 ## Ringkasan Prompt per Fitur
 
 | # | Prompt | Fungsi | Bahasa Output |
@@ -612,6 +652,7 @@ Assess their suitability for the role based on the following criteria: {{criteri
 | 13 | Pesan Intro | Sapaan pembuka personal interview | Teks |
 | 14 | Rephrase Pertanyaan | Variasi pertanyaan yang lebih natural | Teks |
 | 15 | Template Umum | Template penilaian dasar kandidat | Teks |
+| 16 | Generate Follow-Up Question | Membuat satu pertanyaan follow-up untuk jawaban lemah | JSON |
 
 ---
 

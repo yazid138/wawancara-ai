@@ -658,6 +658,20 @@
     </div>
     <div class="footer-note">Wawancara AI © 2026 | src/services/scoring.service.ts → scoreSoftSkillAnswer()</div>
   </div>
+  <!-- ══════════════════════════════════════════════════
+       TAMBAHAN: ALUR FOLLOW-UP & SCORE PROTECTION
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-wrap" style="padding: 20px; font-size: 13px; line-height: 1.6;">
+    <div class="diagram-title" style="margin: -20px -20px 20px -20px; background: #f59e0b; color: white;">Informasi Tambahan — Alur Follow-Up Question & Score Protection</div>
+    <p>Jika nilai jawaban utama (Technical atau SoftSkill) berada di bawah threshold (<strong>Confidence &lt; 0.75</strong> ATAU <strong>Similarity &lt; 0.65</strong> ATAU <strong>Rubric &lt; 0.70</strong>), sistem secara otomatis memicu pembuatan follow-up question.</p>
+    <div style="margin: 15px 0; padding: 12px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">
+      <strong>Score Protection Formula:</strong><br>
+      Skor akhir dihitung ulang untuk menjamin nilai kandidat tidak pernah turun setelah menjawab follow-up:<br>
+      <code>updatedConfidence = mainConfidence * 0.70 + followUpConfidence * 0.30</code><br>
+      <code>updatedFinalScore = max(finalScore, finalScore * 0.85 + followUpScore * 0.15)</code>
+    </div>
+    <p>Jawaban follow-up dinilai secara mandiri menggunakan komponen scoring yang sama (rubric, similarity, keyword) tanpa membuat record <code>Score</code> baru. Nilai utama kemudian di-update dan log data follow-up disimpan di dalam array <code>followUps</code> pada JSON breakdown.</p>
+  </div>
 
 </div>
 </body>

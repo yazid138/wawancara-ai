@@ -172,6 +172,12 @@ Table Question {
   difficulty varchar
   type enum('INTRO', 'GENERAL', 'TECHNICAL', 'SOFTSKILL')
   categoryId int [ref: > QuestionCategory.id]
+  isFollowUp boolean
+  parentAnswerId int [null, ref: > Answer.id]
+  followUpReason text
+  followUpStatus enum('PENDING', 'ANSWERED', 'SKIPPED')
+  expectedSignal text
+  promptFollowUp text
   createdAt datetime
   updatedAt datetime
 }
@@ -243,7 +249,7 @@ Table ChatHistory {
 | **Company** | Data perusahaan yang menawarkan posisi magang |
 | **Position** | Posisi/jabatan magang yang tersedia per perusahaan |
 | **Interview** | Sesi wawancara antara User (Student) dengan Company untuk Position tertentu |
-| **Question** | Bank soal wawancara dengan 4 tipe: Intro, General, Technical, Softskill |
+| **Question** | Bank soal wawancara dengan 4 tipe (Intro, General, Technical, Softskill) serta menyimpan follow-up question yang di-generate AI |
 | **QuestionCategory** | Kategori pertanyaan (Personal, Motivation, Backend, Security, dsb.) |
 | **Answer** | Jawaban kandidat terhadap pertanyaan dalam sesi interview |
 | **Keyword** | Kata kunci yang diharapkan muncul dalam jawaban (berbobot) |
@@ -325,6 +331,18 @@ sequenceDiagram
             BE->>AI: classifySoftSkillAnswer()
             AI-->>BE: Klasifikasi Kategori + Confidence
             BE->>DB: Match kategori + Hitung similarity + keyword → Save Score
+        end
+
+        opt Skor Lemah & Perlu Follow-up (TECHNICAL & SOFTSKILL)
+            BE->>AI: generateFollowUpQuestion()
+            AI-->>BE: Follow-up Question
+            BE->>DB: Simpan Question & ChatHistory (AI, status PENDING)
+            BE-->>FE: Emit new-question (Follow-up)
+            S->>FE: Jawab Follow-up
+            FE->>BE: POST /interviews/:id/answers (Socket/REST)
+            BE->>DB: Save Answer + ChatHistory (USER)
+            BE->>AI: _scoreFollowUpAnswer()
+            BE->>DB: Update Score utama & Set status ANSWERED
         end
 
         BE->>AI: rephraseQuestion(nextQuestion)
@@ -505,6 +523,28 @@ Saat dipromosikan:
 - Untuk SoftSkill: `answerCategoryId` ikut disimpan agar category-scoped similarity bekerja di masa mendatang
 - `sourceAnswerId` disimpan untuk traceability
 
+#### 7.4.5 Mekanisme Follow-Up Question & Score Protection
+
+Sistem secara otomatis mengidentifikasi jawaban kandidat yang dinilai "kurang kuat" pada pertanyaan `TECHNICAL` atau `SOFTSKILL`. Jika terdeteksi, AI akan mengajukan satu follow-up question secara real-time untuk memberi kesempatan kandidat mengklarifikasi jawabannya.
+
+##### 1. Kriteria Pemicu (Threshold)
+Follow-up question dipicu jika salah satu metrik penilaian berikut berada di bawah batas minimum:
+* **Confidence Score** < `0.75`
+* **Similarity Score** < `0.65`
+* **Rubric Score** < `0.70`
+
+##### 2. Batasan Pembuatan (Guard Rails)
+* Maksimal hanya **1** follow-up question berstatus `PENDING` untuk setiap jawaban utama.
+* Follow-up question disimpan langsung ke dalam tabel `Question` (dengan flag `isFollowUp: true` dan referensi `parentAnswerId`) serta `ChatHistory` agar mengalir secara natural di antarmuka chat.
+
+##### 3. Penilaian & Score Protection
+Jawaban follow-up dinilai menggunakan metric yang sama (keyword, similarity, rubric) tanpa membuat record `Score` baru di database. Skor akhir jawaban utama diperbarui menggunakan **Score Protection Formula** (memastikan nilai tidak pernah turun):
+
+* `updatedConfidence = mainConfidence * 0.7 + followUpConfidence * 0.3`
+* `updatedFinalScore = max(finalScore, finalScore * 0.85 + followUpScore * 0.15)`
+
+Breakdown pada tabel `Score` diperbarui ke struktur JSON yang diperkaya (`main`, `followUps` array, dan `final`).
+
 ### 7.5 Resume Wawancara (AI-Generated)
 
 Setelah interview selesai, sistem otomatis:
@@ -544,6 +584,7 @@ Setelah interview selesai, sistem otomatis:
 | `generateInterviewResume()` | Generate resume/ringkasan evaluasi dari seluruh Q&A |
 | `generateIntroMessage()` | Generate sapaan pembuka interview (menyebutkan nama, perusahaan, posisi) |
 | `rephraseQuestion()` | Rephrase pertanyaan agar lebih natural dan bervariasi |
+| `generateFollowUpQuestion()` | Membuat follow-up question secara dinamis menggunakan OpenAI |
 
 ### 7.8 Admin Settings
 
@@ -578,6 +619,8 @@ Setelah interview selesai, sistem otomatis:
 | `POST` | `/interviews/:id/finish` | ✅ | Akhiri interview |
 | `GET` | `/interviews/:id/result` | ✅ | Hasil interview (answer + score) |
 | `GET` | `/interviews/:id/history` | ✅ | Riwayat chat interview |
+| `POST` | `/interviews/:id/follow-up` | ✅ | Trigger manual pembuatan follow-up question |
+| `POST` | `/follow-up/:id/answer` | ✅ | Kirim jawaban follow-up question (fallback REST) |
 
 ### 8.3 Questions
 

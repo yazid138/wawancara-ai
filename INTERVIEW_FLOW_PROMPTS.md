@@ -643,6 +643,41 @@ Yazid menunjukkan motivasi yang kuat dan pemahaman dasar yang baik dalam sesi pe
 
 ---
 
+## 5. Generate Follow-Up Question
+
+**Kapan dipakai:** Setelah scoring jawaban utama selesai (~3.5s delay), jika salah satu metrik penilaian (confidenceScore, similarityScore, rubricScore) berada di bawah threshold.
+**Fungsi:** `generateFollowUpQuestion(question, answer, breakdown, confidence)`
+
+```
+Role:
+Kamu adalah AI interviewer yang sedang mewawancarai kandidat.
+
+Task:
+Buat SATU follow-up question berdasarkan pertanyaan dan jawaban berikut.
+Rules:
+- Gali bagian yang kurang jelas atau kurang didukung bukti konkret
+- Jangan mengulang pertanyaan sebelumnya
+- Maksimal 1 kalimat
+- Fokus pada bukti konkret atau pengalaman nyata
+- Hindari leading question
+
+Data:
+Pertanyaan: {{question}}
+Jawaban kandidat: {{answer}}
+Score breakdown: {{breakdown}}
+Confidence: {{confidence}}
+
+Format:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "followUpQuestion": "...",
+  "reason": "alasan singkat mengapa follow-up ini perlu",
+  "expectedSignal": "sinyal/bukti konkret yang diharapkan dari jawaban"
+}
+```
+
+---
+
 ## Ringkasan
 
 | # | Prompt | Dipanggil Oleh | Waktu Eksekusi |
@@ -652,7 +687,8 @@ Yazid menunjukkan motivasi yang kuat dan pemahaman dasar yang baik dalam sesi pe
 | 3 | Validasi Jawaban | Controller `submitAnswer` | Saat kandidat submit jawaban |
 | 4A | Rubrik Teknikal | `scoreTechnicalAnswer()` | Background setelah jawaban TECHNICAL tersimpan |
 | 4B | Klasifikasi + Rubrik SoftSkill | `scoreSoftSkillAnswer()` | Background setelah jawaban SOFTSKILL tersimpan |
-| 5 | Resume Interview | `processResume()` | Setelah interview selesai (FINISH) |
+| 5 | Generate Follow-Up Question | `generateFollowUp()` | Real-time background setelah scoring utama lemah |
+| 6 | Resume Interview | `processResume()` | Setelah interview selesai (FINISH) |
 
 ---
 

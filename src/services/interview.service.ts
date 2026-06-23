@@ -256,6 +256,8 @@ const _getNextQuestion = async (interviewId: number) => {
       const candidates = await prisma.question.findMany({
         where: {
           type,
+          // Jangan tampilkan follow-up question sebagai soal utama
+          isFollowUp: false,
           id: { notIn: Array.from(usedQuestionIds) },
           ...(selectedCategoryIds.length > 0 &&
           (type === QuestionType.SOFTSKILL || type === QuestionType.TECHNICAL)

@@ -385,6 +385,66 @@ PENTING: Kembalikan HANYA 1 (satu) kalimat pertanyaan hasil rephrase. Jangan mem
   return { rephrase: output_text, prompt: inputPrompt };
 };
 
+export const buildFollowUpPrompt = (
+  pertanyaan: string,
+  jawaban: string,
+  breakdown: string,
+  confidence: number,
+): string => {
+  return `Role:
+Kamu adalah AI interviewer yang sedang mewawancarai kandidat secara profesional.
+
+Task:
+Buat SATU follow-up question berdasarkan pertanyaan dan jawaban kandidat di bawah ini.
+Rules:
+- Gali bagian yang kurang jelas atau kurang didukung bukti konkret
+- Jangan mengulang pertanyaan yang sudah diajukan sebelumnya
+- Maksimal 1 kalimat yang singkat dan jelas
+- Fokus pada pengalaman nyata atau bukti konkret dari kandidat
+- Hindari leading question (pertanyaan yang sudah mengandung jawaban)
+
+Data:
+Pertanyaan: ${pertanyaan}
+Jawaban kandidat: ${jawaban}
+Score breakdown: ${breakdown}
+Confidence AI: ${(confidence * 100).toFixed(0)}%
+
+Format:
+Kembalikan HANYA JSON dengan format berikut, tanpa teks lain:
+{
+  "followUpQuestion": "satu kalimat pertanyaan follow-up",
+  "reason": "alasan singkat mengapa bagian ini perlu digali lebih dalam",
+  "expectedSignal": "sinyal atau bukti konkret yang diharapkan dari jawaban kandidat"
+}`;
+};
+
+/**
+ * Menggunakan AI untuk menghasilkan follow-up question berdasarkan
+ * pertanyaan utama, jawaban kandidat, dan hasil scoring.
+ *
+ * Reusable untuk tipe TECHNICAL dan SOFTSKILL.
+ */
+export const generateFollowUpQuestion = async (
+  pertanyaan: string,
+  jawaban: string,
+  breakdown: string,
+  confidence: number,
+): Promise<{
+  output: {
+    followUpQuestion: string;
+    reason: string;
+    expectedSignal: string;
+  };
+  prompt: string
+}> => {
+  const prompt = buildFollowUpPrompt(pertanyaan, jawaban, breakdown, confidence);
+  const { output_text } = await client.responses.create({
+    model: config.openAIModel,
+    input: prompt,
+  });
+  return { output: JSON.parse(output_text), prompt: prompt };
+};
+
 export const buildSoftSkillClassificationPrompt = (
   pertanyaan: string,
   jawaban: string,
@@ -563,4 +623,6 @@ export default {
   buildSoftSkillClassificationPrompt,
   buildSoftSkillRubricPrompt,
   buildTechnicalRubricPrompt,
+  buildFollowUpPrompt,
+  generateFollowUpQuestion,
 };

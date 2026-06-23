@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "db:seed": "tsx prisma/seed.ts",
     "test": "bun test",
-    "test:e2e": "bun test src/tests/interview.e2e.test.ts --timeout 300000"
+    "test:e2e": "bun test src/tests/interview.e2e.test.ts --timeout 300000",
+    "test:followup": "bun test src/tests/followup.e2e.test.ts --timeout 300000"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

@@ -658,6 +658,20 @@
     </div>
     <div class="footer-note">AI Interview © 2026 | src/services/scoring.service.ts → scoreSoftSkillAnswer()</div>
   </div>
+  <!-- ══════════════════════════════════════════════════
+       ADDITIONAL: ALUR FOLLOW-UP & SCORE PROTECTION
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-wrap" style="padding: 20px; font-size: 13px; line-height: 1.6;">
+    <div class="diagram-title" style="margin: -20px -20px 20px -20px; background: #f59e0b; color: white;">Additional Information — Follow-Up Question & Score Protection Pipeline</div>
+    <p>If the candidate's answer to a main question (Technical or SoftSkill) is deemed weak (meeting the threshold: <strong>Confidence &lt; 0.75</strong> OR <strong>Similarity &lt; 0.65</strong> OR <strong>Rubric &lt; 0.70</strong>), the system automatically triggers an AI-generated follow-up question.</p>
+    <div style="margin: 15px 0; padding: 12px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">
+      <strong>Score Protection Formula:</strong><br>
+      The final score is updated to guarantee the candidate's score never decreases after answering the follow-up:<br>
+      <code>updatedConfidence = mainConfidence * 0.70 + followUpConfidence * 0.30</code><br>
+      <code>updatedFinalScore = max(finalScore, finalScore * 0.85 + followUpScore * 0.15)</code>
+    </div>
+    <p>The follow-up answer is scored independently using the same scoring pipeline (rubric, similarity, keyword) without creating a new <code>Score</code> record. The parent score is updated, and the follow-up log is stored inside the <code>followUps</code> array in the JSON breakdown.</p>
+  </div>
 
 </div>
 </body>

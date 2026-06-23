@@ -9,6 +9,13 @@ datasource db {
   extensions = [vector]
 }
 
+// Status tracking untuk follow-up question
+enum FollowUpStatus {
+  PENDING   // Follow-up sudah digenerate, belum dijawab
+  ANSWERED  // Kandidat sudah menjawab follow-up
+  SKIPPED   // Follow-up dilewati
+}
+
 enum Role {
   ADMIN
   COMPANY
@@ -92,6 +99,20 @@ model Question {
   type       QuestionType @default(GENERAL)
   categoryId Int
 
+  // ── Follow-up fields ────────────────────────────────────────────────────
+  // Apakah pertanyaan ini merupakan follow-up dari jawaban kandidat?
+  isFollowUp     Boolean        @default(false)
+  // ID jawaban (Answer) yang memicu follow-up ini (null untuk pertanyaan utama)
+  parentAnswerId Int?           
+  // Alasan AI mengapa follow-up ini perlu ditanyakan
+  followUpReason String?
+  // Status apakah follow-up sudah dijawab, pending, atau dilewati
+  followUpStatus FollowUpStatus?
+  // Sinyal/bukti konkret yang diharapkan dari jawaban kandidat
+  expectedSignal String?
+  promptFollowUp String?
+  // ────────────────────────────────────────────────────────────────────────
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -100,10 +121,14 @@ model Question {
   idealAnswer IdealAnswer[]
   categories  AnswerCategory[]
 
-  category QuestionCategory @relation(fields: [categoryId], references: [id])
+  category      QuestionCategory @relation(fields: [categoryId], references: [id])
   chatHistories ChatHistory[]
+  // Relasi ke Answer yang memicu follow-up ini
+  parentAnswer  Answer?          @relation("FollowUpQuestions", fields: [parentAnswerId], references: [id])
 
   @@index([categoryId])
+  @@index([parentAnswerId])
+  @@index([isFollowUp])
 }
 
 model QuestionCategory {
@@ -139,11 +164,13 @@ model Answer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  question  Question     @relation(fields: [questionId], references: [id])
-  interview Interview    @relation(fields: [interviewId], references: [id])
-  user      User         @relation(fields: [userId], references: [id])
-  score     Score?
-  idealAnswers IdealAnswer[]
+  question      Question      @relation(fields: [questionId], references: [id])
+  interview     Interview     @relation(fields: [interviewId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  score         Score?
+  idealAnswers  IdealAnswer[]
+  // Follow-up questions yang dipicu oleh jawaban ini
+  followUpQuestions Question[] @relation("FollowUpQuestions")
 
   @@index([questionId])
   @@index([interviewId])

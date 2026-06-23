@@ -4,6 +4,7 @@ import validate from "@/utils/validation";
 import interviewService from "@/services/interview.service";
 import NotFoundException from "@/exception/NotFoundException";
 import scoringService from "@/services/scoring.service";
+import followUpService from "@/services/followUp.service";
 import fs from "fs";
 import ForbiddenException from "@/exception/ForbiddenException";
 import { Status, QuestionType } from "@/prisma/enums";
@@ -162,6 +163,42 @@ export const submitAnswer = async (req: Request, res: Response) => {
     });
   }
 
+  // Handle follow-up question answer
+  if (currentQuestion.isFollowUp) {
+    const result = await followUpService.submitFollowUpAnswer(
+      currentQuestion.id,
+      answer,
+      interviewId,
+      userId,
+    );
+
+    const nextQuestion = await interviewService.getNextQuestion(interviewId);
+
+    if (!nextQuestion) {
+      await interviewService.finishInterview(interviewId);
+      interviewService.processResume(interviewId).catch(console.error);
+
+      return sendResponse(res, {
+        status: 200,
+        message: "Interview selesai",
+        data: {
+          answer: result.answer,
+          questionId: currentQuestion.id,
+        },
+      });
+    }
+
+    return sendResponse(res, {
+      status: 200,
+      message: "Jawaban follow-up berhasil",
+      data: {
+        answer: result.answer,
+        questionId: currentQuestion.id,
+        nextQuestion,
+      },
+    });
+  }
+
   const savedAnswer = await interviewService.createAnswer({
     content: answer,
     questionId: currentQuestion.id,
@@ -197,6 +234,21 @@ export const submitAnswer = async (req: Request, res: Response) => {
     }
   } catch (err) {
     console.error("Scoring error:", err);
+  }
+
+  // ── Auto-trigger follow-up (background, non-blocking) ───────────────────
+  // Jalan setelah scoring selesai. Delay 3 detik agar Score record sudah
+  // tersimpan sebelum follow-up service memeriksanya.
+  if (
+    currentQuestion.type === QuestionType.TECHNICAL ||
+    currentQuestion.type === QuestionType.SOFTSKILL
+  ) {
+    (async () => {
+      await new Promise<void>((r) => setTimeout(r, 3000));
+      await followUpService.generateFollowUp(interviewId, savedAnswer.id);
+    })().catch((err) =>
+      console.error("[FollowUp Background Error]:", err.message),
+    );
   }
 
   const nextQuestion = await interviewService.getNextQuestion(interviewId);

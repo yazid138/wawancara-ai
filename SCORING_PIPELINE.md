@@ -1005,3 +1005,38 @@ Sistem memeriksa 5 gerbang auto-promotion untuk Soft Skill:
 
 **Hasil Akhir:** Skor **89.78** disimpan ke database dengan status **"Jawaban sangat baik"**. Jawaban ini **lulus seluruh sensor** dan otomatis **dipromosikan** menjadi `IdealAnswer` baru untuk kategori `Kolaboratif & Solutif`.
 
+---
+
+## 🧮 Cara Kerja Penilaian: Follow-Up & Score Protection
+
+Ketika jawaban utama kandidat dinilai lemah (memenuhi threshold follow-up), sistem akan menanyakan satu pertanyaan follow-up. Jawaban follow-up ini akan dinilai secara independen dan hasilnya digunakan untuk merevisi skor utama menggunakan **Score Protection Formula**.
+
+### 1. Proses Evaluasi Jawaban Follow-Up
+1. **Keyword Score**: Kata kunci dievaluasi terhadap keywords milik follow-up question.
+2. **Similarity Score**: Cosine similarity dihitung terhadap top-3 `IdealAnswer` milik pertanyaan UTAMA (parent).
+3. **Rubric Score**: OpenAI mengevaluasi jawaban follow-up berdasarkan kriteria pertanyaan utama (TECHNICAL atau SOFTSKILL).
+
+### 2. Formulasi Score Protection (Skor Tidak Pernah Turun)
+Untuk memperbarui tingkat keyakinan (`confidenceScore`) dan nilai akhir (`finalScore`) pada jawaban utama:
+
+*   **Updated Confidence**:
+    $$\text{updatedConfidence} = \text{mainConfidence} \times 0.70 + \text{followUpConfidence} \times 0.30$$
+*   **Updated Final Score**:
+    $$\text{updatedFinalScore} = \max(\text{finalScore}, \text{finalScore} \times 0.85 + \text{followUpScore} \times 0.15)$$
+
+### 3. Contoh Simulasi Perhitungan
+Misalkan jawaban utama kandidat mendapat nilai sebagai berikut:
+*   `originalFinalScore` = **45.00**
+*   `originalConfidence` = **0.50** (Memicu follow-up karena confidence < 0.75 dan score < 50)
+
+Setelah kandidat menjawab follow-up question, hasil penilaian jawaban follow-up adalah:
+*   `followUpFinalScore` = **80.00**
+*   `followUpConfidence` = **0.90**
+
+Maka skor revisi dihitung sebagai berikut:
+*   `updatedConfidence` = $0.50 \times 0.70 + 0.90 \times 0.30 = 0.35 + 0.27 = \mathbf{0.62}$
+*   `updatedFinalScore` = $\max(45.00, 45.00 \times 0.85 + 80.00 \times 0.15) = \max(45.00, 38.25 + 12.00) = \max(45.00, 50.25) = \mathbf{50.25}$
+
+**Hasil Akhir**: Skor utama berhasil dinaikkan dari **45.00** menjadi **50.25** (+5.25), dan tingkat keyakinan meningkat dari **0.50** menjadi **0.62**. Struktur breakdown diperbarui dengan mencatat log jawaban follow-up ini di dalam array `followUps`.
+
+

@@ -23,6 +23,7 @@ import {
   retryIfLowConfidenceWithPrompt,
   stringSimilarity,
 } from "@/utils";
+import logger from "@/utils/logger";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -228,16 +229,9 @@ const scoreTechnicalAnswer = async (answerId: number) => {
   if (finalScore >= 85 && confidenceScore >= 0.85 && similarityScore >= 0.8 && rubricScore >= 0.8) {
     try {
       await addIdealAnswer(answer.questionId, answer.content, answerId);
-      console.log(
-        `[Auto-Promotion] Technical answer promoted to ReferenceAnswer ` +
-          `(ID: ${answerId}, finalScore: ${finalScore.toFixed(2)}, ` +
-          `confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`,
-      );
+      logger.info(`[Auto-Promotion] Technical answer promoted to ReferenceAnswer (ID: ${answerId}, finalScore: ${finalScore.toFixed(2)}, confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`);
     } catch (err: any) {
-      console.error(
-        `[Auto-Promotion Error] Failed to promote technical answer:`,
-        err.message,
-      );
+      logger.error(`[Auto-Promotion Error] Failed to promote technical answer: ${err.message}`);
     }
   }
 
@@ -546,17 +540,9 @@ const scoreSoftSkillAnswer = async (answerId: number) => {
     try {
       const promotedCategoryId = matchedCategory.id ?? null;
       await addIdealAnswer(answer.questionId, answer.content, answerId, promotedCategoryId);
-      console.log(
-        `[Auto-Promotion] Softskill answer promoted to ReferenceAnswer ` +
-          `(ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], ` +
-          `finalScore: ${finalScore.toFixed(2)}, ` +
-          `confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`,
-      );
+      logger.info(`[Auto-Promotion] Softskill answer promoted to ReferenceAnswer (ID: ${answerId}, category: "${matchedCategory.label}" [${promotedCategoryId}], finalScore: ${finalScore.toFixed(2)}, confidence: ${confidenceScore.toFixed(2)}, similarity: ${similarityScore.toFixed(2)})`);
     } catch (err: any) {
-      console.error(
-        `[Auto-Promotion Error] Failed to promote softskill answer:`,
-        err.message,
-      );
+      logger.error(`[Auto-Promotion Error] Failed to promote softskill answer: ${err.message}`);
     }
   }
 

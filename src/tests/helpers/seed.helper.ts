@@ -96,10 +96,7 @@ export const ensureQuestions = async () => {
 
     // Untuk SOFTSKILL: buat answer categories & ideal answers
     if (q.type === QuestionType.SOFTSKILL) {
-      let answerCategories = q.categoryAnswer;
-      if (!answerCategories) {
-        answerCategories = await aiService.generateAnswerCategories(q.content);
-      }
+      const answerCategories = q.categoryAnswer || (await aiService.generateAnswerCategories(q.content)) || [];
 
       const createdCategories = await prisma.answerCategory.createManyAndReturn({
         data: answerCategories.map((cat) => ({

@@ -10,6 +10,7 @@ import settingRouter from "./setting.route";
 import role from "@/middleware/role";
 import companyRouter from "./company.routes";
 import positionRouter from "./position.routes";
+import followUpRouter from "./followUp.route";
 
 const router = Router();
 
@@ -25,5 +26,7 @@ router.use("/questions", auth, questionRouter);
 router.use("/setting", auth, role("ADMIN"), settingRouter);
 router.use("/company", auth, companyRouter);
 router.use("/position", auth, positionRouter);
+// Follow-up question endpoints
+router.use("/follow-up", auth, followUpRouter);
 
 export default router;
