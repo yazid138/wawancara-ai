@@ -3,6 +3,7 @@ type UserResponse = {
   name: string;
   username: string;
   role: string;
+  companyId: number | null;
   createdAt: Date;
 };
 

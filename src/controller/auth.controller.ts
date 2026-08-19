@@ -8,6 +8,7 @@ import config from "@/config";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import userService from "@/services/user.service";
+import companyService from "@/services/company.service";
 import { Role, User } from "@/prisma/client";
 
 type LoginRequest = {
@@ -61,9 +62,10 @@ type RegisterRequest = {
   username: string;
   password: string;
   role: Role;
+  companyName?: string;
 };
 const register = async (req: Request, res: Response) => {
-  const { name, username, password, role } = validate<RegisterRequest>(
+  const { name, username, password, role, companyName } = validate<RegisterRequest>(
     {
       name: "string",
       username: "string",
@@ -71,6 +73,10 @@ const register = async (req: Request, res: Response) => {
       role: {
         type: "enum",
         values: Object.values(Role),
+      },
+      companyName: {
+        type: "string",
+        optional: true,
       },
     },
     req.body,
@@ -80,11 +86,22 @@ const register = async (req: Request, res: Response) => {
     throw new BadRequestException("Username already exists");
   }
   const hashedPassword = await bcrypt.hash(password, 10);
+
+  let companyId: number | undefined;
+  if (role === "COMPANY") {
+    if (!companyName) {
+      throw new BadRequestException("Company name is required for COMPANY role");
+    }
+    const company = await companyService.createCompany(companyName);
+    companyId = company.id;
+  }
+
   await userService.createUser({
     name,
     username,
     password: hashedPassword,
     role,
+    companyId,
   });
   sendResponse(res, { status: 200, message: "Register successful" });
 };
@@ -101,9 +118,15 @@ const logout = (req: Request, res: Response) => {
   });
 };
 
+const getAllStudents = async (req: Request, res: Response) => {
+  const students = await userService.getAllStudents();
+  sendResponse(res, { status: 200, message: "Daftar mahasiswa", data: students });
+};
+
 export default {
   login,
   me,
   register,
   logout,
+  getAllStudents,
 };

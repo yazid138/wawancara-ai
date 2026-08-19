@@ -8,6 +8,7 @@ type StartInterviewInput = {
   userId: number;
   companyId: number;
   positionId: number;
+  jobOpeningId?: number;
   categoryIds?: number[];
 };
 
@@ -28,10 +29,11 @@ const FLOW: QuestionType[] = [
 ];
 
 const startInterview = (data: StartInterviewInput) => {
-  const { categoryIds, ...rest } = data;
+  const { categoryIds, jobOpeningId, ...rest } = data;
   return prisma.interview.create({
     data: {
       ...rest,
+      ...(jobOpeningId ? { jobOpeningId } : {}),
       status: Status.ONGOING,
       ...(categoryIds && categoryIds.length > 0
         ? {
@@ -63,6 +65,10 @@ const getInterviewByUserCompanyPosition = (
 const getInterviewById = (id: number) => {
   return prisma.interview.findUnique({
     where: { id },
+    include: {
+      company: true,
+      position: true,
+    },
   });
 };
 
@@ -509,6 +515,129 @@ const updateFinalResume = (id: number, finalResume: string) => {
   });
 };
 
+const getAllInterviews = () => {
+  return prisma.interview.findMany({
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+        },
+      },
+      company: true,
+      position: true,
+      focusQuestions: true,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+};
+
+const setFocusCategories = async (interviewId: number, categoryIds: number[]) => {
+  await prisma.focusQuestion.deleteMany({
+    where: { interviewId },
+  });
+
+  if (categoryIds.length > 0) {
+    await prisma.focusQuestion.createMany({
+      data: categoryIds.map((categoryId) => ({
+        interviewId,
+        categoryId,
+      })),
+    });
+  }
+
+  return prisma.interview.findUnique({
+    where: { id: interviewId },
+    include: {
+      focusQuestions: true,
+    },
+  });
+};
+
+type CreateInterviewInput = {
+  userId: number;
+  companyId: number;
+  positionId: number;
+  categoryIds?: number[];
+};
+
+const createInterviewByAdmin = (data: CreateInterviewInput) => {
+  const { categoryIds, ...rest } = data;
+  return prisma.interview.create({
+    data: {
+      ...rest,
+      status: Status.ONGOING,
+      ...(categoryIds && categoryIds.length > 0
+        ? {
+            focusQuestions: {
+              create: categoryIds.map((id) => ({
+                categoryId: id,
+              })),
+            },
+          }
+        : {}),
+    },
+  });
+};
+
+const updateInterview = (id: number, data: { companyId?: number; positionId?: number; userId?: number }) => {
+  return prisma.interview.update({
+    where: { id },
+    data,
+  });
+};
+
+const deleteInterview = (id: number) => {
+  return prisma.interview.delete({
+    where: { id },
+  });
+};
+
+const getAllInterviewsWithDetails = () => {
+  return prisma.interview.findMany({
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+        },
+      },
+      company: true,
+      position: true,
+      focusQuestions: {
+        include: {
+          category: true,
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+};
+
+const getInterviewDetail = (id: number) => {
+  return prisma.interview.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          username: true,
+        },
+      },
+      company: true,
+      position: true,
+      focusQuestions: true,
+    },
+  });
+};
+
 export default {
   startInterview,
   getInterviewById,
@@ -522,6 +651,13 @@ export default {
   getResult,
   getInterviewHistory,
   getUserInterviews,
+  getAllInterviews,
+  setFocusCategories,
+  createInterviewByAdmin,
+  updateInterview,
+  deleteInterview,
+  getAllInterviewsWithDetails,
+  getInterviewDetail,
   processResume,
   createUserChat,
   updateFinalResume,

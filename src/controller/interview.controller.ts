@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import sendResponse from "@/utils/responseHandler";
 import validate from "@/utils/validation";
 import interviewService from "@/services/interview.service";
+import jobOpeningService from "@/services/jobOpening.service";
 import NotFoundException from "@/exception/NotFoundException";
 import scoringService from "@/services/scoring.service";
 import followUpService from "@/services/followUp.service";
@@ -10,6 +11,14 @@ import { Status, QuestionType } from "@/prisma/enums";
 import logger from "@/utils/logger";
 
 type StartInterviewRequest = {
+  companyId?: number;
+  positionId?: number;
+  jobOpeningId?: number;
+  categoryIds?: number[];
+};
+
+type CreateInterviewRequest = {
+  userId: number;
   companyId: number;
   positionId: number;
   categoryIds?: number[];
@@ -17,6 +26,49 @@ type StartInterviewRequest = {
 
 // START
 export const startInterview = async (req: Request, res: Response) => {
+  const user = req.user as any;
+  if (user.role === "ADMIN" || user.role === "COMPANY") {
+    throw new ForbiddenException("Admin/HR tidak dapat melakukan wawancara");
+  }
+
+  const userId = user.id;
+  const { jobOpeningId } = req.body;
+
+  if (jobOpeningId) {
+    const jobOpening = await jobOpeningService.getJobOpeningById(+jobOpeningId);
+    if (!jobOpening.isActive) {
+      throw new ForbiddenException("Lamaran sudah tidak aktif");
+    }
+
+    const existingInterview =
+      await interviewService.getInterviewByUserCompanyPosition(
+        userId,
+        jobOpening.companyId,
+        jobOpening.positionId,
+      );
+    if (existingInterview) {
+      throw new ForbiddenException(
+        "Anda sudah melakukan interview untuk posisi ini",
+      );
+    }
+
+    const categoryIds = jobOpening.categories.map((c) => c.categoryId);
+
+    const interview = await interviewService.startInterview({
+      userId,
+      companyId: jobOpening.companyId,
+      positionId: jobOpening.positionId,
+      jobOpeningId: jobOpening.id,
+      categoryIds,
+    });
+
+    return sendResponse(res, {
+      status: 201,
+      message: "Interview berhasil dibuat",
+      data: interview,
+    });
+  }
+
   const { companyId, positionId, categoryIds } = validate<StartInterviewRequest>(
     {
       companyId: "number",
@@ -30,13 +82,11 @@ export const startInterview = async (req: Request, res: Response) => {
     req.body,
   );
 
-  const userId = req.user!.id;
-
   const existingInterview =
     await interviewService.getInterviewByUserCompanyPosition(
       userId,
-      companyId,
-      positionId,
+      companyId!,
+      positionId!,
     );
   if (existingInterview) {
     throw new ForbiddenException(
@@ -46,8 +96,8 @@ export const startInterview = async (req: Request, res: Response) => {
 
   const interview = await interviewService.startInterview({
     userId,
-    companyId,
-    positionId,
+    companyId: companyId!,
+    positionId: positionId!,
     categoryIds,
   });
 
@@ -60,6 +110,11 @@ export const startInterview = async (req: Request, res: Response) => {
 
 // CURRENT QUESTION
 export const getCurrent = async (req: Request, res: Response) => {
+  const user = req.user as any;
+  if (user.role === "ADMIN" || user.role === "COMPANY") {
+    throw new ForbiddenException("Admin/HR tidak dapat melakukan wawancara");
+  }
+
   const id = +req.params.id;
 
   const interview = await interviewService.getInterviewById(id);
@@ -360,6 +415,76 @@ export const getUserInterviews = async (req: Request, res: Response) => {
   });
 };
 
+// ALL INTERVIEWS (ADMIN ONLY)
+export const getAllInterviews = async (req: Request, res: Response) => {
+  const interviews = await interviewService.getAllInterviews();
+
+  sendResponse(res, {
+    status: 200,
+    message: "Daftar semua interview berhasil diambil",
+    data: interviews,
+  });
+};
+
+// SET FOCUS CATEGORIES (ADMIN ONLY)
+export const setFocusCategories = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  const { categoryIds } = validate<{ categoryIds: number[] }>(
+    {
+      categoryIds: {
+        type: "array",
+        items: "number",
+      },
+    },
+    req.body,
+  );
+
+  const interview = await interviewService.getInterviewById(id);
+  if (!interview) {
+    throw new NotFoundException("Interview tidak ditemukan");
+  }
+
+  if (interview.status === Status.FINISH) {
+    throw new ForbiddenException("Tidak dapat mengubah kategori pada interview yang sudah selesai");
+  }
+
+  const updatedInterview = await interviewService.setFocusCategories(id, categoryIds);
+
+  sendResponse(res, {
+    status: 200,
+    message: "Kategori pertanyaan berhasil diatur",
+    data: updatedInterview,
+  });
+};
+
+// STUDENT RESULT (HANYA FINAL RESUME, TANPA SCORE)
+export const getStudentResult = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+
+  const interview = await interviewService.getInterviewById(id);
+  if (!interview) {
+    throw new NotFoundException("Interview tidak ditemukan");
+  }
+
+  if (interview.status !== Status.FINISH) {
+    throw new ForbiddenException("Interview belum selesai");
+  }
+
+  const result = {
+    id: interview.id,
+    status: interview.status,
+    finalResume: interview.finalResume,
+    company: interview.company,
+    position: interview.position,
+  };
+
+  sendResponse(res, {
+    status: 200,
+    message: "Hasil interview mahasiswa",
+    data: result,
+  });
+};
+
 // UPDATE FINAL RESUME
 export const updateFinalResume = async (req: Request, res: Response) => {
   const id = +req.params.id;
@@ -384,6 +509,142 @@ export const updateFinalResume = async (req: Request, res: Response) => {
   });
 };
 
+// CREATE INTERVIEW BY ADMIN
+export const createInterviewByAdmin = async (req: Request, res: Response) => {
+  const { userId, companyId, positionId, categoryIds } = validate<CreateInterviewRequest>(
+    {
+      userId: "number",
+      companyId: "number",
+      positionId: "number",
+      categoryIds: {
+        type: "array",
+        items: "number",
+        optional: true,
+      },
+    },
+    req.body,
+  );
+
+  const existingInterview =
+    await interviewService.getInterviewByUserCompanyPosition(
+      userId,
+      companyId,
+      positionId,
+    );
+  if (existingInterview) {
+    throw new ForbiddenException(
+      "Mahasiswa ini sudah melakukan interview untuk posisi ini",
+    );
+  }
+
+  const interview = await interviewService.createInterviewByAdmin({
+    userId,
+    companyId,
+    positionId,
+    categoryIds,
+  });
+
+  sendResponse(res, {
+    status: 201,
+    message: "Lamaran berhasil dibuat",
+    data: interview,
+  });
+};
+
+// UPDATE INTERVIEW BY ADMIN
+export const updateInterviewByAdmin = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+  const { userId, companyId, positionId } = validate<{
+    userId?: number;
+    companyId?: number;
+    positionId?: number;
+  }>(
+    {
+      userId: { type: "number", optional: true },
+      companyId: { type: "number", optional: true },
+      positionId: { type: "number", optional: true },
+    },
+    req.body,
+  );
+
+  const interview = await interviewService.getInterviewById(id);
+  if (!interview) {
+    throw new NotFoundException("Lamaran tidak ditemukan");
+  }
+
+  if (userId || companyId || positionId) {
+    if (userId && companyId && positionId) {
+      const existingInterview =
+        await interviewService.getInterviewByUserCompanyPosition(
+          userId,
+          companyId,
+          positionId,
+        );
+      if (existingInterview && existingInterview.id !== id) {
+        throw new ForbiddenException(
+          "Mahasiswa ini sudah melakukan interview untuk posisi ini",
+        );
+      }
+    }
+  }
+
+  const updatedInterview = await interviewService.updateInterview(id, {
+    userId,
+    companyId,
+    positionId,
+  });
+
+  sendResponse(res, {
+    status: 200,
+    message: "Lamaran berhasil diupdate",
+    data: updatedInterview,
+  });
+};
+
+// DELETE INTERVIEW BY ADMIN
+export const deleteInterviewByAdmin = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+
+  const interview = await interviewService.getInterviewById(id);
+  if (!interview) {
+    throw new NotFoundException("Lamaran tidak ditemukan");
+  }
+
+  await interviewService.deleteInterview(id);
+
+  sendResponse(res, {
+    status: 200,
+    message: "Lamaran berhasil dihapus",
+  });
+};
+
+// GET ALL INTERVIEWS WITH DETAILS FOR ADMIN
+export const getAllInterviewsForAdmin = async (req: Request, res: Response) => {
+  const interviews = await interviewService.getAllInterviewsWithDetails();
+
+  sendResponse(res, {
+    status: 200,
+    message: "Daftar lamaran berhasil diambil",
+    data: interviews,
+  });
+};
+
+// GET INTERVIEW DETAIL FOR ADMIN
+export const getInterviewDetailForAdmin = async (req: Request, res: Response) => {
+  const id = +req.params.id;
+
+  const interview = await interviewService.getInterviewDetail(id);
+  if (!interview) {
+    throw new NotFoundException("Lamaran tidak ditemukan");
+  }
+
+  sendResponse(res, {
+    status: 200,
+    message: "Detail lamaran berhasil diambil",
+    data: interview,
+  });
+};
+
 export default {
   startInterview,
   getCurrent,
@@ -393,5 +654,13 @@ export default {
   getResult,
   getInterviewHistory,
   getUserInterviews,
+  getAllInterviews,
+  setFocusCategories,
+  getStudentResult,
   updateFinalResume,
+  createInterviewByAdmin,
+  updateInterviewByAdmin,
+  deleteInterviewByAdmin,
+  getAllInterviewsForAdmin,
+  getInterviewDetailForAdmin,
 };

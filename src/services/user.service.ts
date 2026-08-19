@@ -6,15 +6,17 @@ type CreateUserData = {
   username: string;
   password: string;
   role: Role;
+  companyId?: number;
 };
 export const createUser = async ({
   name,
   username,
   password,
   role,
+  companyId,
 }: CreateUserData) => {
   const user = await prisma.user.create({
-    data: { name, username, password, role },
+    data: { name, username, password, role, companyId },
   });
   return user;
 };
@@ -34,10 +36,24 @@ export const findUserById = async (id: number) => {
       name: true,
       username: true,
       role: true,
+      companyId: true,
       createdAt: true,
     },
   });
   return user;
 };
 
-export default { createUser, findUserByUsername, findUserById };
+export const getAllStudents = async () => {
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+    },
+    orderBy: { name: "asc" },
+  });
+  return students;
+};
+
+export default { createUser, findUserByUsername, findUserById, getAllStudents };

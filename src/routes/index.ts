@@ -11,6 +11,7 @@ import role from "@/middleware/role";
 import companyRouter from "./company.routes";
 import positionRouter from "./position.routes";
 import followUpRouter from "./followUp.route";
+import jobOpeningRouter from "./jobOpening.routes";
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use("/company", auth, companyRouter);
 router.use("/position", auth, positionRouter);
 // Follow-up question endpoints
 router.use("/follow-up", auth, followUpRouter);
+router.use("/job-openings", auth, jobOpeningRouter);
 
 export default router;

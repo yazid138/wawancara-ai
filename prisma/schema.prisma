@@ -29,11 +29,14 @@ model User {
   username  String   @unique
   password  String
   role      Role
+  companyId Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interviews Interview[]
-  answers    Answer[]
+  interviews         Interview[]
+  answers            Answer[]
+  company            Company?       @relation(fields: [companyId], references: [id])
+  createdJobOpenings JobOpening[]   @relation("CreatedJobOpenings")
 }
 
 model Company {
@@ -43,8 +46,10 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interviews Interview[]
-  positions Position[]
+  interviews  Interview[]
+  positions   Position[]
+  users       User[]
+  jobOpenings JobOpening[]
 }
 
 model Position {
@@ -55,8 +60,9 @@ model Position {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  interviews Interview[]
-  company Company @relation(fields: [companyId], references: [id])
+  interviews  Interview[]
+  company     Company @relation(fields: [companyId], references: [id])
+  jobOpenings JobOpening[]
 }
 
 enum Status {
@@ -65,22 +71,24 @@ enum Status {
 }
 
 model Interview {
-  id         Int     @id @default(autoincrement())
-  userId     Int
-  companyId  Int
-  positionId Int
-  status    Status?
-  resume    String?
-  finalResume String?
+  id           Int     @id @default(autoincrement())
+  userId       Int
+  companyId    Int
+  positionId   Int
+  jobOpeningId Int?
+  status       Status?
+  resume       String?
+  finalResume  String?
   resumePrompt String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id])
-  company  Company  @relation(fields: [companyId], references: [id])
-  position Position @relation(fields: [positionId], references: [id])
-  answers  Answer[]
+  user       User        @relation(fields: [userId], references: [id])
+  company    Company     @relation(fields: [companyId], references: [id])
+  position   Position    @relation(fields: [positionId], references: [id])
+  jobOpening JobOpening? @relation(fields: [jobOpeningId], references: [id])
+  answers    Answer[]
   chatHistories ChatHistory[]
   focusQuestions FocusQuestion[]
 }
@@ -138,8 +146,9 @@ model QuestionCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  questions Question[]
-  focusQuestions FocusQuestion[]
+  questions          Question[]
+  focusQuestions     FocusQuestion[]
+  jobOpeningCategories JobOpeningCategory[]
 }
 
 model AnswerCategory {
@@ -268,4 +277,37 @@ model FocusQuestion {
   category    QuestionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([interviewId, categoryId])
+}
+
+model JobOpening {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  companyId   Int
+  positionId  Int
+  createdById Int
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company    Company @relation(fields: [companyId], references: [id])
+  position   Position @relation(fields: [positionId], references: [id])
+  createdBy  User @relation("CreatedJobOpenings", fields: [createdById], references: [id])
+  categories JobOpeningCategory[]
+  interviews Interview[]
+
+  @@index([companyId])
+  @@index([positionId])
+  @@index([isActive])
+}
+
+model JobOpeningCategory {
+  jobOpeningId Int
+  categoryId   Int
+
+  jobOpening JobOpening      @relation(fields: [jobOpeningId], references: [id], onDelete: Cascade)
+  category   QuestionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([jobOpeningId, categoryId])
 }
